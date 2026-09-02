@@ -27,7 +27,7 @@ def to_wav(mp3: Path, out_dir: Path, key: str) -> None:
     out = out_dir / f"{key}.wav"
     subprocess.run([
         "ffmpeg", "-y", "-i", str(mp3),
-        "-ac", "1", "-ar", "16000", "-sample_fmt", "s16",
+        "-ac", "1", "-ar", "8000", "-sample_fmt", "s16",
         str(out),
     ], capture_output=True, check=True)
     print(f"  OK  {key:28s} {out.stat().st_size:8d} B")

@@ -85,7 +85,7 @@ VOICE_LINES = {
     "english_recite_words":
         "太棒啦！又记住了一大波单词！每一个拼写都刻进脑子里，"
         "abandon 已经离你远去啦，明天的你词汇量又要破纪录哦！",
-    "english_reading_comprehension":
+    "eng_reading":
         "长难句拆解成功！主旨题、细节题、推理题全部拿下！"
         "多读一篇阅读，考场上就多一份从容，继续刷真题阅读吧，语感正在飞速上涨！",
 

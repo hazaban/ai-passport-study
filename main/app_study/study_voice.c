@@ -42,7 +42,7 @@ const study_voice_map_t study_voice_map[] = {
 
     /* ★ 英语专属定制：subtype 不同 → 不同文案 & 语音 */
     { CAT_ENGLISH, SUBTYPE_RECITE,  "english_recite_words" },  /* 背单词完成 */
-    { CAT_ENGLISH, SUBTYPE_CHAPTER, "english_reading_comprehension" },  /* 阅读题完成 */
+    { CAT_ENGLISH, SUBTYPE_CHAPTER, "eng_reading" },  /* 阅读题完成 */
 
     /* 自定义 */
     { -1, -1, "custom_1" },

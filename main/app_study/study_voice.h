@@ -18,8 +18,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-/* 采样率：与 ES8311 播放和 RTTTL 渲染统一。16 kHz 1ch 16bit */
-#define VOICE_SAMPLE_RATE   16000
+/* 采样率：与 ES8311 播放和 RTTTL 渲染统一。8 kHz 1ch 16bit（体积减半，语音清晰够用） */
+#define VOICE_SAMPLE_RATE   8000
 
 /* ---------- 输出回调 ---------- */
 /* 接收一组 16-bit PCM 采样并写出。ESP32: 调用 bsp_audio_write(buf, n*2) */

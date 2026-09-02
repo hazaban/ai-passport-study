@@ -13,6 +13,8 @@
 #include "study_time.h"
 #include "study_font.h"
 #include <string.h>
+#include <stdio.h>
+#include <time.h>
 
 #ifdef ESP_PLATFORM
 
@@ -68,7 +70,7 @@ static lv_obj_t *mod_card(lv_obj_t *parent, int x, int y, int w, int h,
     lv_obj_set_style_pad_all(o, 0, 0);
     if (shadow) {
         lv_obj_set_style_shadow_width(o, 10, 0);
-        lv_obj_set_style_shadow_opa(o, LV_OPA_12, 0);
+        lv_obj_set_style_shadow_opa(o, LV_OPA_10, 0);
         lv_obj_set_style_shadow_offset_y(o, 4, 0);
         lv_obj_set_style_shadow_color(o, lv_color_hex(0x10233F), 0);
     }
@@ -130,7 +132,7 @@ static lv_obj_t *home_card(int y, int h, uint32_t bg) {
     lv_obj_set_style_border_width(c, 0, 0);
     lv_obj_set_style_pad_all(c, 0, 0);
     lv_obj_set_style_shadow_width(c, 10, 0);
-    lv_obj_set_style_shadow_opa(c, LV_OPA_12, 0);
+    lv_obj_set_style_shadow_opa(c, LV_OPA_10, 0);
     lv_obj_set_style_shadow_offset_y(c, 4, 0);
     lv_obj_set_style_shadow_color(c, lv_color_hex(0x10233F), 0);
     return c;
@@ -206,7 +208,7 @@ void ui_home_build(void) {
     lv_obj_set_style_text_align(cap, LV_TEXT_ALIGN_CENTER, 0);
 
     /* 大数字：APP-style 用日期字体太小时放大，用稍大字重 */
-    char nbuf[8];
+    char nbuf[16];
     int left = study_time_days_until(STUDY_EXAM_MONTH, STUDY_EXAM_DAY);
     if (left < 0) snprintf(nbuf, sizeof(nbuf), "GO");
     else          snprintf(nbuf, sizeof(nbuf), "%d", left);
@@ -412,7 +414,7 @@ static void render_todo_seg(void) {
 }
 
 static void render_header(void) {
-    lv_obj_set_text(todo_title_label, "考研助手");
+    lv_label_set_text(todo_title_label, "考研助手");
 
     /* 倒计时 */
     int left = study_time_days_until(STUDY_EXAM_MONTH, STUDY_EXAM_DAY);
@@ -798,6 +800,8 @@ static bool s_set_wants_home;
 static int  s_bright;            /* 当前亮度 0..100 */
 static bool s_bright_editing;
 
+static void ui_settings_refresh_highlight(void);
+
 static void settings_set_label_text(int i, const char *txt) {
     if (i < 0 || i >= SET_N) return;
     lv_obj_t *l = lv_obj_get_child(s_set_cards[i], 0);
@@ -823,10 +827,10 @@ void ui_settings_build(void) {
     lv_obj_set_pos(title, 16, 8);
 
     /* 亮度：调用硬件调节并持久化 */
-    char bright_buf[24];
+    char bright_buf[32];
     snprintf(bright_buf, sizeof(bright_buf), "屏幕亮度 %d%%", s_bright);
     /* 电量：只读显示 */
-    char batt_buf[24];
+    char batt_buf[32];
     int soc = bsp_battery_soc();
     if (soc < 0) snprintf(batt_buf, sizeof(batt_buf), "电池电量 --%%");
     else         snprintf(batt_buf, sizeof(batt_buf), "电池电量 %d%%", soc);
