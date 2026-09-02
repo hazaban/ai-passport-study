@@ -37,7 +37,6 @@ static bool s_ok[DEMO_COUNT];
 static lv_obj_t *s_menu_scr;
 static lv_obj_t *s_cards[DEMO_COUNT];
 static lv_obj_t *s_rows[DEMO_COUNT];
-static lv_obj_t *s_mascot;
 static int  s_sel;                 // 当前选中项
 static int  s_active = -1;         // 当前所在演示页;-1 = 在菜单
 
