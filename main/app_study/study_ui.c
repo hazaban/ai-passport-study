@@ -190,7 +190,7 @@ void ui_todo_build(void) {
     s_cur_scr = todo_scr;
 
     /* 顶部状态栏 */
-    todo_date_label = ui_pixel_label(todo_scr, "考研助手·加油上岸!", &lv_font_montserrat_14, UI_INK);
+    todo_date_label = ui_pixel_label(todo_scr, "加油上岸!", &lv_font_montserrat_14, UI_INK);
     lv_obj_set_pos(todo_date_label, 12, 10);
     lv_obj_set_width(todo_date_label, 130);
 
@@ -590,11 +590,8 @@ void ui_wifi_build(void) {
     lv_obj_t *panel = ui_pixel_panel_create(s_wifi_scr, 10, 44, 220, 200, UI_PAPER);
 
     /* 当前 AP 热点名（配网状态下展示，方便手机搜索） */
-    wifi_config_t wc;
-    const char *ap_ssid = "STU_STUDY_xxxx";
-    if (esp_wifi_get_config(WIFI_IF_AP, &wc) == ESP_OK && wc.ap.ssid[0]) {
-        ap_ssid = (const char *)wc.ap.ssid;
-    }
+    const char *ap_ssid = study_wifi_get_ap_ssid();
+    if (!ap_ssid || !ap_ssid[0]) ap_ssid = "STU_STUDY_xxxx";
 
     study_wifi_state_t st = study_wifi_get_state();
     char buf[200];
@@ -606,12 +603,12 @@ void ui_wifi_build(void) {
         snprintf(buf, sizeof(buf), "连接中…\n\n请稍候");
     } else if (st == WIFI_STATE_FAILED) {
         snprintf(buf, sizeof(buf),
-                 "连接失败\n\n请重新配网：\n1.手机连热点 %s\n2.打开 http://%s/\n3.重填账号密码",
-                 ap_ssid, STUDY_WIFI_AP_GATEWAY);
+                 "连接失败\n\n请重新配网：\n1.连热点 %s\n  密码 %s\n2.打开 http://%s/\n3.重填账号密码",
+                 ap_ssid, STUDY_WIFI_AP_PASS, STUDY_WIFI_AP_GATEWAY);
     } else {
         snprintf(buf, sizeof(buf),
-                 "开启配网后：\n1.手机连热点 %s\n2.浏览器打开 http://%s/\n3.填 WiFi 账号密码提交",
-                 ap_ssid, STUDY_WIFI_AP_GATEWAY);
+                 "按 OK 开热点\n\n1.连热点 %s\n  密码 %s\n2.打开 http://%s/\n3.填 WiFi 账号密码",
+                 ap_ssid, STUDY_WIFI_AP_PASS, STUDY_WIFI_AP_GATEWAY);
     }
     lv_obj_t *info = ui_pixel_label(panel, buf, &lv_font_montserrat_12, UI_INK);
     lv_obj_set_width(info, 196);

@@ -2,7 +2,7 @@
  * study_wifi.c — WiFi 连接 + 本地网页配网 (SoftAP + HTTP)
  *
  * 配网流程（适合无键盘设备，手机辅助）：
- *   1) 无已存凭证 或 用户到设置页手动触发 → 开启 SoftAP 热点（开放，无密码）
+ *   1) 无已存凭证 或 用户到设置页手动触发 → 开启 SoftAP 热点（WPA2 密码在屏幕显示）
  *   2) 手机连接该热点，浏览器打开 http://192.168.4.1 填入账号密码并提交
  *   3) 设备把凭证写入 NVS("wifi") → 关闭 AP → 连接该 WiFi → 状态回到 CONNECTED
  *   4) 之后每次开机自动读取凭证联网；失败自动回落到 AP 配网等待
@@ -238,7 +238,8 @@ static void start_ap_config(void) {
     ac.ap.ssid_len = (uint8_t)strlen(s_ap_ssid);
     ac.ap.channel = 1;
     ac.ap.max_connection = 4;
-    ac.ap.authmode = WIFI_AUTH_OPEN;       /* 简易配网：开放热点 */
+    ac.ap.authmode = WIFI_AUTH_WPA2_PSK;                  /* 带密码，防止他人乱连 */
+    strncpy((char *)ac.ap.password, STUDY_WIFI_AP_PASS, sizeof(ac.ap.password) - 1);
     esp_wifi_set_config(WIFI_IF_AP, &ac);
     esp_wifi_start();
 
@@ -310,6 +311,7 @@ void study_wifi_set_callback(study_wifi_cb_t cb, void *user) {
 study_wifi_state_t study_wifi_get_state(void) { return s_state; }
 const char *study_wifi_get_ssid(void)          { return s_connected_ssid; }
 int study_wifi_get_rssi(void)                  { return s_rssi; }
+const char *study_wifi_get_ap_ssid(void)       { return s_ap_ssid; }
 
 void study_wifi_start_ap_config(void) {
     if (!s_ready) return;
@@ -378,6 +380,7 @@ void study_wifi_stop(void) {}
 study_wifi_state_t study_wifi_get_state(void) { return WIFI_STATE_IDLE; }
 const char *study_wifi_get_ssid(void) { return ""; }
 int study_wifi_get_rssi(void) { return 0; }
+const char *study_wifi_get_ap_ssid(void) { return ""; }
 void study_wifi_set_callback(study_wifi_cb_t cb, void *user) { (void)cb; (void)user; }
 
 #endif

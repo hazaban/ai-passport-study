@@ -40,6 +40,9 @@ study_wifi_state_t study_wifi_get_state(void);
 const char        *study_wifi_get_ssid(void);
 int                study_wifi_get_rssi(void);
 
+/* 当前配网热点的名称 / 密码（供硬件屏幕直接显示，方便手机连接） */
+const char        *study_wifi_get_ap_ssid(void);
+
 /* 注册状态回调(单回调，从事件/任务上下文触发，UI 需经 lvgl lock)。 */
 void study_wifi_set_callback(study_wifi_cb_t cb, void *user);
 
@@ -47,3 +50,5 @@ void study_wifi_set_callback(study_wifi_cb_t cb, void *user);
 #define STUDY_WIFI_AP_GATEWAY  "192.168.4.1"
 /* 配网热点默认端口 */
 #define STUDY_WIFI_AP_PORT     80
+/* 配网热点密码（手机连接热点时需输入，屏幕会显示） */
+#define STUDY_WIFI_AP_PASS     "12345678"
