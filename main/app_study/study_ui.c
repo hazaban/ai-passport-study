@@ -49,6 +49,9 @@ static study_todo_tab_t s_tab;     /* 当前页：日常秩序 / 各科学习 */
 static int s_sel;                  /* 当前页内选中 card 下标 */
 static bool s_bottom_focus;        /* true = 焦点在底部按钮 */
 static int s_bottom_idx;           /* 0 = +添加，1 = 设置 */
+static int s_scroll;               /* 列表纵向滚动偏移（像素） */
+static int s_off[16], s_hgt[16];   /* 每个卡片的顶部偏移与高度 */
+static int s_list_h;               /* 列表内容总高 */
 static lv_obj_t *todo_scr;
 static lv_obj_t *todo_tab_label;
 static lv_obj_t *todo_date_label;
@@ -73,6 +76,27 @@ static void fill_card_ids_for_tab(void) {
     todo_card_ids[todo_card_n++] = -1 - (int)grp;      /* -1 日常秩序, -2 各科学习 */
     for (int i = 0; i < np && todo_card_n < 16; i++) todo_card_ids[todo_card_n++] = pend[i];
     for (int i = 0; i < nd && todo_card_n < 16; i++) todo_card_ids[todo_card_n++] = done[i];
+
+    /* 记录每个卡片的纵向布局，供滚动显示使用 */
+    int y = 0;
+    for (int ci = 0; ci < todo_card_n; ci++) {
+        int hh = (todo_card_ids[ci] < 0) ? GRP_LABEL_H : (CARD_H + CARD_MARGIN);
+        s_off[ci] = y; s_hgt[ci] = hh; y += hh;
+    }
+    s_list_h = y;
+}
+
+/* 滚动偏移夹取到 [0, 内容高-可视高]，且保证 s_sel 可见 */
+static void clamp_scroll_to_selection(void) {
+    if (s_sel < 0 || s_sel >= todo_card_n) { s_scroll = 0; return; }
+    int top = s_off[s_sel];
+    int bot = top + s_hgt[s_sel];
+    if (top < s_scroll) s_scroll = top;
+    if (bot > s_scroll + MID_H) s_scroll = bot - MID_H;
+    int maxs = s_list_h - MID_H;
+    if (maxs < 0) maxs = 0;
+    if (s_scroll < 0) s_scroll = 0;
+    if (s_scroll > maxs) s_scroll = maxs;
 }
 
 static void render_todo_cards(void) {
@@ -81,18 +105,22 @@ static void render_todo_cards(void) {
         if (todo_card_objs[i]) { lv_obj_delete(todo_card_objs[i]); todo_card_objs[i] = NULL; }
     }
 
-    int y = 0;
+    int view_bot = s_scroll + MID_H;                 /* 可视窗口底部 */
     for (int ci = 0; ci < todo_card_n; ci++) {
         int tid = todo_card_ids[ci];
+        int abs_y = s_off[ci];
+        int hgt   = s_hgt[ci];
+
+        /* 视野之外：不创建对象（滚动查看时用） */
+        if (abs_y + hgt <= s_scroll || abs_y >= view_bot) continue;
+        int y = abs_y - s_scroll;
+
         if (tid < 0) {
             /* Section header */
             const char *label = (tid == -1) ? "· 日常秩序 ·" : "· 各科学习 ·";
-            uint32_t color = UI_MUTED;
             lv_obj_t *h = ui_pixel_label(todo_panel, label, &lv_font_montserrat_12, UI_INK);
             lv_obj_set_pos(h, 6, y + 2);
             lv_obj_set_size(h, W - 24, GRP_LABEL_H);
-            (void)color;
-            y += GRP_LABEL_H;
             todo_card_objs[ci] = h;
             continue;
         }
@@ -133,7 +161,6 @@ static void render_todo_cards(void) {
         lv_label_set_long_mode(title, LV_LABEL_LONG_CLIP);
 
         todo_card_objs[ci] = card;
-        y += CARD_H + CARD_MARGIN;
     }
 }
 
@@ -156,6 +183,7 @@ static void render_date_and_progress(void) {
 void ui_todo_build(void) {
     s_tab = TAB_DAILY;          /* 默认停在「日常秩序」页 */
     s_sel = 0;
+    s_scroll = 0;
     s_bottom_focus = false;
 
     todo_scr = ui_pixel_screen_create("KAOYAN");
@@ -243,7 +271,7 @@ void ui_todo_key(uint8_t btn_u, uint8_t ev_u) {
                 if (s_sel <= 0) {
                     /* 已在列表最顶部（分组头）：切换到另一个分类页 */
                     s_tab = (s_tab == TAB_DAILY) ? TAB_SUBJECTS : TAB_DAILY;
-                    s_sel = 0;
+                    s_sel = 0; s_scroll = 0;
                 } else {
                     s_sel--;
                 }
@@ -254,11 +282,13 @@ void ui_todo_key(uint8_t btn_u, uint8_t ev_u) {
                     s_sel++;
                 }
             }
+            if (!s_bottom_focus) clamp_scroll_to_selection();
         } else {
             /* 焦点在底部按钮 */
             if (btn == BSP_BTN_UP) {
                 s_bottom_focus = false;
                 s_sel = (todo_card_n > 0) ? todo_card_n - 1 : 0;
+                clamp_scroll_to_selection();
             } else {
                 s_bottom_idx = (s_bottom_idx + 1) % 2;
             }
@@ -275,15 +305,53 @@ int ui_todo_selected_task_id(void) {
 }
 
 /* ==============================================================
- * PAGE_ADD_TASK — 添加任务（4 步）
- *   Step 0: 从 26 个预设模板里挑一个（最高效）
- *   Step 1: 选择 10 个类别
- *   Step 2: 选择 7 个子分类
- *   Step 3: 选择 时间 (HH:MM)
+ * PAGE_ADD_TASK — 添加任务（简化为一步:从预设模板里挑一个直接添加）
+ *   26 个预设模板，超出一屏(6 条)时用上/下键自动翻页选择
  * ============================================================== */
+#define ADD_PER_PAGE 6
 static int s_add_step;
-static int s_add_sel;
+static int s_add_sel;               /* 选中模板的【绝对】下标 0..总数-1，据此翻页 */
 static study_task_t s_draft;
+static lv_obj_t *s_add_panel;       /* 模板列表容器（供翻页重绘） */
+static lv_obj_t *s_add_hint;        /* 底部提示（含页码） */
+
+/* 清空并重绘当前页的模板卡（page = s_add_sel / ADD_PER_PAGE） */
+static void add_render_preset_list(void) {
+    const study_preset_t *presets;
+    int total = study_task_presets(&presets);
+    if (total <= 0) return;
+
+    lv_obj_clean(s_add_panel);
+    int page = s_add_sel / ADD_PER_PAGE;
+    int first = page * ADD_PER_PAGE;
+    int cnt = total - first; if (cnt > ADD_PER_PAGE) cnt = ADD_PER_PAGE;
+
+    for (int i = 0; i < cnt; i++) {
+        int idx = first + i;
+        int y = 8 + i * 36;
+        lv_obj_t *card = ui_pixel_panel_create(s_add_panel, 6, y, 208, 32, UI_MUTED);
+        if (idx == s_add_sel) ui_pixel_set_selected(card, true, true);
+        const study_category_t *cat = study_category_get(presets[idx].category);
+        lv_obj_t *bar = lv_obj_create(card);
+        lv_obj_set_size(bar, 4, 24); lv_obj_set_pos(bar, 4, 4);
+        lv_obj_set_style_radius(bar, 2, 0);
+        lv_obj_set_style_bg_color(bar, lv_color_hex(cat ? cat->color_hex : UI_INK), 0);
+        lv_obj_set_style_border_width(bar, 0, 0);
+        char buf[48];
+        snprintf(buf, sizeof(buf), "%s", presets[idx].title);
+        lv_obj_t *l = ui_pixel_label(card, buf, &lv_font_montserrat_12, UI_INK);
+        lv_obj_set_pos(l, 16, 6);
+        lv_obj_set_width(l, 180);
+        lv_label_set_long_mode(l, LV_LABEL_LONG_CLIP);
+    }
+
+    /* 页码提示：第 p/tp 页 */
+    int total_pages = (total + ADD_PER_PAGE - 1) / ADD_PER_PAGE;
+    char h[48];
+    snprintf(h, sizeof(h), "第 %d/%d 页  OK确认 上/下选择",
+             page + 1, total_pages);
+    lv_label_set_text(s_add_hint, h);
+}
 
 void ui_add_build(void) {
     s_add_step = 0;
@@ -298,31 +366,11 @@ void ui_add_build(void) {
     lv_obj_t *title = ui_pixel_label(scr, "添加任务 · 选模板", &lv_font_montserrat_14, UI_INK);
     lv_obj_set_pos(title, 12, 10);
 
-    lv_obj_t *panel = ui_pixel_panel_create(scr, 10, 44, 220, 230, UI_PAPER);
+    s_add_panel = ui_pixel_panel_create(scr, 10, 44, 220, 230, UI_PAPER);
+    s_add_hint = ui_pixel_label(scr, "", &lv_font_montserrat_12, UI_SKY);
+    lv_obj_set_pos(s_add_hint, 12, 296);
 
-    const study_preset_t *presets;
-    int n = study_task_presets(&presets);
-    if (n > 6) n = 6;  /* 一屏最多展示 6 条 */
-    for (int i = 0; i < n; i++) {
-        int y = 8 + i * 36;
-        lv_obj_t *card = ui_pixel_panel_create(panel, 6, y, 208, 32, UI_MUTED);
-        if (i == s_add_sel) ui_pixel_set_selected(card, true, true);
-        const study_category_t *cat = study_category_get(presets[i].category);
-        lv_obj_t *bar = lv_obj_create(card);
-        lv_obj_set_size(bar, 4, 24); lv_obj_set_pos(bar, 4, 4);
-        lv_obj_set_style_radius(bar, 2, 0);
-        lv_obj_set_style_bg_color(bar, lv_color_hex(cat ? cat->color_hex : UI_INK), 0);
-        lv_obj_set_style_border_width(bar, 0, 0);
-        char buf[48];
-        snprintf(buf, sizeof(buf), "%s", presets[i].title);
-        lv_obj_t *l = ui_pixel_label(card, buf, &lv_font_montserrat_12, UI_INK);
-        lv_obj_set_pos(l, 16, 6);
-        lv_obj_set_width(l, 180);
-        lv_label_set_long_mode(l, LV_LABEL_LONG_CLIP);
-    }
-
-    lv_obj_t *hint = ui_pixel_label(scr, "OK:确认 上/下:选择", &lv_font_montserrat_12, UI_SKY);
-    lv_obj_set_pos(hint, 40, 296);
+    add_render_preset_list();
     s_mascot = ui_pixel_mascot_create(scr, 101, H - 34);
     lv_screen_load(scr);
 }
@@ -341,14 +389,20 @@ void ui_add_key(uint8_t btn_u, uint8_t ev_u) {
     if (ev_u != BSP_BTN_CLICK) return;
     bsp_btn_t btn = (bsp_btn_t)btn_u;
 
-    if (btn == BSP_BTN_UP) { if (s_add_sel > 0) s_add_sel--; }
-    if (btn == BSP_BTN_DOWN) { s_add_sel++; }
+    if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
+        const study_preset_t *presets;
+        int total = study_task_presets(&presets);
+        int old = s_add_sel;
+        if (btn == BSP_BTN_UP)   { if (s_add_sel > 0) s_add_sel--; }
+        else                     { if (s_add_sel < total - 1) s_add_sel++; }
+        if (s_add_sel != old) add_render_preset_list();   /* 跨页时自动重绘 */
+    }
 
     if (btn == BSP_BTN_OK) {
         const study_preset_t *presets;
         int pn = study_task_presets(&presets);
         if (s_add_step == 0) {
-            /* Step 0: 预设选中 → 填 draft 并进 category 步 */
+            /* 选中的模板 → 填 draft 并直接提交 */
             if (s_add_sel < pn) {
                 strncpy(s_draft.title, presets[s_add_sel].title, TASK_TITLE_LEN - 1);
                 s_draft.category = presets[s_add_sel].category;
@@ -356,7 +410,6 @@ void ui_add_key(uint8_t btn_u, uint8_t ev_u) {
                 s_draft.hour     = presets[s_add_sel].hour;
                 s_draft.minute   = presets[s_add_sel].minute;
             }
-            /* 直接提交：简化实现，直接 add 并标记 step=99 */
             if (s_cb && s_cb->on_task_added) {
                 study_task_t tmp = s_draft;
                 (void)s_cb->on_task_added(&tmp);
@@ -427,7 +480,7 @@ void ui_detail_build(int task_id) {
     lv_obj_t *xl = ui_pixel_label(btn_del, "删除", &lv_font_montserrat_12, 0xFFFFFF);
     lv_obj_center(xl);
 
-    lv_obj_t *hint = ui_pixel_label(s_detail_scr, "OK:切键;长按OK:返回", &lv_font_montserrat_10, UI_SKY);
+    lv_obj_t *hint = ui_pixel_label(s_detail_scr, "OK:完成/取消 · 长按OK:返回", &lv_font_montserrat_10, UI_SKY);
     lv_obj_set_pos(hint, 60, 242);
 
     s_mascot = ui_pixel_mascot_create(s_detail_scr, 101, H - 34);
