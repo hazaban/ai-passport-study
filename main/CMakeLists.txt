@@ -24,8 +24,8 @@ idf_component_register(
          "app_study/study_wifi.c"        # WiFi 连接 + 本地网页配网 (SoftAP+HTTP)
     INCLUDE_DIRS "."
                  "app_study"
-    REQUIRES bsp bt esp_event esp_hw_support esp_netif esp_timer esp_wifi \
-             nvs_flash esp_spiffs lwip esp_http_server
+    REQUIRES bsp bt esp_event esp_hw_support esp_netif esp_timer esp_wifi
+             nvs_flash spiffs lwip esp_http_server json
 )
 
 # ----- 考研助手：把 build/voicepack 目录打成 voicepack 分区的 SPIFFS 镜像并纳入烧录 -----

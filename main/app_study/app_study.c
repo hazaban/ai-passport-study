@@ -96,7 +96,7 @@ static void voice_fs_init(void) {
     }
     /* 确认分区存在，否则 SPIFFS 只有目录没有文件，播不出人声 */
     size_t total = 0, used = 0;
-    esp_vfs_spiffs_info("voicepack", &total, &used);
+    esp_spiffs_info("voicepack", &total, &used);
     ESP_LOGI(TAG, "voicepack 已挂载: %u / %u bytes", (unsigned)used, (unsigned)total);
     study_voice_set_fs(&s_voice_fs);
 }

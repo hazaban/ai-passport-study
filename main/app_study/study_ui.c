@@ -17,6 +17,7 @@
 #include "lvgl.h"
 #include "ui_pixel.h"
 #include "bsp_display.h"
+#include "bsp_button.h"
 
 /* ==============================================================
  * 共用对象（跨页共享，如吉祥物、回调指针）
@@ -368,7 +369,7 @@ static void add_render_preset_list(void) {
 
     /* 页码提示：第 p/tp 页 */
     int total_pages = (total + ADD_PER_PAGE - 1) / ADD_PER_PAGE;
-    char h[48];
+    char h[72];
     snprintf(h, sizeof(h), "第 %d/%d 页  OK确认 上/下选择",
              page + 1, total_pages);
     lv_label_set_text(s_add_hint, h);

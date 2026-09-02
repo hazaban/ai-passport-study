@@ -38,7 +38,7 @@ static bool s_ready = false;               /* esp_wifi 已初始化 */
 static esp_netif_t *s_sta_netif = NULL;
 static esp_netif_t *s_ap_netif  = NULL;
 static httpd_handle_t s_server = NULL;
-static char s_ap_ssid[24];
+static char s_ap_ssid[40];
 static char s_connected_ssid[33];          /* STA 当前/最近连接到的 SSID */
 static int  s_rssi = 0;
 static volatile study_wifi_state_t s_state = WIFI_STATE_IDLE;
@@ -234,7 +234,7 @@ static void start_ap_config(void) {
     esp_wifi_stop();                    /* 切换到 AP 前先停旧模式（未启动也无妨） */
     esp_wifi_set_mode(WIFI_MODE_AP);
     wifi_config_t ac = { 0 };
-    strncpy((char *)ac.ap.ssid, s_ap_ssid, sizeof(s_ap_ssid) - 1);
+    strncpy((char *)ac.ap.ssid, s_ap_ssid, sizeof(ac.ap.ssid) - 1);
     ac.ap.ssid_len = (uint8_t)strlen(s_ap_ssid);
     ac.ap.channel = 1;
     ac.ap.max_connection = 4;

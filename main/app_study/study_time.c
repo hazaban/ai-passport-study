@@ -7,7 +7,7 @@
 #ifdef ESP_PLATFORM
 
 #include "esp_log.h"
-#include "esp_netif_sntp.h"
+#include "esp_sntp.h"
 #include "time.h"
 
 static const char *TAG = "study_time";
@@ -18,18 +18,12 @@ void study_time_init(void) {
     setenv("TZ", "CST-8", 1);   /* 中国标准时间(UTC+8)，东八区 */
     tzset();
 
-    esp_netif_sntp_config_t cfg = {
-        .smooth_sync = false,
-        .server_from_dhcp = true,     /* 若 DHCP 下发 NTP 服务器优先用 */
-        .start = true,                /* 立即启动，后台异步请求 */
-        .servers = { "pool.ntp.org", "ntp.aliyun.com", "" },
-    };
-    esp_err_t err = esp_netif_sntp_init(&cfg);
-    if (err != ESP_OK) {
-        ESP_LOGW(TAG, "SNTP 启动失败: %s，闹钟将回落到手动时间", esp_err_to_name(err));
-    } else {
-        ESP_LOGI(TAG, "SNTP 已启动（后台校时中）");
-    }
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, "pool.ntp.org");
+    sntp_setservername(1, "ntp.aliyun.com");
+    sntp_setservername(2, "");
+    sntp_init();
+    ESP_LOGI(TAG, "SNTP 已启动（后台校时中）");
 }
 
 bool study_time_synced(void) {
