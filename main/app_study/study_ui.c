@@ -20,6 +20,7 @@
 #include "ui_pixel.h"
 #include "bsp_display.h"
 #include "bsp_button.h"
+#include "bsp_battery.h"
 
 /* ==============================================================
  * 现代扁平设计令牌
@@ -104,6 +105,157 @@ static lv_obj_t *mod_label(lv_obj_t *parent, const char *text,
     }
     return l;
 }
+
+/* ==============================================================
+ * PAGE_HOME — 封面主页面
+ *
+ * 顶部：应用名 + 日期
+ * 中部：考研倒计时大数字
+ * 底部：[进入学习] [设置] 两个现代大按钮
+ * ============================================================== */
+static lv_obj_t *s_home_scr;
+static lv_obj_t *s_home_cnt;
+static lv_obj_t *s_home_btn[2];      /* 0=进入学习 1=设置 */
+static int s_home_sel;
+static bool s_home_wants_study;
+static bool s_home_wants_settings;
+
+static lv_obj_t *home_card(int y, int h, uint32_t bg) {
+    lv_obj_t *c = lv_obj_create(s_home_scr);
+    lv_obj_remove_flag(c, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_pos(c, 12, y);
+    lv_obj_set_size(c, 216, h);
+    lv_obj_set_style_radius(c, 16, 0);
+    lv_obj_set_style_bg_color(c, lv_color_hex(bg), 0);
+    lv_obj_set_style_border_width(c, 0, 0);
+    lv_obj_set_style_pad_all(c, 0, 0);
+    lv_obj_set_style_shadow_width(c, 10, 0);
+    lv_obj_set_style_shadow_opa(c, LV_OPA_12, 0);
+    lv_obj_set_style_shadow_offset_y(c, 4, 0);
+    lv_obj_set_style_shadow_color(c, lv_color_hex(0x10233F), 0);
+    return c;
+}
+
+static lv_obj_t *home_big_button(int y, bool primary) {
+    lv_obj_t *b = lv_obj_create(s_home_scr);
+    lv_obj_remove_flag(b, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_pos(b, 12, y);
+    lv_obj_set_size(b, 216, 56);
+    lv_obj_set_style_radius(b, 28, 0);
+    lv_obj_set_style_bg_color(b, lv_color_hex(primary ? C_PRIMARY : C_CARD), 0);
+    lv_obj_set_style_border_width(b, primary ? 0 : 2, 0);
+    lv_obj_set_style_border_color(b, lv_color_hex(C_PRIMARY), 0);
+    lv_obj_set_style_pad_all(b, 0, 0);
+    if (primary) {
+        lv_obj_set_style_shadow_width(b, 10, 0);
+        lv_obj_set_style_shadow_opa(b, LV_OPA_30, 0);
+        lv_obj_set_style_shadow_offset_y(b, 3, 0);
+    }
+    return b;
+}
+
+static void home_refresh_buttons(void) {
+    for (int i = 0; i < 2; i++) {
+        if (!s_home_btn[i]) continue;
+        bool sel = (s_home_sel == i);
+        if (i == 0) {
+            lv_obj_set_style_bg_color(s_home_btn[i],
+                lv_color_hex(sel ? C_PRIMARY_D : C_PRIMARY), 0);
+        } else {
+            lv_obj_set_style_bg_color(s_home_btn[i],
+                lv_color_hex(sel ? 0x4C7DFF : C_CARD), 0);
+            lv_obj_set_style_border_width(s_home_btn[i], sel ? 0 : 2, 0);
+        }
+        lv_obj_t *lab = lv_obj_get_child(s_home_btn[i], 0);
+        if (lab) lv_obj_set_style_text_color(lab,
+            lv_color_hex((i == 0 || sel) ? 0xFFFFFF : C_PRIMARY), 0);
+    }
+}
+
+void ui_home_build(void) {
+    s_home_sel = 0;
+    s_home_wants_study = false;
+    s_home_wants_settings = false;
+
+    s_home_scr = lv_obj_create(NULL);
+    lv_obj_remove_flag(s_home_scr, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(s_home_scr, lv_color_hex(C_BG), 0);
+    lv_obj_set_style_border_width(s_home_scr, 0, 0);
+    lv_obj_set_style_pad_all(s_home_scr, 0, 0);
+    s_cur_scr = s_home_scr;
+
+    /* 顶部应用名 + 日期 */
+    lv_obj_t *head = home_card(8, 44, C_CARD);
+    lv_obj_t *t = ui_pixel_label(head, "考研日程助手", F_STUDY, C_INK);
+    lv_obj_set_pos(t, 16, 10);
+
+    time_t now = time(NULL);
+    struct tm tv;
+    localtime_r(&now, &tv);
+    char dbuf[24];
+    snprintf(dbuf, sizeof(dbuf), "%d月%d日", tv.tm_mon + 1, tv.tm_mday);
+    lv_obj_t *d = ui_pixel_label(head, dbuf, F_STUDY, C_MUTED);
+    lv_obj_set_align(d, LV_ALIGN_TOP_RIGHT);
+    lv_obj_set_pos(d, -16, 10);
+
+    /* 中部倒计时大卡片 */
+    lv_obj_t *cnt = home_card(60, 150, 0x22314D);
+    lv_obj_t *cap = ui_pixel_label(cnt, "距离考研", F_STUDY, 0xAAB6D0);
+    lv_obj_set_align(cap, LV_ALIGN_TOP_MID);
+    lv_obj_set_pos(cap, 0, 18);
+    lv_obj_set_style_text_align(cap, LV_TEXT_ALIGN_CENTER, 0);
+
+    /* 大数字：APP-style 用日期字体太小时放大，用稍大字重 */
+    char nbuf[8];
+    int left = study_time_days_until(STUDY_EXAM_MONTH, STUDY_EXAM_DAY);
+    if (left < 0) snprintf(nbuf, sizeof(nbuf), "GO");
+    else          snprintf(nbuf, sizeof(nbuf), "%d", left);
+    s_home_cnt = ui_pixel_label(cnt, nbuf, F_STUDY, 0xFFFFFF);
+    lv_obj_center(s_home_cnt);
+    /* 放大视觉效果：与大卡片垂直居中偏下 */
+    lv_obj_set_style_text_font(s_home_cnt, F_STUDY, 0);
+    lv_obj_set_pos(s_home_cnt, 0, 48);
+    lv_obj_set_style_text_align(s_home_cnt, LV_TEXT_ALIGN_CENTER, 0);
+
+    lv_obj_t *unit = ui_pixel_label(cnt, "天", F_STUDY, C_ACCENT);
+    lv_obj_set_align(unit, LV_ALIGN_BOTTOM_MID);
+    lv_obj_set_pos(unit, 0, -18);
+
+    lv_obj_t *sub = ui_pixel_label(cnt, "学习，让每一天都有意义", F_STUDY, 0x8B9BB5);
+    lv_obj_set_align(sub, LV_ALIGN_BOTTOM_MID);
+    lv_obj_set_pos(sub, 0, -2);
+
+    /* 底部两个入口按钮 */
+    s_home_btn[0] = home_big_button(220, true);
+    lv_obj_t *b0 = ui_pixel_label(s_home_btn[0], "进入学习", F_STUDY, 0xFFFFFF);
+    lv_obj_center(b0);
+
+    s_home_btn[1] = home_big_button(284, false);
+    lv_obj_t *b1 = ui_pixel_label(s_home_btn[1], "设置", F_STUDY, C_PRIMARY);
+    lv_obj_center(b1);
+
+    home_refresh_buttons();
+    lv_screen_load(s_home_scr);
+}
+
+void ui_home_destroy(void) {
+    if (s_home_scr) { lv_obj_delete(s_home_scr); s_home_scr = NULL; }
+}
+
+void ui_home_key(uint8_t btn_u, uint8_t ev_u) {
+    if (ev_u != BSP_BTN_CLICK) return;
+    bsp_btn_t btn = (bsp_btn_t)btn_u;
+    if (btn == BSP_BTN_UP && s_home_sel > 0) s_home_sel--;
+    if (btn == BSP_BTN_DOWN && s_home_sel < 1) s_home_sel++;
+    if (btn == BSP_BTN_OK) {
+        if (s_home_sel == 0) s_home_wants_study = true;
+        else                 s_home_wants_settings = true;
+    }
+    home_refresh_buttons();
+}
+
+bool ui_home_wants_study(void)     { return s_home_wants_study; }
+bool ui_home_wants_settings(void)  { return s_home_wants_settings; }
 
 /* ==============================================================
  * PAGE_TODO — 今日 Task（日常秩序 / 各科学习 两个分组）
@@ -626,16 +778,39 @@ void ui_detail_key(uint8_t btn_u, uint8_t ev_u) {
 }
 
 /* ==============================================================
- * PAGE_SETTINGS — 设置
+ * PAGE_SETTINGS — 设置（WiFi / 亮度 / 电量 / 音量 / 时间 / 返回主界面）
  * ============================================================== */
+enum {
+    SET_WIFI = 0,
+    SET_BRIGHT,
+    SET_BATT,
+    SET_VOL,
+    SET_WAKE,
+    SET_SLEEP,
+    SET_HOME,
+    SET_N
+};
 static lv_obj_t *s_set_scr;
-static lv_obj_t *s_set_cards[7];
+static lv_obj_t *s_set_cards[SET_N];
 static int s_set_sel;
 static bool s_set_wants_wifi;
+static bool s_set_wants_home;
+static int  s_bright;            /* 当前亮度 0..100 */
+static bool s_bright_editing;
+
+static void settings_set_label_text(int i, const char *txt) {
+    if (i < 0 || i >= SET_N) return;
+    lv_obj_t *l = lv_obj_get_child(s_set_cards[i], 0);
+    if (l) lv_label_set_text(l, txt);
+}
 
 void ui_settings_build(void) {
     s_set_sel = 0;
     s_set_wants_wifi = false;
+    s_set_wants_home = false;
+    s_bright_editing = false;
+    s_bright = (s_cb && s_cb->cfg_get) ? s_cb->cfg_get("bright", 80) : 80;
+
     s_set_scr = lv_obj_create(NULL);
     lv_obj_remove_flag(s_set_scr, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_bg_color(s_set_scr, lv_color_hex(C_BG), 0);
@@ -647,50 +822,82 @@ void ui_settings_build(void) {
     lv_obj_t *title = ui_pixel_label(head, "设置", F_STUDY, C_INK);
     lv_obj_set_pos(title, 16, 8);
 
-    const char *items[] = {
+    /* 亮度：调用硬件调节并持久化 */
+    char bright_buf[24];
+    snprintf(bright_buf, sizeof(bright_buf), "屏幕亮度 %d%%", s_bright);
+    /* 电量：只读显示 */
+    char batt_buf[24];
+    int soc = bsp_battery_soc();
+    if (soc < 0) snprintf(batt_buf, sizeof(batt_buf), "电池电量 --%%");
+    else         snprintf(batt_buf, sizeof(batt_buf), "电池电量 %d%%", soc);
+
+    static const char *items[SET_N] = {
         "WiFi 连接/配网",
+        NULL,
+        NULL,
         "音量 80%",
         "起床时间 07:00",
         "睡觉时间 23:00",
-        "语音包 · 水豚噜噜",
-        "清除已完成任务",
-        "关于 考研助手",
+        "返回主界面",
     };
-    for (int i = 0; i < 7; i++) {
+
+    for (int i = 0; i < SET_N; i++) {
         lv_obj_t *card = mod_card(s_set_scr, 12, 60 + i * 32, 216, 28,
                                   (i == s_set_sel) ? 0xEDF2FF : C_CARD, 10, true);
         if (i == s_set_sel) lv_obj_set_style_border_width(card, 2, 0);
         lv_obj_set_style_border_color(card, lv_color_hex(C_PRIMARY), 0);
-        lv_obj_t *l = ui_pixel_label(card, items[i], F_STUDY, C_INK);
+        const char *txt = items[i];
+        if (i == SET_BRIGHT) txt = bright_buf;
+        else if (i == SET_BATT) txt = batt_buf;
+        lv_obj_t *l = ui_pixel_label(card, txt, F_STUDY, C_INK);
         lv_obj_set_pos(l, 12, 2);
         s_set_cards[i] = card;
     }
-    s_set_cards[6] = NULL; /* 仅 0..6 使用；7 项用 0..6 */
     lv_screen_load(s_set_scr);
 }
 void ui_settings_destroy(void) { if (s_set_scr) { lv_obj_delete(s_set_scr); s_set_scr = NULL; } }
 void ui_settings_key(uint8_t btn_u, uint8_t ev_u) {
     if (ev_u != BSP_BTN_CLICK) return;
     bsp_btn_t btn = (bsp_btn_t)btn_u;
-    if (btn == BSP_BTN_UP   && s_set_sel > 0) s_set_sel--;
-    if (btn == BSP_BTN_DOWN && s_set_sel < 6) s_set_sel++;
+
     if (btn == BSP_BTN_OK) {
-        if (s_set_sel == 5) { int n = study_task_archive_done_once(); (void)n; }
-        if (s_set_sel == 0) { s_set_wants_wifi = true; ui_settings_refresh_highlight(); return; }
-        if (s_set_sel == 0 || s_set_sel == 6) { /* 占位 */ }
+        if (s_bright_editing) { s_bright_editing = false; ui_settings_refresh_highlight(); return; }
+        if (s_set_sel == SET_WIFI) { s_set_wants_wifi = true; ui_settings_refresh_highlight(); return; }
+        if (s_set_sel == SET_BRIGHT) { s_bright_editing = true; ui_settings_refresh_highlight(); return; }
+        if (s_set_sel == SET_HOME) { s_set_wants_home = true; return; }
         ui_settings_destroy();
         ui_todo_build();
+        return;
+    }
+
+    if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
+        if (s_bright_editing) {
+            s_bright += (btn == BSP_BTN_UP) ? 10 : -10;
+            if (s_bright < 20) s_bright = 20;
+            if (s_bright > 100) s_bright = 100;
+            bsp_display_backlight((uint8_t)s_bright);
+            if (s_cb && s_cb->cfg_set) s_cb->cfg_set("bright", s_bright);
+            char buf[24];
+            snprintf(buf, sizeof(buf), "屏幕亮度 %d%%", s_bright);
+            settings_set_label_text(SET_BRIGHT, buf);
+            ui_settings_refresh_highlight();
+            return;
+        }
+        if (btn == BSP_BTN_UP   && s_set_sel > 0) s_set_sel--;
+        if (btn == BSP_BTN_DOWN && s_set_sel < SET_N - 1) s_set_sel++;
+        ui_settings_refresh_highlight();
     }
 }
 void ui_settings_refresh_highlight(void) {
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < SET_N; i++) {
         if (!s_set_cards[i]) continue;
-        bool sel = (i == s_set_sel);
+        bool sel = (i == s_set_sel && !s_bright_editing);
         lv_obj_set_style_bg_color(s_set_cards[i], lv_color_hex(sel ? 0xEDF2FF : C_CARD), 0);
         lv_obj_set_style_border_width(s_set_cards[i], sel ? 2 : 0, 0);
     }
 }
 bool ui_settings_wants_wifi(void) { return s_set_wants_wifi; }
+bool ui_settings_wants_home(void) { return s_set_wants_home; }
 
 /* ==============================================================
  * PAGE_WIFI — WiFi 状态 / 配网引导
@@ -809,6 +1016,11 @@ bool ui_scene_is_showing(void) { return s_scn_scr != NULL; }
 #else  /* !ESP_PLATFORM — 宿主编译存根 */
 
 void study_ui_init(const study_ui_callbacks_t *cb) { (void)cb; }
+void ui_home_build(void) {}
+void ui_home_destroy(void) {}
+void ui_home_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }
+bool ui_home_wants_study(void) { return false; }
+bool ui_home_wants_settings(void) { return false; }
 void ui_todo_build(void) {}
 void ui_todo_destroy(void) {}
 void ui_todo_refresh(void) {}
@@ -825,6 +1037,7 @@ void ui_settings_build(void) {}
 void ui_settings_destroy(void) {}
 void ui_settings_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }
 bool ui_settings_wants_wifi(void) { return false; }
+bool ui_settings_wants_home(void) { return false; }
 void ui_wifi_build(void) {}
 void ui_wifi_destroy(void) {}
 void ui_wifi_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }

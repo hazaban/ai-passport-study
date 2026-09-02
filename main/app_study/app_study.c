@@ -43,7 +43,7 @@
 static const char *TAG = "app_study";
 
 /* ---------- 页面状态 ---------- */
-static study_page_t s_page = PAGE_TODO;
+static study_page_t s_page = PAGE_HOME;
 static TaskHandle_t s_tick_task = NULL;
 static TaskHandle_t s_voice_task = NULL;
 static QueueHandle_t s_voice_cmd_q = NULL;
@@ -349,10 +349,16 @@ void app_study_enter(void) {
     s_voice_cmd_q = xQueueCreate(8, sizeof(voice_cmd_t));
     xTaskCreate(voice_worker, "study_voice", 4096, NULL, 4, &s_voice_task);
 
-    /* 3) UI 初始化 & 载入首屏 */
+    /* 3) UI 初始化 & 载入首屏（封面主页面） */
     study_ui_init(&s_ui_cb);
+    /* 应用持久化的屏幕亮度 */
+    {
+        int br = cfg_get("bright", 80);
+        bsp_display_backlight((uint8_t)br);
+    }
+    s_page = PAGE_HOME;
     if (bsp_lvgl_lock(1000)) {
-        ui_todo_build();
+        ui_home_build();
         bsp_lvgl_unlock();
     }
 
@@ -369,6 +375,7 @@ void app_study_exit(void) {
     study_voice_stop();
     if (bsp_lvgl_lock(1000)) {
         switch (s_page) {
+            case PAGE_HOME:       ui_home_destroy(); break;
             case PAGE_TODO:       ui_todo_destroy(); break;
             case PAGE_ADD_TASK:   ui_add_destroy(); break;
             case PAGE_TASK_DETAIL:ui_detail_destroy(); break;
@@ -397,6 +404,18 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
     }
 
     switch (s_page) {
+        case PAGE_HOME:
+            ui_home_key((uint8_t)btn, (uint8_t)ev);
+            if (ui_home_wants_study()) {
+                ui_home_destroy();
+                ui_todo_build();
+                s_page = PAGE_TODO;
+            } else if (ui_home_wants_settings()) {
+                ui_home_destroy();
+                ui_settings_build();
+                s_page = PAGE_SETTINGS;
+            }
+            break;
         case PAGE_TODO:
             ui_todo_key((uint8_t)btn, (uint8_t)ev);
             break;
@@ -419,6 +438,10 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
                 ui_settings_destroy();
                 ui_wifi_build();
                 s_page = PAGE_WIFI;
+            } else if (ui_settings_wants_home()) {
+                ui_settings_destroy();
+                ui_home_build();
+                s_page = PAGE_HOME;
             }
             break;
         case PAGE_WIFI:

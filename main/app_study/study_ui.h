@@ -31,16 +31,29 @@ void study_ui_init(const study_ui_callbacks_t *cb);
 
 /* ---------- 页面类型 ---------- */
 typedef enum {
-    PAGE_TODO = 0,        /* 今日 Todo（左右双页: 日常秩序 / 各科学习） */
+    PAGE_HOME = 0,        /* 封面主页面：倒计时 + 进入学习 / 设置 */
+    PAGE_TODO,            /* 今日 Todo（左右双页: 日常秩序 / 各科学习） */
     PAGE_ADD_TASK,        /* 添加任务：模板选择 → 类别 → subtype → 时间 */
     PAGE_TASK_DETAIL,     /* 任务详情：勾选 / 编辑时间 / 删除 */
-    PAGE_SETTINGS,        /* 设置：音量 / 默认起床睡觉时间 / 语音包 / 清除已完成 */
+    PAGE_SETTINGS,        /* 设置：WiFi / 亮度 / 电量 / 音量 / 时间 */
     PAGE_WIFI,            /* WiFi：配网 / 状态显示 */
     PAGE_ENCOURAGE,       /* 完成任务后的鼓励弹窗（含颜色动画） */
     PAGE_SCENE,           /* 日常秩序场景的温馨提示（开始学习/睡觉等） */
 } study_page_t;
 
 /* ---------- 页面 API（每个页面 build / refresh / destroy 三件套） ---------- */
+
+/* -------- 封面主页面 (PAGE_HOME) --------
+ * 顶部：应用名 + 日期
+ * 中部：考研倒计时大数字
+ * 底部：[进入学习] [设置] 两个大按钮
+ */
+void ui_home_build(void);
+void ui_home_destroy(void);
+void ui_home_key(uint8_t btn, uint8_t ev);
+/* OK 命中「进入学习」/「设置」后置位；app_study 据此切页 */
+bool ui_home_wants_study(void);
+bool ui_home_wants_settings(void);
 
 /* -------- Todo 页 (PAGE_TODO) --------
  * 顶部：日期 + 星期 + 电池
@@ -83,6 +96,8 @@ void ui_settings_destroy(void);
 void ui_settings_key(uint8_t btn, uint8_t ev);
 /* 设置页 OK 命中「WiFi 配网」后置位；app_study 据此切到 PAGE_WIFI */
 bool ui_settings_wants_wifi(void);
+/* 设置页 OK 命中「返回主界面」后置位；app_study 据此切回 PAGE_HOME */
+bool ui_settings_wants_home(void);
 
 /* -------- WiFi 页 (PAGE_WIFI) -------- */
 void ui_wifi_build(void);

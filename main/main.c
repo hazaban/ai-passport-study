@@ -45,26 +45,62 @@ static void menu_refresh(void) {
         lv_label_set_text_fmt(s_rows[i], "%s%s",
                               DEMOS[i].name,
                               s_ok[i] ? "" : "  [FAIL]");
-        ui_pixel_set_selected(s_cards[i], (int)i == s_sel, s_ok[i]);
-        lv_obj_set_style_text_color(s_rows[i],
-            s_ok[i] ? lv_color_hex(UI_INK) : lv_color_hex(0x7A2020), 0);
+        bool sel = ((int)i == s_sel);
+        if (sel) {
+            lv_obj_set_style_bg_color(s_cards[i], lv_color_hex(0x4C7DFF), 0);
+            lv_obj_set_style_border_color(s_cards[i], lv_color_hex(0x3569E8), 0);
+            lv_obj_set_style_text_color(s_rows[i], lv_color_hex(0xFFFFFF), 0);
+        } else {
+            lv_obj_set_style_bg_color(s_cards[i], lv_color_hex(0xFFFFFF), 0);
+            lv_obj_set_style_border_color(s_cards[i], lv_color_hex(0xE3EAF4), 0);
+            lv_obj_set_style_text_color(s_rows[i],
+                s_ok[i] ? lv_color_hex(0x22314D) : lv_color_hex(0x7A2020), 0);
+        }
     }
 }
 
+static lv_obj_t *menu_card(lv_obj_t *parent, int x, int y) {
+    lv_obj_t *c = lv_obj_create(parent);
+    lv_obj_remove_flag(c, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_pos(c, x, y);
+    lv_obj_set_size(c, 102, 40);
+    lv_obj_set_style_radius(c, 12, 0);
+    lv_obj_set_style_bg_color(c, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_set_style_border_width(c, 1, 0);
+    lv_obj_set_style_border_color(c, lv_color_hex(0xE3EAF4), 0);
+    lv_obj_set_style_pad_all(c, 0, 0);
+    return c;
+}
+
 static void menu_build(void) {
-    s_menu_scr = ui_pixel_screen_create("FoloToy");
+    s_menu_scr = lv_obj_create(NULL);
+    lv_obj_remove_flag(s_menu_scr, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(s_menu_scr, lv_color_hex(0xEFF3FA), 0);
+    lv_obj_set_style_border_width(s_menu_scr, 0, 0);
+    lv_obj_set_style_pad_all(s_menu_scr, 0, 0);
+
+    /* 顶部标题栏（现代扁平卡片） */
+    lv_obj_t *head = lv_obj_create(s_menu_scr);
+    lv_obj_remove_flag(head, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_size(head, 224, 46); lv_obj_set_pos(head, 8, 8);
+    lv_obj_set_style_radius(head, 14, 0);
+    lv_obj_set_style_bg_color(head, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_set_style_border_width(head, 0, 0);
+    lv_obj_t *ht = lv_label_create(head);
+    lv_label_set_text(ht, "AI Passport");
+    lv_obj_set_style_text_font(ht, &lv_font_montserrat_20, 0);
+    lv_obj_set_style_text_color(ht, lv_color_hex(0x22314D), 0);
+    lv_obj_set_pos(ht, 16, 10);
 
     for (size_t i = 0; i < DEMO_COUNT; i++) {
         int x = 11 + (int)(i % 2) * 112;
-        int y = 52 + (int)(i / 2) * 47;
-        s_cards[i] = ui_pixel_panel_create(s_menu_scr, x, y, 102, 40, UI_PAPER);
+        int y = 64 + (int)(i / 2) * 52;
+        s_cards[i] = menu_card(s_menu_scr, x, y);
         s_rows[i] = lv_label_create(s_cards[i]);
         lv_obj_set_style_text_font(s_rows[i], &lv_font_montserrat_14, 0);
         lv_obj_set_style_text_align(s_rows[i], LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_center(s_rows[i]);
     }
-
-    s_mascot = ui_pixel_mascot_create(s_menu_scr, 101, 242);
 
     menu_refresh();
     lv_screen_load(s_menu_scr);
@@ -92,13 +128,9 @@ static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
         if (btn == BSP_BTN_DOWN) { s_sel = (s_sel + 1) % DEMO_COUNT;              menu_refresh(); }
         if (btn == BSP_BTN_OK && s_ok[s_sel]) {
             s_active = s_sel;
-            ui_pixel_mascot_jump(s_mascot);
             lv_obj_delete(s_menu_scr);
             s_menu_scr = NULL;
-            s_mascot = NULL;
             DEMOS[s_active].enter();
-        } else if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
-            ui_pixel_mascot_jump(s_mascot);
         }
     }
     bsp_lvgl_unlock();
@@ -133,7 +165,13 @@ void app_main(void) {
     s_ok[5] = true;                                    // 页面内按需初始化并显示错误
     s_ok[6] = true;
 
-    if (bsp_lvgl_lock(1000)) { enter_menu(); bsp_lvgl_unlock(); }
+    if (bsp_lvgl_lock(1000)) {
+        /* 开机直接进入考研助手（Study 为第一个菜单项），
+         * 不再显示官方像素机器狗菜单。长按 OK 可回到上方现代目录。 */
+        s_active = 0;
+        DEMOS[0].enter();
+        bsp_lvgl_unlock();
+    }
 
     ESP_LOGI(TAG, "就绪:Display=%d Button=%d Audio=%d Battery=%d",
              s_ok[0], s_ok[1], s_ok[2], s_ok[3]);
