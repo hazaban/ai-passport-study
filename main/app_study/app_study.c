@@ -34,6 +34,7 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "esp_spiffs.h"        /* 挂载 voicepack 分区读语音 */
+#include "esp_task_wdt.h"      /* 挂载/格式化期间摘除看门狗，防止复位循环 */
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -87,7 +88,12 @@ static void voice_fs_init(void) {
         .max_files            = 6,
         .format_if_mount_failed = true,   /* 首刷分区未格式化时自动格式化 */
     };
+    /* 若 voicepack.bin 未烧入或分区未格式化，首次挂载会同步格式化整个分区。
+     * 3.6MB 格式化耗时可能超过任务看门狗 5s → 看门狗复位 → 重启再格式化 → 无限复位循环。
+     * 因此挂载期间暂时摘除当前任务看门狗，让格式化一次完成。 */
+    esp_task_wdt_delete(NULL);            /* 若未注册会返回错误，忽略即可 */
     esp_err_t err = esp_vfs_spiffs_register(&conf);
+    esp_task_wdt_add(NULL);               /* 挂载结束立即恢复看门狗 */
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "voicepack SPIFFS 挂载失败(%s)，语音将回落到 RTTTL 提示音",
                  esp_err_to_name(err));

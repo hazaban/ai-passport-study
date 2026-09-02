@@ -69,10 +69,8 @@ static lv_obj_t *mod_card(lv_obj_t *parent, int x, int y, int w, int h,
     lv_obj_set_style_border_width(o, 0, 0);
     lv_obj_set_style_pad_all(o, 0, 0);
     if (shadow) {
-        lv_obj_set_style_shadow_width(o, 10, 0);
-        lv_obj_set_style_shadow_opa(o, LV_OPA_10, 0);
-        lv_obj_set_style_shadow_offset_y(o, 4, 0);
-        lv_obj_set_style_shadow_color(o, lv_color_hex(0x10233F), 0);
+        /* 扁平风格：不启用阴影（LVGL9 软渲染阴影吃内存/CPU，ESP32-C3 上易卡顿/复位） */
+        (void)0;
     }
     return o;
 }
