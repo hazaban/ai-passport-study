@@ -3,6 +3,7 @@
  */
 #include "study_group.h"
 #include "study_category.h"
+#include <stdlib.h>
 
 static bool task_in_group(const study_task_t *t, study_group_t group) {
     bool is_daily = (t->category == CAT_DAILY);
@@ -44,8 +45,10 @@ int study_group_list_today(study_group_t group,
     int all_ids[TASK_MAX_COUNT];
     int n = study_task_list_today(all_ids, TASK_MAX_COUNT);
 
-    /* 1) 先过滤 group + done，把 task 对象暂存起来便于排序 */
-    study_task_t keep[TASK_MAX_COUNT];
+    /* 1) 先过滤 group + done，把 task 对象暂存起来便于排序。
+     * keep 用堆分配，避免在小栈任务（esp_timer）里栈溢出。 */
+    study_task_t *keep = (study_task_t *)calloc(TASK_MAX_COUNT, sizeof(study_task_t));
+    if (!keep) return 0;
     int kc = 0;
     for (int i = 0; i < n; i++) {
         study_task_t t;
@@ -69,6 +72,7 @@ int study_group_list_today(study_group_t group,
     /* 3) 截断输出 */
     int out_n = kc < max ? kc : max;
     for (int i = 0; i < out_n; i++) out_ids[i] = keep[i].id;
+    free(keep);
     return out_n;
 }
 

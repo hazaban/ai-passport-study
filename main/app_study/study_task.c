@@ -145,8 +145,11 @@ int study_task_list_today(int *out_ids, int max) {
     int n = 0;
     if (s_store->all_task_ids(all_ids, TASK_MAX_COUNT, &n) != 0) return 0;
 
-    /* 2) 过滤 today 可见的，把 task 对象暂存起来便于排序 */
-    study_task_t keep[TASK_MAX_COUNT];
+    /* 2) 过滤 today 可见的，把 task 对象暂存起来便于排序。
+     * keep 用堆分配：该函数可能在 esp_timer 等小栈任务里被调用
+     * （study_task_t 含标题数组，256 项会占 ~16KB 栈），放栈上会溢出。 */
+    study_task_t *keep = (study_task_t *)calloc(TASK_MAX_COUNT, sizeof(study_task_t));
+    if (!keep) return 0;
     int kc = 0;
     for (int i = 0; i < n; i++) {
         study_task_t t;
@@ -170,6 +173,7 @@ int study_task_list_today(int *out_ids, int max) {
     /* 4) 截断到 max，输出 id */
     int out_n = kc < max ? kc : max;
     for (int i = 0; i < out_n; i++) out_ids[i] = keep[i].id;
+    free(keep);
     return out_n;
 }
 
