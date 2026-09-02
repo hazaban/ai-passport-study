@@ -31,7 +31,7 @@ void study_ui_init(const study_ui_callbacks_t *cb);
 
 /* ---------- 页面类型 ---------- */
 typedef enum {
-    PAGE_TODO = 0,        /* 今日 Todo（左右双 Tab: PENDING / DONE） */
+    PAGE_TODO = 0,        /* 今日 Todo（左右双页: 日常秩序 / 各科学习） */
     PAGE_ADD_TASK,        /* 添加任务：模板选择 → 类别 → subtype → 时间 */
     PAGE_TASK_DETAIL,     /* 任务详情：勾选 / 编辑时间 / 删除 */
     PAGE_SETTINGS,        /* 设置：音量 / 默认起床睡觉时间 / 语音包 / 清除已完成 */
@@ -44,12 +44,12 @@ typedef enum {
 
 /* -------- Todo 页 (PAGE_TODO) --------
  * 顶部：日期 + 星期 + 电池
- * 中部：两个 Tab（未完成 / 已完成），Tab 内再分「日常秩序」「各科目」两组
+ * 左右两页 = 「日常秩序」/「各科学习」；每页内未完成任务在上、已完成任务在下
  * 底部：[+ 添加] [设置]
  */
 typedef enum {
-    TAB_PENDING = 0,
-    TAB_DONE    = 1,
+    TAB_DAILY    = 0,     /* 日常秩序页 */
+    TAB_SUBJECTS = 1,     /* 各科学习页 */
 } study_todo_tab_t;
 
 void ui_todo_build(void);                      /* 构建屏幕并 lv_screen_load */

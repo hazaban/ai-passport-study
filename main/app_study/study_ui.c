@@ -29,13 +29,9 @@ void study_ui_init(const study_ui_callbacks_t *cb) {
 }
 
 /* ==============================================================
- * PAGE_TODO — 今日 Todo（左右双 Tab + 双分组）
- *   Left Tab (TAB_PENDING)  : 未完成
- *      ├ 日常秩序 (PENDING)
- *      └ 各科目 (PENDING)
- *   Right Tab (TAB_DONE)    : 已完成
- *      ├ 日常秩序 (DONE)
- *      └ 各科目 (DONE)
+ * PAGE_TODO — 今日 Todo（左右双页 = 日常秩序 / 各科学习）
+ *   左页 (TAB_DAILY)   : 日常秩序（未完成在上 → 已完成在下）
+ *   右页 (TAB_SUBJECTS): 各科学习（未完成在上 → 已完成在下）
  *
  * 可视区域：240×320。顶部 40 状态栏 + 中部 220 任务卡 + 底部 60 双按钮。
  * ============================================================== */
@@ -49,14 +45,10 @@ void study_ui_init(const study_ui_callbacks_t *cb) {
 #define CARD_MARGIN   4
 
 /* 内部状态 */
-static study_todo_tab_t s_tab;
-static int s_group_daily_sel;     /* 日常秩序组选中下标 -1 = 未选 */
-static int s_group_daily_count;
-static int s_group_subj_sel;      /* 各科目组选中下标 -1 = 未选 */
-static int s_group_subj_count;
-static int s_focus;               /* 0 = 日常秩序组，1 = 各科目组，2 = +添加，3 = 设置 */
-static bool s_bottom_focus;       /* true = 焦点在底部按钮 */
-static int s_bottom_idx;          /* 0 = +添加，1 = 设置 */
+static study_todo_tab_t s_tab;     /* 当前页：日常秩序 / 各科学习 */
+static int s_sel;                  /* 当前页内选中 card 下标 */
+static bool s_bottom_focus;        /* true = 焦点在底部按钮 */
+static int s_bottom_idx;           /* 0 = +添加，1 = 设置 */
 static lv_obj_t *todo_scr;
 static lv_obj_t *todo_tab_label;
 static lv_obj_t *todo_date_label;
@@ -69,21 +61,18 @@ static lv_obj_t *btn_add;
 static lv_obj_t *btn_set;
 
 static void fill_card_ids_for_tab(void) {
-    /* 把当前 Tab 的两张分组 id 展开，填入 todo_card_ids；
-     * 每个分组先写一组头（"日常秩序"/"各科目"，用 task_id = -1 表示 section header）*/
-    study_group_t grps[2] = { STUDY_GROUP_DAILY_ORDER, STUDY_GROUP_SUBJECTS };
-    study_done_filter_t filter = (s_tab == TAB_PENDING) ? STUDY_DONE_PENDING : STUDY_DONE_DONE;
+    /* 当前页只显示一个分组；组内「未完成 → 已完成」从上到下排列。
+     * 卡片布局：下标 0 为分组头（task_id < 0），其后为任务 id。 */
+    study_group_t grp = (s_tab == TAB_DAILY) ? STUDY_GROUP_DAILY_ORDER
+                                             : STUDY_GROUP_SUBJECTS;
+    int pend[16], done[16];
+    int np = study_group_list_today(grp, STUDY_DONE_PENDING, pend, 16);
+    int nd = study_group_list_today(grp, STUDY_DONE_DONE,    done, 16);
 
     todo_card_n = 0;
-    for (int g = 0; g < 2 && todo_card_n < 16; g++) {
-        int ids[16];
-        int n = study_group_list_today(grps[g], filter, ids, 16);
-        if (n == 0) continue;
-        todo_card_ids[todo_card_n++] = -1 - g;     /* -1 = 日常秩序 header, -2 = 各科目 header */
-        for (int i = 0; i < n && todo_card_n < 16; i++) {
-            todo_card_ids[todo_card_n++] = ids[i];
-        }
-    }
+    todo_card_ids[todo_card_n++] = -1 - (int)grp;      /* -1 日常秩序, -2 各科学习 */
+    for (int i = 0; i < np && todo_card_n < 16; i++) todo_card_ids[todo_card_n++] = pend[i];
+    for (int i = 0; i < nd && todo_card_n < 16; i++) todo_card_ids[todo_card_n++] = done[i];
 }
 
 static void render_todo_cards(void) {
@@ -112,11 +101,7 @@ static void render_todo_cards(void) {
         const study_category_t *cat = study_category_get(t.category);
 
         lv_obj_t *card = ui_pixel_panel_create(todo_panel, 4, y, W - 16, CARD_H, UI_PAPER);
-        bool selected = false;
-        if (!s_bottom_focus) {
-            if (s_focus == 0 && s_group_daily_count > 0 && s_group_daily_sel == ci) selected = true;
-            if (s_focus == 1 && s_group_subj_count  > 0 && s_group_subj_sel  == ci) selected = true;
-        }
+        bool selected = !s_bottom_focus && (ci == s_sel);   /* 选中高亮 */
         if (selected) ui_pixel_set_selected(card, true, true);
 
         /* 左：色条 */
@@ -153,7 +138,9 @@ static void render_todo_cards(void) {
 }
 
 static void render_tab_label(void) {
-    const char *t = (s_tab == TAB_PENDING) ? "◀ 未完成 · 已完成 ▶" : "◀ 未完成 · 已完成 ▶";
+    const char *t = (s_tab == TAB_DAILY)
+                    ? "● 日常秩序     ○ 各科学习"
+                    : "○ 日常秩序     ● 各科学习";
     lv_label_set_text(todo_tab_label, t);
 }
 
@@ -167,9 +154,8 @@ static void render_date_and_progress(void) {
 }
 
 void ui_todo_build(void) {
-    s_tab = TAB_PENDING;
-    s_focus = 0;        /* 默认焦点在「日常秩序」组 */
-    s_group_daily_sel = s_group_subj_sel = 0;
+    s_tab = TAB_DAILY;          /* 默认停在「日常秩序」页 */
+    s_sel = 0;
     s_bottom_focus = false;
 
     todo_scr = ui_pixel_screen_create("KAOYAN");
@@ -230,13 +216,11 @@ void ui_todo_key(uint8_t btn_u, uint8_t ev_u) {
     if (ev_u != BSP_BTN_CLICK) return;
     bsp_btn_t btn = (bsp_btn_t)btn_u;
 
-    /* 双击快捷跳过 */
+    /* 短按 OK */
     if (btn == BSP_BTN_OK) {
         if (!s_bottom_focus) {
-            /* 在某个任务上按 OK → 跳详情页 */
-            int ci = -1;
-            if (s_focus == 0) ci = s_group_daily_sel;
-            else if (s_focus == 1) ci = s_group_subj_sel;
+            /* 焦点在列表 → 进入选中任务详情 */
+            int ci = s_sel;
             if (ci >= 0 && ci < todo_card_n) {
                 int tid = todo_card_ids[ci];
                 if (tid > 0) {
@@ -246,71 +230,35 @@ void ui_todo_key(uint8_t btn_u, uint8_t ev_u) {
                 }
             }
         } else {
-            /* 底部按钮 */
-            if (s_bottom_idx == 0) {
-                ui_todo_destroy();
-                ui_add_build();
-                return;
-            } else {
-                ui_todo_destroy();
-                ui_settings_build();
-                return;
-            }
+            /* 焦点在底部按钮 */
+            if (s_bottom_idx == 0) { ui_todo_destroy(); ui_add_build(); return; }
+            else                   { ui_todo_destroy(); ui_settings_build(); return; }
         }
     }
 
-    /* Tab 切换：长按上下或边界切换。简化：上键到顶再按 = 切到上一 Tab */
+    /* 上/下键移动焦点；列表某项在最上/最下时再按，切换「日常秩序↔各科学习」页 */
     if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
-        /* 简单 tab 切换：左右键概念复用「OK+上=切左TAB, OK+下=切右TAB」不合适，
-         * 用「在底部 0(添加)上再按上 = 切到已完成 TAB；在已完成上再按上回到未完成」
-         * 过于模糊。这里用一个清晰规则：
-         *   OK 长按 = 返回菜单 (main.c 统一处理)
-         *   上/下 = 移动焦点（在两组之间 + 底部之间循环）
-         *   [特殊: 在日常秩序组的 header 上按 UP = 切左TAB / DOWN 时最后按到最底部切右TAB]
-         * 用更直接的：双击上=切上tab, 双击下=切下tab, 实现复杂度高。
-         * → 简化实现：按「OK + 上/下」组合难捕获, 改用「当焦点在最上再上=切tab, 最下再下=切tab */
         if (!s_bottom_focus) {
             if (btn == BSP_BTN_UP) {
-                /* 当前组内上移 */
-                if (s_focus == 0) {
-                    if (s_group_daily_sel <= 0) {
-                        /* 已在日常秩序最上：切 Tab (PENDING↔DONE) */
-                        s_tab = (s_tab == TAB_PENDING) ? TAB_DONE : TAB_PENDING;
-                        s_group_daily_sel = s_group_subj_sel = 0;
-                    } else {
-                        s_group_daily_sel--;
-                    }
+                if (s_sel <= 0) {
+                    /* 已在列表最顶部（分组头）：切换到另一个分类页 */
+                    s_tab = (s_tab == TAB_DAILY) ? TAB_SUBJECTS : TAB_DAILY;
+                    s_sel = 0;
                 } else {
-                    if (s_group_subj_sel <= 0) {
-                        s_focus = 0;   /* 切回日常秩序组的最后一个 */
-                        s_group_daily_sel = (s_group_daily_count > 0) ? (s_group_daily_count - 1) : 0;
-                    } else {
-                        s_group_subj_sel--;
-                    }
+                    s_sel--;
                 }
             } else { /* DOWN */
-                if (s_focus == 0) {
-                    if (s_group_daily_count == 0 || s_group_daily_sel >= s_group_daily_count - 1) {
-                        s_focus = 1; s_group_subj_sel = 0;
-                    } else {
-                        s_group_daily_sel++;
-                    }
+                if (s_sel >= todo_card_n - 1) {
+                    s_bottom_focus = true; s_bottom_idx = 0;
                 } else {
-                    if (s_group_subj_count == 0 || s_group_subj_sel >= s_group_subj_count - 1) {
-                        s_bottom_focus = true; s_bottom_idx = 0;
-                    } else {
-                        s_group_subj_sel++;
-                    }
+                    s_sel++;
                 }
             }
         } else {
             /* 焦点在底部按钮 */
             if (btn == BSP_BTN_UP) {
-                /* 回到各科目最后一个或日常秩序最后一个 */
                 s_bottom_focus = false;
-                s_focus = 1;
-                s_group_subj_sel = (s_group_subj_count > 0) ? (s_group_subj_count - 1) : 0;
-                if (s_group_subj_count == 0) { s_focus = 0; s_group_daily_sel = (s_group_daily_count > 0) ? (s_group_daily_count - 1) : 0; }
+                s_sel = (todo_card_n > 0) ? todo_card_n - 1 : 0;
             } else {
                 s_bottom_idx = (s_bottom_idx + 1) % 2;
             }
@@ -320,12 +268,9 @@ void ui_todo_key(uint8_t btn_u, uint8_t ev_u) {
 }
 
 int ui_todo_selected_task_id(void) {
-    int ci = -1;
     if (s_bottom_focus) return -1;
-    if (s_focus == 0) ci = s_group_daily_sel;
-    if (s_focus == 1) ci = s_group_subj_sel;
-    if (ci < 0 || ci >= todo_card_n) return -1;
-    int tid = todo_card_ids[ci];
+    if (s_sel < 0 || s_sel >= todo_card_n) return -1;
+    int tid = todo_card_ids[s_sel];
     return tid > 0 ? tid : -1;
 }
 
