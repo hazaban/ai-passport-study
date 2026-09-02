@@ -52,6 +52,26 @@ long study_time_get_epoch_day(void) {
     return (long)(now / 86400L);
 }
 
+int study_time_days_until(int month, int day) {
+    time_t now = time(NULL);
+    if (now < 946684800L) return -1;    /* 未同步 */
+    struct tm tmv;
+    localtime_r(&now, &tmv);
+    int y = tmv.tm_year + 1900;
+
+    struct tm target = {0};
+    target.tm_year = y - 1900;
+    target.tm_mon  = month - 1;
+    target.tm_mday = day;
+    target.tm_isdst = -1;
+    time_t tt = mktime(&target);
+    if (tt < now) {                     /* 今年已过，顺延到明年 */
+        target.tm_year = y - 1899;
+        tt = mktime(&target);
+    }
+    return (int)((tt - now) / 86400L);
+}
+
 #else  /* 宿主编译：STUB */
 
 void study_time_init(void) {}
@@ -62,5 +82,6 @@ void study_time_get_now(int *hour, int *min) {
     *min  = 0;
 }
 long study_time_get_epoch_day(void) { return -1L; }
+int study_time_days_until(int month, int day) { return 107; } /* 宿主测试占位 */
 
 #endif

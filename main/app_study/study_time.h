@@ -23,3 +23,11 @@ void study_time_get_now(int *hour, int *min);
 /* 取"自 epoch 起的天序号"（用于跨天周期提醒，如每 7 天洗头发）。
  * 未同步时返回 -1，调用方不应使用。同步后 = time(NULL)/86400。 */
 long study_time_get_epoch_day(void);
+
+/* 距下一个 month/day 目标日还剩的天数（例如考研 ~12月19日）。
+ * 若今年该日已过，自动顺延到明年。未同步时返回 -1。 */
+int study_time_days_until(int month, int day);
+
+/* 考研考试日（月/日），用于首页倒计时展示 */
+#define STUDY_EXAM_MONTH  12
+#define STUDY_EXAM_DAY    19

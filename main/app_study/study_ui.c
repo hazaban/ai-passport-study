@@ -9,6 +9,7 @@
 #include "study_group.h"
 #include "study_category.h"
 #include "study_wifi.h"
+#include "study_time.h"
 #include <string.h>
 
 #ifdef ESP_PLATFORM
@@ -33,11 +34,11 @@ void study_ui_init(const study_ui_callbacks_t *cb) {
  *   左页 (TAB_DAILY)   : 日常秩序（未完成在上 → 已完成在下）
  *   右页 (TAB_SUBJECTS): 各科学习（未完成在上 → 已完成在下）
  *
- * 可视区域：240×320。顶部 40 状态栏 + 中部 220 任务卡 + 底部 60 双按钮。
+ * 可视区域：240×320。顶部 50 状态栏（含倒计时）+ 中部 220 任务卡 + 底部 60 双按钮。
  * ============================================================== */
 #define W       240
 #define H       320
-#define TOP_H   40
+#define TOP_H   50
 #define MID_H   220
 #define BOT_H   60
 #define GRP_LABEL_H  18
@@ -56,6 +57,7 @@ static lv_obj_t *todo_scr;
 static lv_obj_t *todo_tab_label;
 static lv_obj_t *todo_date_label;
 static lv_obj_t *todo_prog_label;
+static lv_obj_t *todo_countdown_label;
 static lv_obj_t *todo_panel;      /* 中部任务卡容器 */
 static lv_obj_t *todo_card_objs[16];  /* 卡数量上界 16 (240 屏放得下) */
 static int       todo_card_ids[16];   /* 对应 task id */
@@ -171,6 +173,17 @@ static void render_tab_label(void) {
     lv_label_set_text(todo_tab_label, t);
 }
 
+static void render_countdown(void) {
+    int left = study_time_days_until(STUDY_EXAM_MONTH, STUDY_EXAM_DAY);
+    char cbuf[48];
+    if (left < 0) {
+        lv_label_set_text(todo_countdown_label, "考研倒计时 · 敬请期待");
+    } else {
+        snprintf(cbuf, sizeof(cbuf), "考研倒计时 还剩 %d 天", left);
+        lv_label_set_text(todo_countdown_label, cbuf);
+    }
+}
+
 static void render_date_and_progress(void) {
     /* 日期 — 简化：显示"备考加油"文字 + 完成进度 */
     study_daily_stats_t st = {0};
@@ -191,13 +204,20 @@ void ui_todo_build(void) {
 
     /* 顶部状态栏 */
     todo_date_label = ui_pixel_label(todo_scr, "加油上岸!", &lv_font_montserrat_14, UI_INK);
-    lv_obj_set_pos(todo_date_label, 12, 10);
+    lv_obj_set_pos(todo_date_label, 12, 6);
     lv_obj_set_width(todo_date_label, 130);
 
     todo_prog_label = ui_pixel_label(todo_scr, "", &lv_font_montserrat_12, UI_SKY);
-    lv_obj_set_pos(todo_prog_label, 150, 12);
+    lv_obj_set_pos(todo_prog_label, 150, 8);
     lv_obj_set_width(todo_prog_label, 80);
     lv_obj_set_style_text_align(todo_prog_label, LV_TEXT_ALIGN_RIGHT, 0);
+
+    /* 居中的考研倒计时（小字号，占一行） */
+    todo_countdown_label = ui_pixel_label(todo_scr, "", &lv_font_montserrat_10, UI_SKY);
+    lv_obj_set_width(todo_countdown_label, W - 24);
+    lv_obj_set_pos(todo_countdown_label, 12, 22);
+    lv_obj_set_style_text_align(todo_countdown_label, LV_TEXT_ALIGN_CENTER, 0);
+    render_countdown();
 
     todo_tab_label = ui_pixel_label(todo_scr, "", &lv_font_montserrat_12, UI_INK);
     lv_obj_set_width(todo_tab_label, W - 24);
@@ -237,6 +257,7 @@ void ui_todo_refresh(void) {
     fill_card_ids_for_tab();
     render_todo_cards();
     render_date_and_progress();
+    render_countdown();
     render_tab_label();
 }
 
