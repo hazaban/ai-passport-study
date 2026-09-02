@@ -129,10 +129,7 @@ static lv_obj_t *home_card(int y, int h, uint32_t bg) {
     lv_obj_set_style_bg_color(c, lv_color_hex(bg), 0);
     lv_obj_set_style_border_width(c, 0, 0);
     lv_obj_set_style_pad_all(c, 0, 0);
-    lv_obj_set_style_shadow_width(c, 10, 0);
-    lv_obj_set_style_shadow_opa(c, LV_OPA_10, 0);
-    lv_obj_set_style_shadow_offset_y(c, 4, 0);
-    lv_obj_set_style_shadow_color(c, lv_color_hex(0x10233F), 0);
+    /* 扁平风格：不启用阴影 */
     return c;
 }
 
@@ -146,11 +143,7 @@ static lv_obj_t *home_big_button(int y, bool primary) {
     lv_obj_set_style_border_width(b, primary ? 0 : 2, 0);
     lv_obj_set_style_border_color(b, lv_color_hex(C_PRIMARY), 0);
     lv_obj_set_style_pad_all(b, 0, 0);
-    if (primary) {
-        lv_obj_set_style_shadow_width(b, 10, 0);
-        lv_obj_set_style_shadow_opa(b, LV_OPA_30, 0);
-        lv_obj_set_style_shadow_offset_y(b, 3, 0);
-    }
+    (void)primary;   /* 扁平风格：不启用阴影 */
     return b;
 }
 
