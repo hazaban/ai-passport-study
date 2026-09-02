@@ -117,11 +117,18 @@ static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
     if (!bsp_lvgl_lock(500)) return;
 
     if (s_active >= 0) {
-        if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {     // 统一返回
+        /* 非 Study 演示：长按 OK 统一返回目录；
+         * Study 内部的长按返回由 app_study_key 处理，仅当它在封面页长按时
+         * 才通过 app_study_wants_exit() 请求完全退出回目录。 */
+        if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG && s_active != 0) {
             DEMOS[s_active].exit();
             enter_menu();
         } else {
             DEMOS[s_active].key(btn, ev);
+            if (s_active == 0 && app_study_wants_exit()) {
+                DEMOS[s_active].exit();
+                enter_menu();
+            }
         }
     } else if (ev == BSP_BTN_CLICK) {
         if (btn == BSP_BTN_UP)   { s_sel = (s_sel + DEMO_COUNT - 1) % DEMO_COUNT; menu_refresh(); }

@@ -73,6 +73,11 @@ void ui_todo_key(uint8_t btn, uint8_t ev);     /* 分发按键 (btn, ev 用 bsp_
 /* 返回当前选中任务 ID（用于跳到详情页）；未选中返回 -1 */
 int  ui_todo_selected_task_id(void);
 
+/* Todo 页 OK 命中「任务 / +添加 / 设置」后置位；app_study 据此统一切页并维护状态 */
+bool ui_todo_wants_detail(int *out_task_id);
+bool ui_todo_wants_add(void);
+bool ui_todo_wants_settings(void);
+
 /* -------- 添加任务页 (PAGE_ADD_TASK) --------
  * 步骤：1) 预设模板列表 (快速添加)
  *        2) 类别（10 类）
@@ -89,6 +94,8 @@ bool ui_add_is_finished(int *out_newly_added_id);  /* 用户走完后 true，回
 void ui_detail_build(int task_id);
 void ui_detail_destroy(void);
 void ui_detail_key(uint8_t btn, uint8_t ev);
+/* OK 完成/取消后请求返回 Todo；app_study 据此统一切页 */
+bool ui_detail_wants_back(void);
 
 /* -------- 设置页 (PAGE_SETTINGS) -------- */
 void ui_settings_build(void);
@@ -98,6 +105,8 @@ void ui_settings_key(uint8_t btn, uint8_t ev);
 bool ui_settings_wants_wifi(void);
 /* 设置页 OK 命中「返回主界面」后置位；app_study 据此切回 PAGE_HOME */
 bool ui_settings_wants_home(void);
+/* 设置页 OK 命中其余条目(音量/起床/睡觉)后置位；app_study 据此返回 PAGE_TODO */
+bool ui_settings_wants_todo(void);
 
 /* -------- WiFi 页 (PAGE_WIFI) -------- */
 void ui_wifi_build(void);

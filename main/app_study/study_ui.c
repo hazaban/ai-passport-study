@@ -271,9 +271,16 @@ static study_todo_tab_t s_tab;
 static int s_sel;
 static bool s_bottom_focus;
 static int s_bottom_idx;           /* 0 = +添加，1 = 设置 */
+static bool s_seg_focus;           /* 焦点在页签(日常/各科)时 true；此时上下键左右切换页签 */
 static int s_scroll;
 static int s_off[16], s_hgt[16];
 static int s_list_h;
+
+/* 页面切换请求（由 app_study.c 读取后统一切页，保证 s_page 状态一致） */
+static bool s_todo_wants_detail;
+static int  s_todo_want_detail_id;
+static bool s_todo_wants_add;
+static bool s_todo_wants_settings;
 static lv_obj_t *todo_scr;
 static lv_obj_t *todo_title_label;   /* 标题「考研助手」 */
 static lv_obj_t *todo_cnt_label;     /* 倒计时 pill */
@@ -394,8 +401,9 @@ static void render_todo_seg(void) {
     for (int i = 0; i < 2; i++) {
         if (!todo_seg[i]) continue;
         bool sel = ((int)s_tab == i);
+        bool focus = sel && s_seg_focus;
         lv_obj_set_style_bg_color(todo_seg[i],
-            lv_color_hex(sel ? C_PRIMARY : C_CARD), 0);
+            lv_color_hex(focus ? C_PRIMARY_D : (sel ? C_PRIMARY : C_CARD)), 0);
         lv_obj_set_style_border_width(todo_seg[i], sel ? 0 : 1, 0);
         /* 内部文字颜色更新 */
         lv_obj_t *lab = lv_obj_get_child(todo_seg[i], 0);
@@ -439,6 +447,11 @@ void ui_todo_build(void) {
     s_scroll = 0;
     s_bottom_focus = false;
     s_bottom_idx = 0;
+    s_seg_focus = false;
+    s_todo_wants_detail = false;
+    s_todo_want_detail_id = -1;
+    s_todo_wants_add = false;
+    s_todo_wants_settings = false;
 
     /* 干净的现代背景（不再有草地/云朵） */
     todo_scr = lv_obj_create(NULL);
@@ -523,30 +536,42 @@ void ui_todo_key(uint8_t btn_u, uint8_t ev_u) {
     bsp_btn_t btn = (bsp_btn_t)btn_u;
 
     if (btn == BSP_BTN_OK) {
-        if (!s_bottom_focus) {
+        if (s_seg_focus) {
+            /* 页签聚焦：确认进入当前页签列表 */
+            s_seg_focus = false;
+            s_sel = 0; s_scroll = 0;
+        } else if (!s_bottom_focus) {
             int ci = s_sel;
             if (ci >= 0 && ci < todo_card_n) {
                 int tid = todo_card_ids[ci];
-                if (tid > 0) { ui_todo_destroy(); ui_detail_build(tid); return; }
+                if (tid > 0) {
+                    s_todo_wants_detail = true;
+                    s_todo_want_detail_id = tid;
+                }
             }
         } else {
-            if (s_bottom_idx == 0) { ui_todo_destroy(); ui_add_build(); return; }
-            else                   { ui_todo_destroy(); ui_settings_build(); return; }
+            if (s_bottom_idx == 0) s_todo_wants_add = true;
+            else                   s_todo_wants_settings = true;
         }
+        ui_todo_refresh();
+        return;
     }
 
     if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
-        if (!s_bottom_focus) {
+        if (s_seg_focus) {
+            /* 页签左右切换：上=左(日常) 下=右(各科)，由上下键完成左右移动 */
+            if (btn == BSP_BTN_UP) s_tab = TAB_DAILY;
+            else                   s_tab = TAB_SUBJECTS;
+            s_sel = 0; s_scroll = 0;
+        } else if (!s_bottom_focus) {
             if (btn == BSP_BTN_UP) {
-                if (s_sel <= 0) {
-                    s_tab = (s_tab == TAB_DAILY) ? TAB_SUBJECTS : TAB_DAILY;
-                    s_sel = 0; s_scroll = 0;
-                } else s_sel--;
+                if (s_sel <= 0) s_seg_focus = true;   /* 列表到顶 → 聚焦页签 */
+                else s_sel--;
             } else {
                 if (s_sel >= todo_card_n - 1) { s_bottom_focus = true; s_bottom_idx = 0; }
                 else s_sel++;
             }
-            if (!s_bottom_focus) clamp_scroll_to_selection();
+            if (!s_bottom_focus && !s_seg_focus) clamp_scroll_to_selection();
         } else {
             if (btn == BSP_BTN_UP) {
                 s_bottom_focus = false;
@@ -556,6 +581,23 @@ void ui_todo_key(uint8_t btn_u, uint8_t ev_u) {
         }
     }
     ui_todo_refresh();
+}
+
+bool ui_todo_wants_detail(int *out_task_id) {
+    if (out_task_id) *out_task_id = s_todo_want_detail_id;
+    bool r = s_todo_wants_detail;
+    s_todo_wants_detail = false;
+    return r;
+}
+bool ui_todo_wants_add(void) {
+    bool r = s_todo_wants_add;
+    s_todo_wants_add = false;
+    return r;
+}
+bool ui_todo_wants_settings(void) {
+    bool r = s_todo_wants_settings;
+    s_todo_wants_settings = false;
+    return r;
 }
 
 int ui_todo_selected_task_id(void) {
@@ -690,10 +732,12 @@ void ui_add_key(uint8_t btn_u, uint8_t ev_u) {
  * PAGE_TASK_DETAIL — 任务详情
  * ============================================================== */
 static int s_detail_id;
+static bool s_detail_wants_back;
 static lv_obj_t *s_detail_scr;
 
 void ui_detail_build(int task_id) {
     s_detail_id = task_id;
+    s_detail_wants_back = false;
     study_task_t t;
     if (study_task_get(task_id, &t) != 0) return;
     const study_category_t *cat = study_category_get(t.category);
@@ -765,9 +809,15 @@ void ui_detail_key(uint8_t btn_u, uint8_t ev_u) {
         study_task_t t;
         if (study_task_get(s_detail_id, &t) != 0) return;
         if (s_cb && s_cb->on_task_done_changed) s_cb->on_task_done_changed(s_detail_id, !t.done);
-        ui_detail_destroy();
-        ui_todo_build();
+        s_detail_wants_back = true;   /* 由 app_study 统一返回 Todo 页 */
+        return;
     }
+}
+
+bool ui_detail_wants_back(void) {
+    bool r = s_detail_wants_back;
+    s_detail_wants_back = false;
+    return r;
 }
 
 /* ==============================================================
@@ -788,6 +838,7 @@ static lv_obj_t *s_set_cards[SET_N];
 static int s_set_sel;
 static bool s_set_wants_wifi;
 static bool s_set_wants_home;
+static bool s_set_wants_todo;
 static int  s_bright;            /* 当前亮度 0..100 */
 static bool s_bright_editing;
 
@@ -803,6 +854,7 @@ void ui_settings_build(void) {
     s_set_sel = 0;
     s_set_wants_wifi = false;
     s_set_wants_home = false;
+    s_set_wants_todo = false;
     s_bright_editing = false;
     s_bright = (s_cb && s_cb->cfg_get) ? s_cb->cfg_get("bright", 80) : 80;
 
@@ -860,8 +912,8 @@ void ui_settings_key(uint8_t btn_u, uint8_t ev_u) {
         if (s_set_sel == SET_WIFI) { s_set_wants_wifi = true; ui_settings_refresh_highlight(); return; }
         if (s_set_sel == SET_BRIGHT) { s_bright_editing = true; ui_settings_refresh_highlight(); return; }
         if (s_set_sel == SET_HOME) { s_set_wants_home = true; return; }
-        ui_settings_destroy();
-        ui_todo_build();
+        /* 音量/起床/睡觉等暂未实现编辑 → OK 返回学习页 */
+        s_set_wants_todo = true;
         return;
     }
 
@@ -893,6 +945,7 @@ void ui_settings_refresh_highlight(void) {
 }
 bool ui_settings_wants_wifi(void) { return s_set_wants_wifi; }
 bool ui_settings_wants_home(void) { return s_set_wants_home; }
+bool ui_settings_wants_todo(void) { return s_set_wants_todo; }
 
 /* ==============================================================
  * PAGE_WIFI — WiFi 状态 / 配网引导
@@ -1021,6 +1074,9 @@ void ui_todo_destroy(void) {}
 void ui_todo_refresh(void) {}
 void ui_todo_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }
 int  ui_todo_selected_task_id(void) { return -1; }
+bool ui_todo_wants_detail(int *out_task_id) { (void)out_task_id; return false; }
+bool ui_todo_wants_add(void) { return false; }
+bool ui_todo_wants_settings(void) { return false; }
 void ui_add_build(void) {}
 void ui_add_destroy(void) {}
 void ui_add_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }
@@ -1028,11 +1084,13 @@ bool ui_add_is_finished(int *out_newly_added_id) { (void)out_newly_added_id; ret
 void ui_detail_build(int task_id) { (void)task_id; }
 void ui_detail_destroy(void) {}
 void ui_detail_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }
+bool ui_detail_wants_back(void) { return false; }
 void ui_settings_build(void) {}
 void ui_settings_destroy(void) {}
 void ui_settings_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }
 bool ui_settings_wants_wifi(void) { return false; }
 bool ui_settings_wants_home(void) { return false; }
+bool ui_settings_wants_todo(void) { return false; }
 void ui_wifi_build(void) {}
 void ui_wifi_destroy(void) {}
 void ui_wifi_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }

@@ -45,6 +45,8 @@ static const char *TAG = "app_study";
 
 /* ---------- 页面状态 ---------- */
 static study_page_t s_page = PAGE_HOME;
+static study_page_t s_prev_page = PAGE_HOME;   /* 记录来源页，供长按返回 */
+static bool s_wants_exit = false;              /* 封面页长按 OK = 完全退出回目录 */
 static TaskHandle_t s_tick_task = NULL;
 static TaskHandle_t s_voice_task = NULL;
 static QueueHandle_t s_voice_cmd_q = NULL;
@@ -363,6 +365,8 @@ void app_study_enter(void) {
         bsp_display_backlight((uint8_t)br);
     }
     s_page = PAGE_HOME;
+    s_prev_page = PAGE_HOME;
+    s_wants_exit = false;
     if (bsp_lvgl_lock(1000)) {
         ui_home_build();
         bsp_lvgl_unlock();
@@ -391,7 +395,33 @@ void app_study_exit(void) {
         }
         bsp_lvgl_unlock();
     }
+    s_page = PAGE_HOME;
+    s_prev_page = PAGE_HOME;
+    s_wants_exit = false;
     ESP_LOGI(TAG, "考研助手已退出");
+}
+
+/* ---------- 长按返回：销毁当前页并重建上一页 ---------- */
+static void nav_back(void) {
+    study_page_t target = s_prev_page;
+    if (target != PAGE_HOME && target != PAGE_TODO && target != PAGE_SETTINGS)
+        target = PAGE_HOME;
+
+    switch (s_page) {
+        case PAGE_ADD_TASK:    ui_add_destroy(); break;
+        case PAGE_TASK_DETAIL: ui_detail_destroy(); break;
+        case PAGE_SETTINGS:    ui_settings_destroy(); break;
+        case PAGE_WIFI:        ui_wifi_destroy(); break;
+        case PAGE_TODO:        ui_todo_destroy(); break;
+        default: break;
+    }
+    switch (target) {
+        case PAGE_TODO:     ui_todo_build(); break;
+        case PAGE_SETTINGS: ui_settings_build(); break;
+        default:            ui_home_build(); target = PAGE_HOME; break;
+    }
+    s_prev_page = PAGE_HOME;
+    s_page = target;
 }
 
 void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
@@ -409,26 +439,55 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
         return;
     }
 
+    /* 长按 OK = 返回上一页；封面页长按 = 完全退出回目录 */
+    if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {
+        if (s_page == PAGE_HOME) s_wants_exit = true;
+        else                     nav_back();
+        bsp_lvgl_unlock();
+        return;
+    }
+
     switch (s_page) {
         case PAGE_HOME:
             ui_home_key((uint8_t)btn, (uint8_t)ev);
             if (ui_home_wants_study()) {
+                s_prev_page = s_page;
                 ui_home_destroy();
                 ui_todo_build();
                 s_page = PAGE_TODO;
             } else if (ui_home_wants_settings()) {
+                s_prev_page = s_page;
                 ui_home_destroy();
                 ui_settings_build();
                 s_page = PAGE_SETTINGS;
             }
             break;
-        case PAGE_TODO:
+        case PAGE_TODO: {
             ui_todo_key((uint8_t)btn, (uint8_t)ev);
+            int tid = -1;
+            if (ui_todo_wants_detail(&tid)) {
+                s_prev_page = s_page;
+                ui_todo_destroy();
+                ui_detail_build(tid);
+                s_page = PAGE_TASK_DETAIL;
+            } else if (ui_todo_wants_add()) {
+                s_prev_page = s_page;
+                ui_todo_destroy();
+                ui_add_build();
+                s_page = PAGE_ADD_TASK;
+            } else if (ui_todo_wants_settings()) {
+                s_prev_page = s_page;
+                ui_todo_destroy();
+                ui_settings_build();
+                s_page = PAGE_SETTINGS;
+            }
             break;
+        }
         case PAGE_ADD_TASK: {
             int new_id = -1;
             ui_add_key((uint8_t)btn, (uint8_t)ev);
             if (ui_add_is_finished(&new_id)) {
+                s_prev_page = s_page;
                 ui_add_destroy();
                 ui_todo_build();
                 s_page = PAGE_TODO;
@@ -437,17 +496,30 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
         }
         case PAGE_TASK_DETAIL:
             ui_detail_key((uint8_t)btn, (uint8_t)ev);
+            if (ui_detail_wants_back()) {
+                s_prev_page = s_page;
+                ui_detail_destroy();
+                ui_todo_build();
+                s_page = PAGE_TODO;
+            }
             break;
         case PAGE_SETTINGS:
             ui_settings_key((uint8_t)btn, (uint8_t)ev);
             if (ui_settings_wants_wifi()) {
+                s_prev_page = s_page;
                 ui_settings_destroy();
                 ui_wifi_build();
                 s_page = PAGE_WIFI;
             } else if (ui_settings_wants_home()) {
+                s_prev_page = s_page;
                 ui_settings_destroy();
                 ui_home_build();
                 s_page = PAGE_HOME;
+            } else if (ui_settings_wants_todo()) {
+                s_prev_page = s_page;
+                ui_settings_destroy();
+                ui_todo_build();
+                s_page = PAGE_TODO;
             }
             break;
         case PAGE_WIFI:
@@ -456,12 +528,13 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
         default: break;
     }
 
-    /* 页面切换：从 todo → 添加/详情/设置 的路由（由各 ui_*_key 在内部
-     * 通过「在底部添加/设置按钮上按 OK」时主动设置 s_page 并切屏；
-     * 这里也提供一层「详情/设置页按 OK 长按返回」由 main.c 统一拦截长按时
-     * 会走 demo exit，但 study 内部的子页面返回，交给各子页自己处理短按 OK）*/
-
     bsp_lvgl_unlock();
+}
+
+bool app_study_wants_exit(void) {
+    bool r = s_wants_exit;
+    s_wants_exit = false;
+    return r;
 }
 
 #else  /* !ESP_PLATFORM — 宿主编译存根：方便静态语法检查 */
