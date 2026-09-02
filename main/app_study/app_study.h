@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include <stdbool.h>
 #include "bsp_button.h"
 
 void app_study_enter(void);   /* 构建屏幕 + 启动 FreeRTOS 调度/播放任务 */
