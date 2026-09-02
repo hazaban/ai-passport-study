@@ -54,26 +54,27 @@
 <div class="sub">
   依据 <b>FoloToy AI Passport</b> 屏幕参数：竖屏 <b>240×320</b>（RGB，使用 LVGL Montserrat 10/12/14 号像素字体）逐页还原。
   每张界面按代码中的坐标、文案、配色绘制，供你在烧录前预览整体观感（<i>吉祥物「水豚噜噜」以占位图标示意</i>）。<br>
+  首页左右两页 = <b>日常秩序 / 各科学习</b>，每页内未完成在上、已完成在下，任务多时可上/下滚动；添加任务支持分页选择。<br>
   点击二维码/链接可通过手机配网，见界面「WiFi 配网」。
 </div>
 
 <div class="grid">
 
-<!-- 屏幕1：TODO 未完成 -->
+<!-- 屏幕1：日常秩序页 -->
 <div class="screen-card">
-  <h3>① 今日任务 · 未完成（默认页）</h3>
-  <div class="desc">顶部：标题+进度；中间两分组（日常秩序/各科学习），任务卡=色条+时间+□标题；底部 [+添加任务][设置]</div>
-  <div class="frame"><div class="box"><div class="scr"><div class="screen" id="s_todo_pending">
+  <h3>① 今日任务 · 日常秩序页（左页）</h3>
+  <div class="desc">左右两页 = 日常秩序 / 各科学习；每页内【未完成在上、已完成在下】。任务多时上/下键滚动看，选中项蓝色边框高亮</div>
+  <div class="frame"><div class="box"><div class="scr"><div class="screen" id="s_todo_daily">
     <div class="sts-title">考研助手·加油上岸!</div>
     <div class="sts-prog">进度 2/7</div>
-    <div class="tab">◀ 未完成 · 已完成 ▶</div>
+    <div class="tab">● 日常秩序　　○ 各科学习</div>
     <div class="panel" style="left:10px;top:44px;width:220px;height:220px">
       <div class="ghead" style="top:2px">· 日常秩序 ·</div>
-      <div class="card" style="left:4px;top:20px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">07:00</div><div class="ctitle" style="top:20px">□&nbsp;早上洗漱</div></div>
+      <div class="card" style="left:4px;top:20px;width:224px;box-shadow:0 0 0 2px #4A90D9"><div class="bar" style="background:#82BE2D"></div><div class="ctime">07:00</div><div class="ctitle" style="top:20px">□&nbsp;早上洗漱</div></div>
       <div class="card" style="left:4px;top:64px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">07:30</div><div class="ctitle" style="top:20px">□&nbsp;早饭</div></div>
-      <div class="card" style="left:4px;top:108px;width:224px;box-shadow:0 0 0 2px #4A90D9"><div class="bar" style="background:#82BE2D"></div><div class="ctime">08:00</div><div class="ctitle" style="top:20px">□&nbsp;开始学习（放好手机）</div></div>
-      <div class="card" style="left:4px;top:152px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime" style="color:#9aa0a6">无</div><div class="ctitle" style="top:20px">□&nbsp;洗头发</div></div>
-      <div class="ghead" style="top:196px">· 各科学习 ·</div>
+      <div class="card" style="left:4px;top:108px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">08:00</div><div class="ctitle" style="top:20px">□&nbsp;开始学习（放好手机）</div></div>
+      <div class="card" style="left:4px;top:152px;width:224px;background:#f6f7f8"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#9aa0a6">06:45</div><div class="ctitle done" style="top:20px">✓&nbsp;起床·叠被</div></div>
+      <div class="card" style="left:4px;top:196px;width:224px;background:#f6f7f8"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#9aa0a6">06:50</div><div class="ctitle done" style="top:20px">✓&nbsp;早起一杯水</div></div>
     </div>
     <div class="fbtn" style="left:16px;background:#eef0f3">＋ 添加任务</div>
     <div class="fbtn" style="left:128px;background:#eef0f3">设置</div>
@@ -81,19 +82,21 @@
   </div></div></div></div>
 </div>
 
-<!-- 屏幕2：TODO 已完成 -->
+<!-- 屏幕2：各科学习页 -->
 <div class="screen-card">
-  <h3>② 今日任务 · 已完成（右侧 Tab）</h3>
-  <div class="desc">在未完成页按住上键切到右侧 Tab；已完成任务标题置灰、前加 ✓，仍按分组展示</div>
-  <div class="frame"><div class="box"><div class="scr"><div class="screen" id="s_todo_done">
+  <h3>② 今日任务 · 各科学习页（右页）</h3>
+  <div class="desc">在列表顶部再按上键切到右页；各科任务同样未完成在上、已完成在下，已完成标题置灰 + ✓</div>
+  <div class="frame"><div class="box"><div class="scr"><div class="screen" id="s_todo_subjects">
     <div class="sts-title">考研助手·加油上岸!</div>
     <div class="sts-prog">进度 2/7</div>
-    <div class="tab">◀ 未完成 · 已完成 ▶</div>
+    <div class="tab">○ 日常秩序　　● 各科学习</div>
     <div class="panel" style="left:10px;top:44px;width:220px;height:220px">
-      <div class="ghead" style="top:2px">· 日常秩序 ·</div>
-      <div class="card" style="left:4px;top:20px;width:224px;background:#f6f7f8"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#9aa0a6">07:00</div><div class="ctitle done" style="top:20px">✓&nbsp;早上洗漱</div></div>
-      <div class="card" style="left:4px;top:64px;width:224px;background:#f6f7f8"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#9aa0a6">08:00</div><div class="ctitle done" style="top:20px">✓&nbsp;开始学习（放好手机）</div></div>
-      <div class="ghead" style="top:108px">· 各科学习 ·</div>
+      <div class="ghead" style="top:2px">· 各科学习 ·</div>
+      <div class="card" style="left:4px;top:20px;width:224px;box-shadow:0 0 0 2px #4A90D9"><div class="bar" style="background:#E43B2F"></div><div class="ctime">08:30</div><div class="ctitle" style="top:20px">□&nbsp;高等数学-每日一题</div></div>
+      <div class="card" style="left:4px;top:64px;width:224px"><div class="bar" style="background:#FF6B9D"></div><div class="ctime">09:30</div><div class="ctitle" style="top:20px">□&nbsp;英语-背单词</div></div>
+      <div class="card" style="left:4px;top:108px;width:224px"><div class="bar" style="background:#1689E8"></div><div class="ctime">10:30</div><div class="ctitle" style="top:20px">□&nbsp;数据结构-链表复习</div></div>
+      <div class="card" style="left:4px;top:152px;width:224px;background:#f6f7f8"><div class="bar" style="background:#C0392B;opacity:.5"></div><div class="ctime" style="color:#9aa0a6">07:20</div><div class="ctitle done" style="top:20px">✓&nbsp;政治-早读</div></div>
+      <div class="card" style="left:4px;top:196px;width:224px;background:#f6f7f8"><div class="bar" style="background:#FFB23E;opacity:.5"></div><div class="ctime" style="color:#9aa0a6">08:00</div><div class="ctitle done" style="top:20px">✓&nbsp;线性代数-课后题</div></div>
     </div>
     <div class="fbtn" style="left:16px;background:#eef0f3">＋ 添加任务</div>
     <div class="fbtn" style="left:128px;background:#eef0f3;box-shadow:0 0 0 2px #4A90D9">设置</div>
@@ -103,8 +106,8 @@
 
 <!-- 屏幕3：添加任务 -->
 <div class="screen-card">
-  <h3>③ 添加任务 · 选模板</h3>
-  <div class="desc">按 OK 进入添加；从 26 个预设模板里挑（一屏最多 6 条），选中项蓝色高亮</div>
+  <h3>③ 添加任务 · 选模板（分页）</h3>
+  <div class="desc">按 OK 进入添加；共 26 个预设模板，每屏最多 6 条 → 按 ▲/▼ 自动翻页（第 x/5 页），选中项蓝色高亮</div>
   <div class="frame"><div class="box"><div class="scr"><div class="screen" id="s_add">
     <div class="title">添加任务 · 选模板</div>
     <div class="panel" style="left:10px;top:44px;width:220px;height:230px">
@@ -129,7 +132,7 @@
         <div style="position:absolute;left:16px;top:8px;font-size:12px;">洗头发</div>
       </div>
     </div>
-    <div class="hint" style="top:296px">OK:确认　上/下:选择</div>
+    <div class="hint" style="top:296px">第 1/5 页  OK确认　上/下选择</div>
     <div class="mascot" style="left:186px;top:278px">🐹</div>
   </div></div></div></div>
 </div>
@@ -146,7 +149,7 @@
       <div style="position:absolute;left:12px;top:56px;font-size:12px">时间: 08:00</div>
       <div style="position:absolute;left:12px;top:80px;font-size:12px">状态: □ 待完成</div>
     </div>
-    <div style="position:absolute;left:12px;top:242px;font-size:10px;color:#4A90D9">OK:切键;长按OK:返回</div>
+    <div style="position:absolute;left:12px;top:242px;font-size:10px;color:#4A90D9">OK:完成/取消 · 长按OK:返回</div>
     <div class="fbtn" style="position:absolute;left:16px;top:258px;width:64px;background:#FFD928">完成!</div>
     <div class="fbtn" style="position:absolute;left:160px;top:258px;width:64px;background:#E43B2F;color:#fff">删除</div>
     <div class="mascot" style="left:186px;top:282px">🐹</div>
