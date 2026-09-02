@@ -22,6 +22,7 @@ idf_component_register(
          "app_study/study_category.c"
          "app_study/study_time.c"        # SNTP 时间源（闹钟/到点到点用）
          "app_study/study_wifi.c"        # WiFi 连接 + 本地网页配网 (SoftAP+HTTP)
+         "app_study/study_font.c"        # 内嵌中文字库（LVGL 字体子集）
     INCLUDE_DIRS "."
                  "app_study"
     REQUIRES bsp bt esp_event esp_hw_support esp_netif esp_timer esp_wifi
