@@ -50,6 +50,8 @@ CONFIG_LV_DRAW_SW_SUPPORT_A1=y
 CONFIG_LV_DRAW_SW_SUPPORT_A2=y
 CONFIG_LV_DRAW_SW_SUPPORT_A4=y
 CONFIG_LV_DRAW_SW_SUPPORT_A8=y
+# study_font 由 lv_font_conv 以压缩(no-prefilter)格式生成；必须启用压缩解码，否则文字空白/乱码
+CONFIG_LV_USE_FONT_COMPRESSED=y
 
 # --- Bluetooth LE / NimBLE ---
 # ESP32-C3 仅支持 BLE；示例只启用单连接 peripheral 所需的最小 host 配置。

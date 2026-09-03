@@ -264,15 +264,15 @@ bool ui_home_wants_settings(void)  { return s_home_wants_settings; }
  * 布局：顶部白卡（标题+倒计时+进度条）→ 分组分段控件 → 任务列表 → 底部按钮
  * ============================================================== */
 #define HEAD_H   78
-#define SEG_Y    88
-#define SEG_H    26
-#define PANEL_Y  120
+#define SEG_Y    84
+#define SEG_H    24
+#define PANEL_Y  112
 #define PANEL_H  170
-#define BOT_Y    300
+#define BOT_Y    286
 #define BOT_H    16
-#define GRP_H    20
-#define CARD_H   40
-#define CARD_MARGIN 6
+#define GRP_H    16
+#define CARD_H   34
+#define CARD_MARGIN 4
 
 /* 内部状态 */
 static study_todo_tab_t s_tab;
@@ -537,9 +537,9 @@ void ui_todo_build(void) {
     lv_obj_set_style_clip_corner(todo_panel, true, 0);
 
     /* 底部操作按钮 */
-    btn_add = mod_button(todo_scr, 12, BOT_Y, 104, 32, C_PRIMARY, 0xFFFFFF, true);
+    btn_add = mod_button(todo_scr, 12, BOT_Y, 104, 30, C_PRIMARY, 0xFFFFFF, true);
     mod_button_label(btn_add, "+ 添加任务", 0xFFFFFF);
-    btn_set = mod_button(todo_scr, 124, BOT_Y, 104, 32, C_CARD, C_PRIMARY, false);
+    btn_set = mod_button(todo_scr, 124, BOT_Y, 104, 30, C_CARD, C_PRIMARY, false);
     mod_button_label(btn_set, "设置", C_PRIMARY);
 
     fill_card_ids_for_tab();
