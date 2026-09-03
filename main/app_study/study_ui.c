@@ -173,16 +173,13 @@ static void home_refresh_buttons(void) {
     for (int i = 0; i < 2; i++) {
         if (!s_home_btn[i]) continue;
         bool sel = (s_home_sel == i);
-        if (i == 0) {  /* 进入学习：实心蓝 */
-            lv_obj_set_style_bg_color(s_home_btn[i],
-                lv_color_hex(sel ? HB_D : HB), 0);
-        } else {       /* 设置：柔和中性 ⇄ 实心蓝(选中) */
-            lv_obj_set_style_bg_color(s_home_btn[i],
-                lv_color_hex(sel ? HB : 0xEDF1F7), 0);
-        }
+        /* 只有被选中的按钮显示为实心蓝 + 白字，未选中统一为柔和浅灰 + 藏青字，
+           选中态一目了然（避免之前“两个都变蓝”造成设置块看似无法被选中） */
+        lv_obj_set_style_bg_color(s_home_btn[i],
+            lv_color_hex(sel ? (i == 0 ? HB_D : HB) : 0xEDF1F7), 0);
         lv_obj_t *lab = lv_obj_get_child(s_home_btn[i], 0);
         if (lab) lv_obj_set_style_text_color(lab,
-            lv_color_hex((i == 0 || sel) ? 0xFFFFFF : HINK), 0);
+            lv_color_hex(sel ? 0xFFFFFF : HINK), 0);
     }
 }
 
@@ -282,8 +279,8 @@ void ui_home_build(void) {
     if (!s_home_timer) s_home_timer = lv_timer_create(home_timer_cb, 1000, NULL);
     home_time_refresh();
 
-    /* 倒计时卡(柔和浅蓝)：标题 + 大数字 + 单位 + 考试日期 */
-    lv_obj_t *cnt = home_card(82, 138, HCARD2);
+    /* 倒计时卡(纯白,与浅蓝灰背景区分)：标题 + 大数字 + 单位 + 考试日期 */
+    lv_obj_t *cnt = home_card(82, 138, 0xFFFFFF);
     lv_obj_t *cap = ui_pixel_label(cnt, "考研倒计时", F_STUDY, HMUTED);
     lv_obj_set_align(cap, LV_ALIGN_TOP_MID);
     lv_obj_set_pos(cap, 0, 16);
