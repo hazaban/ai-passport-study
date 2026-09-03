@@ -13,7 +13,8 @@
  *      task_<id>  (blob JSON)     单条任务（长度 < 508B ，NVS blob 上限 4KB 够用）
  *   namespace "config" :
  *      voice_pack (string)
- *      wake_h / wake_m / sleep_h / sleep_m (u8)
+ *      rec_wake_h / rec_wake_m / rec_sleep_h / rec_sleep_m (u8)  早起/睡眠记录时间戳
+ *      theme (u8)          0=夜间 1=白天
  *      volume (u8)
  */
 #pragma once

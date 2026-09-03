@@ -392,8 +392,7 @@ static void tick_worker(void *arg) {
             now_m = cfg_get("sim_m", 0);
         }
 
-        /* 起床闹钟时间从设置读取；跨日复位每日任务与提醒状态 */
-        study_sched_set_wake_time(cfg_get("wake_h", 7), cfg_get("wake_m", 0));
+        /* 跨日复位每日任务与提醒状态 */
         if (ctm.tm_year >= 0) {   /* civil 可用(含手动) */
             int cd = (ctm.tm_year + 1900) * 10000 + (ctm.tm_mon + 1) * 100 + ctm.tm_mday;
             if (s_last_day > 0 && cd != s_last_day) {
@@ -412,23 +411,6 @@ static void tick_worker(void *arg) {
                 strncpy(cmd.key, "hair_remind", sizeof(cmd.key) - 1);
                 xQueueSend(s_voice_cmd_q, &cmd, 0);
             }
-        }
-
-        /* ----- 1) 温柔唤醒闹钟（时间可在设置改，每天仅一次） ----- */
-        if (study_sched_check_wakeup_alarm(now_h, now_m)) {
-            /* 闹钟专属：轻柔 RTTTL + 温柔唤醒语音 */
-            static const char wakeup_rtttl[] =
-                "WakeUp:d=4,o=5,b=66:c5,g4,c5,e5,g5,c6,e6,p,g5,e5,c5";
-            voice_cmd_t cmd = { .kind = VCMD_SCENE };
-            /* 先走 RTTTL 轻柔前奏 + 再接 wakeup_alarm 温柔语音 */
-            study_sched_ack_fired(0);  /* no-op */
-            cmd.rtttl[0] = '\0';
-            strncpy(cmd.key, "wakeup_alarm", sizeof(cmd.key) - 1);
-            xQueueSend(s_voice_cmd_q, &cmd, 0);
-            /* 用独立 RTTTL 指令作为前奏（RING 队列） */
-            voice_cmd_t cmd_r = { .kind = VCMD_RTTTL };
-            strncpy(cmd_r.rtttl, wakeup_rtttl, sizeof(cmd_r.rtttl) - 1);
-            xQueueSendToFront(s_voice_cmd_q, &cmd_r, 0);
         }
 
         /* ----- 2) 普通任务到点提醒 ----- */

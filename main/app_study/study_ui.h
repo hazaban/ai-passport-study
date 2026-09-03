@@ -24,6 +24,8 @@ typedef struct {
     /* 请求设置」睡觉「时间等元数据（config 命名空间）*/
     int  (*cfg_get)(const char *k, int def);
     void (*cfg_set)(const char *k, int v);
+    /* 通知业务层：白天/夜间主题已切换(0=夜间 1=白天)，需重建当前非首页页面 */
+    void (*on_theme_changed)(int theme);
 } study_ui_callbacks_t;
 
 /* ---------- 公共初始化 ---------- */

@@ -17,8 +17,6 @@
 /* ---------- 语音 key 映射 ----------
  * subtype = -1 表示「该类通用」；英语下有 subtype 级的专属定制。 */
 const study_voice_map_t study_voice_map[] = {
-    /* 每日固定闹钟 */
-    { -1, -1, "wakeup_alarm"  },
     /* 日常秩序场景 */
     { -1, -1, "morning_wash" },
     { -1, -1, "start_study"  },
