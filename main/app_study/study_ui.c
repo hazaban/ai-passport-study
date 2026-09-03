@@ -225,10 +225,10 @@ void ui_home_build(void) {
     s_cur_scr = s_home_scr;
 
     /* 顶部卡：第一行 = 应用名 + 右侧电池(进度条式填充)；第二行 = 年月日周几 + 时分秒 */
-    lv_obj_t *head = home_card(8, 52, 0xFFFFFF);
+    lv_obj_t *head = home_card(8, 70, 0xFFFFFF);
 
     lv_obj_t *t = ui_pixel_label(head, "考研日程助手", F_STUDY, HINK);
-    lv_obj_set_pos(t, 16, 8);
+    lv_obj_set_pos(t, 16, 16);
 
     /* 电池：横向进度条式填充（无数字/无竖条），低电红、中电橙、满电/高电绿 */
     {
@@ -244,7 +244,7 @@ void ui_home_build(void) {
             lv_obj_set_style_border_color(body, lv_color_hex(0xB9C6D6), 0);
             lv_obj_set_style_pad_all(body, 0, 0);
             lv_obj_set_align(body, LV_ALIGN_TOP_RIGHT);
-            lv_obj_set_pos(body, -14, 9);
+            lv_obj_set_pos(body, -14, 16);
             /* 极帽(右侧小突出) */
             lv_obj_t *nub = lv_obj_create(body);
             lv_obj_remove_flag(nub, LV_OBJ_FLAG_SCROLLABLE);
@@ -268,20 +268,20 @@ void ui_home_build(void) {
 
     /* 第二行：日期(左) + 秒级时钟(右) */
     s_home_date = ui_pixel_label(head, "", F_STUDY, HMUTED);
-    lv_obj_set_pos(s_home_date, 16, 33);
+    lv_obj_set_pos(s_home_date, 16, 47);
 
     s_home_clock = ui_pixel_label(head, "", &lv_font_montserrat_14, HMUTED);
     lv_obj_set_align(s_home_clock, LV_ALIGN_TOP_RIGHT);
-    lv_obj_set_pos(s_home_clock, -14, 34);
+    lv_obj_set_pos(s_home_clock, -14, 48);
 
     if (!s_home_timer) s_home_timer = lv_timer_create(home_timer_cb, 1000, NULL);
     home_time_refresh();
 
     /* 倒计时卡(柔和浅蓝)：标题 + 大数字 + 单位 + 考试日期 */
-    lv_obj_t *cnt = home_card(64, 118, HCARD2);
+    lv_obj_t *cnt = home_card(82, 138, HCARD2);
     lv_obj_t *cap = ui_pixel_label(cnt, "考研倒计时", F_STUDY, HMUTED);
     lv_obj_set_align(cap, LV_ALIGN_TOP_MID);
-    lv_obj_set_pos(cap, 0, 10);
+    lv_obj_set_pos(cap, 0, 16);
     lv_obj_set_style_text_align(cap, LV_TEXT_ALIGN_CENTER, 0);
 
     int left = study_time_days_until(STUDY_EXAM_MONTH, STUDY_EXAM_DAY);
@@ -290,11 +290,11 @@ void ui_home_build(void) {
     else          snprintf(nbuf, sizeof(nbuf), "%d", left);
     s_home_cnt = ui_pixel_label(cnt, nbuf, &lv_font_montserrat_20, HINK);
     lv_obj_set_align(s_home_cnt, LV_ALIGN_CENTER);
-    lv_obj_set_pos(s_home_cnt, -16, 12);
+    lv_obj_set_pos(s_home_cnt, -16, 8);
 
     lv_obj_t *unit = ui_pixel_label(cnt, "天", F_STUDY, HACC);
     lv_obj_set_align(unit, LV_ALIGN_CENTER);
-    lv_obj_set_pos(unit, 24, 12);
+    lv_obj_set_pos(unit, 24, 8);
 
     if (left < 0) {
         lv_obj_t *g = ui_pixel_label(cnt, "考研日已过，继续加油", F_STUDY, HMUTED);
@@ -306,19 +306,14 @@ void ui_home_build(void) {
         lv_obj_set_align(g, LV_ALIGN_BOTTOM_MID); lv_obj_set_pos(g, 0, -12);
     }
 
-    /* 两个入口按钮：并排同一行(更省纵向空间)：进入学习=实心蓝，设置=柔和中性(无蓝描边) */
-    s_home_btn[0] = home_big_button(8, 190, 108, 44, true);
+    /* 两个入口按钮：并排贴近底部：进入学习=实心蓝，设置=柔和中性(无蓝描边) */
+    s_home_btn[0] = home_big_button(8, 246, 108, 44, true);
     lv_obj_t *b0 = ui_pixel_label(s_home_btn[0], "进入学习", F_STUDY, 0xFFFFFF);
     lv_obj_center(b0);
 
-    s_home_btn[1] = home_big_button(124, 190, 100, 44, false);
+    s_home_btn[1] = home_big_button(124, 246, 100, 44, false);
     lv_obj_t *b1 = ui_pixel_label(s_home_btn[1], "设置", F_STUDY, HINK);
     lv_obj_center(b1);
-
-    /* 底部柔和提示，避免下方留白过多 */
-    lv_obj_t *foot = ui_pixel_label(s_home_scr, "保持专注 · 每天进步一点", F_STUDY, HMUTED);
-    lv_obj_set_align(foot, LV_ALIGN_BOTTOM_MID);
-    lv_obj_set_pos(foot, 0, -12);
 
     home_refresh_buttons();
     lv_screen_load(s_home_scr);
