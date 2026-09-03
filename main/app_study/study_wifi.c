@@ -82,15 +82,6 @@ static bool creds_get(char *ssid, size_t ssid_sz, char *pass, size_t pass_sz) {
     return true;
 }
 
-static void creds_erase(void) {
-    nvs_handle_t h;
-    if (nvs_open(WIFI_NVS_NS, NVS_READWRITE, &h) != ESP_OK) return;
-    nvs_erase_key(h, WIFI_NVS_SSID);
-    nvs_erase_key(h, WIFI_NVS_PASS);
-    nvs_commit(h);
-    nvs_close(h);
-}
-
 static void creds_save(const char *ssid, const char *pass) {
     nvs_handle_t h;
     if (nvs_open(WIFI_NVS_NS, NVS_READWRITE, &h) != ESP_OK) {
@@ -175,10 +166,9 @@ static void stop_http_server(void) {
 static esp_err_t handle_ap_root(httpd_req_t *req);
 static esp_err_t handle_ap_save(httpd_req_t *req);
 
-/* 统一启动：AP+STA 同时开 —— 热点始终可搜到(配网名 STU_STUDY_xxxx，密码 liyufan)。
- * ssid/pass 非空则同时去连家里 WiFi；为空则只开配网热点。 */
-static void wifi_start_apsta(const char *ssid, const char *pass) {
-    bool have = (ssid && ssid[0]);
+/* AP+STA 同时开：配网热点始终可搜到(STU_STUDY_xxxx + 密码)；有凭证则同时去连家里 WiFi */
+static void wifi_start_apsta(bool have, const char *ssid, const char *pass) {
+    if (!s_ready) return;
     s_retry_count = 0;
 
     esp_wifi_stop();
@@ -204,9 +194,9 @@ static void wifi_start_apsta(const char *ssid, const char *pass) {
     } else {
         set_state(WIFI_STATE_AP_CONFIG);
     }
-    esp_wifi_start();        /* 事件 STA_START → esp_wifi_connect() 自动去连 */
+    esp_wifi_start();    /* WIFI_EVENT_STA_START → esp_wifi_connect() 自动去连 */
 
-    /* 配网页(HTTP)始终开启，方便随时重配 */
+    /* 配网页始终开，方便随时改网络 */
     if (!s_server) {
         httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
         cfg.server_port = STUDY_WIFI_AP_PORT;
@@ -225,8 +215,7 @@ static void wifi_start_apsta(const char *ssid, const char *pass) {
 }
 
 static void connect_sta(const char *ssid, const char *pass) {
-    /* 连家里 WiFi 的同时保持热点开启 */
-    wifi_start_apsta(ssid, pass);
+    wifi_start_apsta(true, ssid, pass);   /* 连家里 WiFi，同时热点保持 */
 }
 
 static esp_err_t handle_ap_root(httpd_req_t *req) {
@@ -274,17 +263,10 @@ static void start_apply_creds(void) {
     xTaskCreate(apply_creds_task, "wifi_apply", 4096, NULL, 3, NULL);
 }
 
-/* 开启配网：SoftAP + HTTP 服务器 */
+/* 开启配网：确保热点一定可搜到（断开正在连的网络，不反复尝试旧网避免抖动） */
 static void start_ap_config(void) {
-    /* 只保证配网热点开启(不附带 STA 反复重试)，避免连接失败抖动 */
-    wifi_start_apsta(NULL, NULL);
-}
-
-/* 清除已保存的家里 WiFi，并重开配网热点（用于“断联旧WiFi重新配”） */
-void study_wifi_forget(void) {
-    creds_erase();
-    ESP_LOGI(TAG, "已清除保存的 WiFi，重开配网热点");
-    start_ap_config();
+    if (s_state == WIFI_STATE_AP_CONFIG && s_server) return;
+    wifi_start_apsta(false, NULL, NULL);
 }
 
 /* ---------- WiFi 事件 ---------- */
@@ -391,13 +373,10 @@ void study_wifi_init(const char *ap_ssid_prefix) {
 
     s_ready = true;
 
-    /* 有凭证 → 直连；否则 → AP 配网吧等 */
+    /* 热点常开(APSTA)：无凭证→只开配网热点；有凭证→热点照开并自动连家里 WiFi */
     char ssid[33], pass[65];
-    if (creds_get(ssid, sizeof(ssid), pass, sizeof(pass))) {
-        connect_sta(ssid, pass);
-    } else {
-        start_ap_config();
-    }
+    bool have = creds_get(ssid, sizeof(ssid), pass, sizeof(pass));
+    wifi_start_apsta(have, have ? ssid : NULL, have ? pass : NULL);
 }
 
 #else  /* !ESP_PLATFORM — 宿主编译存根 */
@@ -405,7 +384,6 @@ void study_wifi_init(const char *ap_ssid_prefix) {
 bool study_wifi_has_stored_creds(void) { return false; }
 void study_wifi_init(const char *ap_ssid_prefix) { (void)ap_ssid_prefix; }
 void study_wifi_start_ap_config(void) {}
-void study_wifi_forget(void) {}
 void study_wifi_stop(void) {}
 study_wifi_state_t study_wifi_get_state(void) { return WIFI_STATE_IDLE; }
 const char *study_wifi_get_ssid(void) { return ""; }

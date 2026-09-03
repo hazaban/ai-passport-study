@@ -10,7 +10,6 @@
 #include "esp_sntp.h"
 #include "esp_event.h"
 #include "esp_netif.h"
-#include "esp_timer.h"
 #include "time.h"
 
 static const char *TAG = "study_time";
@@ -77,7 +76,8 @@ int study_time_days_until(int month, int day) {
     return (int)((tt - now) / 86400L);
 }
 
-/* ---------- 手动时钟（离线兜底；会“走表”，设好后秒/分持续前进，闹钟才可靠） ---------- */
+/* ---------- 手动时钟（离线兜底；会持续走表，闹钟/倒计时/日期才能准确） ---------- */
+#include "esp_timer.h"
 static time_t   s_man_epoch = 0;      /* 设定时刻换算成 epoch 秒 */
 static int64_t  s_set_us     = 0;     /* 设定时刻的 esp_timer 单调时间 */
 static bool     s_m_set      = false;
@@ -106,7 +106,6 @@ bool study_time_civil_tm(struct tm *out) {
         return true;
     }
     if (!s_m_set) return false;          /* 未校时也无手动时间 */
-    /* 手动时间：设定值 + 真实流逝时间 → 持续走表 */
     time_t cur = s_man_epoch + (time_t)((esp_timer_get_time() - s_set_us) / 1000000LL);
     localtime_r(&cur, out);
     return true;
