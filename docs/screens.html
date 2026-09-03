@@ -101,7 +101,8 @@
 <div class="sub">
   依据 <b>FoloToy AI Passport</b> 屏幕参数：竖屏 <b>240×320</b>（RGB，使用 LVGL Montserrat 10/12/14 号像素字体）逐页还原。
   本次预览包含待确认的改动：<b>① 首页倒计时：标题变橙调大、数字变黑调大；② 其他页面蓝色降饱和（柔和蓝）；③ 非首页新增「白天模式」（夜间=当前黑底白字）</b>。
-  设置页的「起床/睡觉时间」已改为 <b>早起记录 / 睡眠记录</b>（按 OK 记录当前时刻，不新增行）。<br>
+  设置页的「起床/睡觉时间」已改为 <b>早起记录 / 睡眠记录</b>（按 OK 记录当前时刻，不新增行）；早起/睡觉<b>闹钟提醒已删除</b>。<br>
+  <b>洗头发</b>任务块直接展示下次洗的时间（如「还有3天」「今天洗」）；已添加的日程和学习科目<b>每过 24 点自动重置为未完成</b>。<br>
   首页左右两页 = <b>日常秩序 / 各科学习</b>，每页内未完成在上、已完成在下，任务多时可上/下滚动；添加任务支持分页选择。<br>
   点击二维码/链接可通过手机配网，见界面「WiFi 配网」。
 </div>
@@ -141,10 +142,11 @@
     <div class="panel" style="left:8px;top:54px;width:224px;height:220px;background:transparent;box-shadow:none">
       <div class="ghead" style="top:2px">· 日常秩序 ·</div>
       <div class="card" style="left:0;top:20px;width:224px;box-shadow:0 0 0 2px #7EA6D6"><div class="bar" style="background:#82BE2D"></div><div class="ctime">07:00</div><div class="ctitle" style="top:20px">□&nbsp;早上洗漱</div></div>
-      <div class="card" style="left:0;top:64px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">07:30</div><div class="ctitle" style="top:20px">□&nbsp;早饭</div></div>
-      <div class="card" style="left:0;top:108px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">08:00</div><div class="ctitle" style="top:20px">□&nbsp;开始学习（放好手机）</div></div>
-      <div class="card" style="left:0;top:152px;width:224px;background:#1A2530;box-shadow:none"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#9AA8B8">06:45</div><div class="ctitle done" style="top:20px">✓&nbsp;起床·叠被</div></div>
-      <div class="card" style="left:0;top:196px;width:224px;background:#1A2530;box-shadow:none"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#9AA8B8">06:50</div><div class="ctitle done" style="top:20px">✓&nbsp;早起一杯水</div></div>
+      <div class="card" style="left:0;top:62px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">07:30</div><div class="ctitle" style="top:20px">□&nbsp;早饭</div></div>
+      <div class="card" style="left:0;top:104px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">08:00</div><div class="ctitle" style="top:20px">□&nbsp;开始学习（放好手机）</div></div>
+      <div class="card" style="left:0;top:146px;width:224px;background:#1A2530;box-shadow:none"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#9AA8B8">06:45</div><div class="ctitle done" style="top:20px">✓&nbsp;起床·叠被</div></div>
+      <div class="card" style="left:0;top:188px;width:224px;background:#1A2530;box-shadow:none"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#9AA8B8">06:50</div><div class="ctitle done" style="top:20px">✓&nbsp;早起一杯水</div></div>
+      <div class="card" style="left:0;top:230px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">还有3天</div><div class="ctitle" style="top:20px">□&nbsp;洗头发</div></div>
     </div>
     <div class="fbtn" style="left:16px">＋ 添加任务</div>
     <div class="fbtn" style="left:128px">设置</div>
@@ -155,7 +157,7 @@
 <!-- 屏幕2：日常秩序页 · 白天模式 -->
 <div class="screen-card">
   <h3>② 今日任务 · 日常秩序页（白天模式 = 新增柔和浅色）</h3>
-  <div class="desc">白天模式：<b>背景 #F2F5F9</b>（柔和浅蓝灰）、白色卡片、深藏青文字 #2B3A4A 清晰不刺眼；蓝色用更柔和的 <b>#5B84B0</b>。在设置页「界面模式」切换。</div>
+  <div class="desc">白天模式：<b>背景 #F2F5F9</b>（柔和浅蓝灰）、白色卡片、深藏青文字 #2B3A4A 清晰不刺眼；选中边框用<b>降饱和灰蓝 #9BB1C6（不用主蓝）</b>；<b>洗头发</b>块直接显示「还有3天」。在设置页「界面模式」切换。</div>
   <div class="frame"><div class="box"><div class="scr"><div class="screen scr-day" id="s_todo_daily_day">
     <div class="sts-title">加油上岸!</div>
     <div class="sts-prog">进度 2/7</div>
@@ -163,11 +165,12 @@
     <div class="tab">● 日常秩序　　○ 各科学习</div>
     <div class="panel" style="left:8px;top:54px;width:224px;height:220px;background:transparent;box-shadow:none">
       <div class="ghead" style="top:2px">· 日常秩序 ·</div>
-      <div class="card" style="left:0;top:20px;width:224px;box-shadow:0 0 0 2px #5B84B0"><div class="bar" style="background:#82BE2D"></div><div class="ctime">07:00</div><div class="ctitle" style="top:20px">□&nbsp;早上洗漱</div></div>
-      <div class="card" style="left:0;top:64px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">07:30</div><div class="ctitle" style="top:20px">□&nbsp;早饭</div></div>
-      <div class="card" style="left:0;top:108px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">08:00</div><div class="ctitle" style="top:20px">□&nbsp;开始学习（放好手机）</div></div>
-      <div class="card" style="left:0;top:152px;width:224px;background:#F5F7FA;box-shadow:none"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#8A97A8">06:45</div><div class="ctitle done" style="top:20px">✓&nbsp;起床·叠被</div></div>
-      <div class="card" style="left:0;top:196px;width:224px;background:#F5F7FA;box-shadow:none"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#8A97A8">06:50</div><div class="ctitle done" style="top:20px">✓&nbsp;早起一杯水</div></div>
+      <div class="card" style="left:0;top:20px;width:224px;box-shadow:0 0 0 2px #9BB1C6"><div class="bar" style="background:#82BE2D"></div><div class="ctime">07:00</div><div class="ctitle" style="top:20px">□&nbsp;早上洗漱</div></div>
+      <div class="card" style="left:0;top:62px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">07:30</div><div class="ctitle" style="top:20px">□&nbsp;早饭</div></div>
+      <div class="card" style="left:0;top:104px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">08:00</div><div class="ctitle" style="top:20px">□&nbsp;开始学习（放好手机）</div></div>
+      <div class="card" style="left:0;top:146px;width:224px;background:#F5F7FA;box-shadow:none"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#8A97A8">06:45</div><div class="ctitle done" style="top:20px">✓&nbsp;起床·叠被</div></div>
+      <div class="card" style="left:0;top:188px;width:224px;background:#F5F7FA;box-shadow:none"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#8A97A8">06:50</div><div class="ctitle done" style="top:20px">✓&nbsp;早起一杯水</div></div>
+      <div class="card" style="left:0;top:230px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">还有3天</div><div class="ctitle" style="top:20px">□&nbsp;洗头发</div></div>
     </div>
     <div class="fbtn" style="left:16px">＋ 添加任务</div>
     <div class="fbtn" style="left:128px">设置</div>
@@ -336,6 +339,7 @@
   <tr><td>主蓝</td><td>选中/按钮/胶囊</td><td>#7EA6D6（原 #6FA8FF 降饱和）</td><td>#5B84B0（更柔）</td></tr>
   <tr><td>主蓝加深</td><td>选中态底</td><td>#5E86B8</td><td>#4A7199</td></tr>
   <tr><td>分隔线/描边</td><td>边框外沿</td><td>#2B3948</td><td>#DFE5EC</td></tr>
+  <tr><td>选中态边框</td><td>选中卡片外框</td><td>#7EA6D6</td><td>#9BB1C6 降饱和灰蓝（不用主蓝）</td></tr>
   <tr><td>强调橙</td><td>首页倒计时</td><td colspan="2">#F08A24（仅首页）</td></tr>
 </table>
 

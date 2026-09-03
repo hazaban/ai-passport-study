@@ -63,6 +63,7 @@ typedef struct {
     uint32_t line;      /* 分隔线/描边 */
     uint32_t accent;    /* 强调橙 */
     uint32_t sel;       /* 列表选中背景 */
+    uint32_t sel_border;/* 选中态边框（白天用降饱和，不用主蓝） */
     uint32_t pill;      /* 倒计时胶囊底 */
 } ui_theme_t;
 
@@ -77,10 +78,12 @@ static const ui_theme_t s_theme_night = {
     .line      = 0x2B3948,
     .accent    = 0xFFB23E,
     .sel       = 0x2E3A55,
+    .sel_border= 0x7EA6D6,
     .pill      = 0x22314B,
 };
 
-/* 白天：柔和浅蓝灰底 + 白卡片 + 深藏青文字，不晃眼且清晰 */
+/* 白天：柔和浅蓝灰底 + 白卡片 + 深藏青文字，不晃眼且清晰；
+ * 选中边框用降饱和灰蓝（不用主蓝），进一步去刺眼 */
 static const ui_theme_t s_theme_day = {
     .bg        = 0xF2F5F9,
     .card      = 0xFFFFFF,
@@ -91,6 +94,7 @@ static const ui_theme_t s_theme_day = {
     .line      = 0xDFE5EC,
     .accent    = 0xE8923C,
     .sel       = 0xE4ECF5,
+    .sel_border= 0x9BB1C6,   /* 降饱和灰蓝边框 */
     .pill      = 0xE9F0F8,
 };
 
@@ -327,24 +331,28 @@ void ui_home_build(void) {
     if (!s_home_timer) s_home_timer = lv_timer_create(home_timer_cb, 1000, NULL);
     home_time_refresh();
 
-    /* 倒计时卡(纯白,与浅蓝灰背景区分)：标题 + 大数字 + 单位 + 考试日期 */
+    /* 倒计时卡(纯白,与浅蓝灰背景区分)：标题 + 大数字 + 单位 + 考试日期
+     * 标题：橙色加粗(transform_scale 放大模拟加粗)；数字：更大、纯黑 */
     lv_obj_t *cnt = home_card(82, 138, 0xFFFFFF);
-    lv_obj_t *cap = ui_pixel_label(cnt, "考研倒计时", F_STUDY, HMUTED);
+    lv_obj_t *cap = ui_pixel_label(cnt, "考研倒计时", F_STUDY, HACC);
     lv_obj_set_align(cap, LV_ALIGN_TOP_MID);
-    lv_obj_set_pos(cap, 0, 16);
+    lv_obj_set_pos(cap, 0, 10);
     lv_obj_set_style_text_align(cap, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_transform_scale(cap, 333, 0);   /* ≈1.3x → 视觉 19px */
 
     int left = study_time_days_until(STUDY_EXAM_MONTH, STUDY_EXAM_DAY);
     char nbuf[16];
     if (left < 0) snprintf(nbuf, sizeof(nbuf), "GO");
     else          snprintf(nbuf, sizeof(nbuf), "%d", left);
-    s_home_cnt = ui_pixel_label(cnt, nbuf, &lv_font_montserrat_20, HINK);
+    s_home_cnt = ui_pixel_label(cnt, nbuf, &lv_font_montserrat_20, 0x1A1F27);
     lv_obj_set_align(s_home_cnt, LV_ALIGN_CENTER);
-    lv_obj_set_pos(s_home_cnt, -16, 8);
+    lv_obj_set_pos(s_home_cnt, -20, 4);
+    lv_obj_set_style_transform_scale(s_home_cnt, 384, 0);  /* 1.5x → 视觉 30px */
 
     lv_obj_t *unit = ui_pixel_label(cnt, "天", F_STUDY, HACC);
     lv_obj_set_align(unit, LV_ALIGN_CENTER);
-    lv_obj_set_pos(unit, 24, 8);
+    lv_obj_set_pos(unit, 28, 6);
+    lv_obj_set_style_transform_scale(unit, 358, 0);   /* ≈1.4x 与标题呼应 */
 
     if (left < 0) {
         lv_obj_t *g = ui_pixel_label(cnt, "考研日已过，继续加油", F_STUDY, HMUTED);
@@ -511,9 +519,9 @@ static void render_todo_cards(void) {
 
         /* 白色圆角任务卡 */
         lv_obj_t *card = mod_card(todo_panel, 2, y, 218, CARD_H,
-                                  armed ? 0xFFE2E2 : (selected ? 0x2E3A55 : thm()->card), 12, true);
+                                  armed ? 0xFFE2E2 : (selected ? thm()->sel : thm()->card), 12, true);
         if (selected || armed) lv_obj_set_style_border_width(card, 2, 0);
-        lv_obj_set_style_border_color(card, lv_color_hex(armed ? 0xE43B2F : thm()->primary), 0);
+        lv_obj_set_style_border_color(card, lv_color_hex(armed ? 0xE43B2F : thm()->sel_border), 0);
 
         /* 左侧类别色条（圆角胶囊） */
         lv_obj_t *tab = lv_obj_create(card);
@@ -547,11 +555,22 @@ static void render_todo_cards(void) {
         lv_label_set_long_mode(title, LV_LABEL_LONG_CLIP);
         if (t.done) lv_obj_set_style_text_decor(title, LV_TEXT_DECOR_STRIKETHROUGH, 0);
 
-        /* 右上角时间（洗头发：显示“下次洗头日期”） */
+        /* 右上角时间（洗头发：直接展示距下次洗头还剩几天） */
         char tbuf[24];
         if (t.hour < 0 && strstr(t.title, "洗头发") != NULL) {
             long nd = study_sched_hair_next_epoch_day();
-            if (nd > 0) {
+            long td = study_time_get_epoch_day();
+            if (nd > 0 && td > 0) {
+                long left = nd - td;
+                if (left > 0)      snprintf(tbuf, sizeof(tbuf), "还有%ld天", left);
+                else if (left == 0) strncpy(tbuf, "今天洗", sizeof(tbuf));
+                else {  /* 已过洗头日但没赶上早晨窗口：直接给出日期 */
+                    time_t tt = nd * 86400L;
+                    struct tm hm;
+                    localtime_r(&tt, &hm);
+                    snprintf(tbuf, sizeof(tbuf), "下次%d/%d", hm.tm_mon + 1, hm.tm_mday);
+                }
+            } else if (nd > 0) {
                 time_t tt = nd * 86400L;
                 struct tm hm;
                 localtime_r(&tt, &hm);
@@ -681,7 +700,7 @@ void ui_todo_build(void) {
     todo_cnt_label = ui_pixel_label(head, "", F_STUDY, thm()->primary);
     lv_obj_set_align(todo_cnt_label, LV_ALIGN_TOP_RIGHT);
     lv_obj_set_pos(todo_cnt_label, -14, 8);
-    lv_obj_set_style_bg_color(todo_cnt_label, lv_color_hex(0xEAF0FF), 0);
+    lv_obj_set_style_bg_color(todo_cnt_label, lv_color_hex(thm()->pill), 0);
     lv_obj_set_style_pad_hor(todo_cnt_label, 6, 0);
     lv_obj_set_style_radius(todo_cnt_label, 8, 0);
 
@@ -716,9 +735,9 @@ void ui_todo_build(void) {
     lv_obj_set_style_clip_corner(todo_panel, true, 0);
 
     /* 底部操作按钮 */
-    btn_add = mod_button(todo_scr, 12, BOT_Y, 104, 30, thm()->card, thm()->primary, false);
+    btn_add = mod_button(todo_scr, 12, BOT_Y, 104, 30, thm()->card, thm()->sel_border, false);
     mod_button_label(btn_add, "+ 添加任务", thm()->primary);
-    btn_set = mod_button(todo_scr, 124, BOT_Y, 104, 30, thm()->card, thm()->primary, false);
+    btn_set = mod_button(todo_scr, 124, BOT_Y, 104, 30, thm()->card, thm()->sel_border, false);
     mod_button_label(btn_set, "主页面", thm()->primary);
 
     fill_card_ids_for_tab();
@@ -945,10 +964,10 @@ static void add_render_preset_list(void) {
         int idx = ids[row];
         int y = 2 + k * (CARD_H + 4);
         lv_obj_t *card = mod_card(s_add_panel, 0, y, 220, CARD_H,
-                                  (row == s_add_sel) ? 0x2E3A55 : thm()->card, 12, true);
+                                  (row == s_add_sel) ? thm()->sel : thm()->card, 12, true);
         if (row == s_add_sel) {
             lv_obj_set_style_border_width(card, 2, 0);
-            lv_obj_set_style_border_color(card, lv_color_hex(thm()->primary), 0);
+            lv_obj_set_style_border_color(card, lv_color_hex(thm()->sel_border), 0);
         }
         const study_category_t *cat = study_category_get(presets[idx].category);
         lv_obj_t *tab = lv_obj_create(card);
@@ -1142,6 +1161,8 @@ void ui_detail_build(int task_id) {
 void ui_detail_destroy(void) {
     if (s_detail_scr) { lv_obj_delete(s_detail_scr); s_detail_scr = NULL; }
 }
+
+int ui_detail_current_id(void) { return s_detail_id; }
 
 void ui_detail_key(uint8_t btn_u, uint8_t ev_u) {
     if (ev_u != BSP_BTN_CLICK) return;
@@ -1406,7 +1427,7 @@ void ui_settings_refresh_highlight(void) {
     for (int i = 0; i < SET_N; i++) {
         if (!s_set_cards[i]) continue;
         bool sel = (i == s_set_sel);
-        lv_obj_set_style_bg_color(s_set_cards[i], lv_color_hex(sel ? 0x2E3A55 : thm()->card), 0);
+        lv_obj_set_style_bg_color(s_set_cards[i], lv_color_hex(sel ? thm()->sel : thm()->card), 0);
         lv_obj_set_style_border_width(s_set_cards[i], sel ? 2 : 0, 0);
     }
 }
@@ -1579,6 +1600,7 @@ bool ui_add_is_finished(int *out_newly_added_id) { (void)out_newly_added_id; ret
 void ui_detail_build(int task_id) { (void)task_id; }
 void ui_detail_destroy(void) {}
 void ui_detail_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }
+int  ui_detail_current_id(void) { return -1; }
 bool ui_detail_wants_back(void) { return false; }
 void ui_settings_build(void) {}
 void ui_settings_destroy(void) {}

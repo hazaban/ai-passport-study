@@ -339,6 +339,19 @@ static void play_scene_if_daily(int task_id) {
     }
 }
 
+/* 白天/夜间模式切换：重建当前非首页页面，让新配色立即生效（首页保持独立亮色，不重建） */
+static void on_theme_changed(int theme) {
+    (void)theme;
+    switch (s_page) {
+        case PAGE_TODO:        ui_todo_destroy();       ui_todo_build();            break;
+        case PAGE_ADD_TASK:    ui_add_destroy();        ui_add_build();             break;
+        case PAGE_TASK_DETAIL: ui_detail_destroy();     ui_detail_build(ui_detail_current_id()); break;
+        case PAGE_SETTINGS:    ui_settings_destroy();   ui_settings_build();        break;
+        case PAGE_WIFI:        ui_wifi_destroy();       ui_wifi_build();            break;
+        default: break;
+    }
+}
+
 static study_ui_callbacks_t s_ui_cb = {
     .on_task_done_changed     = on_task_done_changed,
     .on_task_added            = on_task_added,
@@ -347,6 +360,7 @@ static study_ui_callbacks_t s_ui_cb = {
     .play_scene_if_daily      = play_scene_if_daily,
     .cfg_get                  = cfg_get,
     .cfg_set                  = cfg_set,
+    .on_theme_changed         = on_theme_changed,
 };
 
 /* ---------- 播放 worker 任务 ---------- */
@@ -398,6 +412,11 @@ static void tick_worker(void *arg) {
             if (s_last_day > 0 && cd != s_last_day) {
                 study_scheduler_new_day();
                 clear_daily_done();
+                /* 让当前 Todo 页立即显示“全部重置为未完成” */
+                if (bsp_lvgl_lock(100)) {
+                    ui_todo_refresh();
+                    bsp_lvgl_unlock();
+                }
             }
             s_last_day = cd;
         }

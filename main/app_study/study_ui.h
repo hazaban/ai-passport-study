@@ -101,6 +101,8 @@ bool ui_add_is_finished(int *out_newly_added_id);  /* 用户走完后 true，回
 void ui_detail_build(int task_id);
 void ui_detail_destroy(void);
 void ui_detail_key(uint8_t btn, uint8_t ev);
+/* 返回当前详情页绑定的任务 ID（主题切换重建用） */
+int  ui_detail_current_id(void);
 /* OK 完成/取消后请求返回 Todo；app_study 据此统一切页 */
 bool ui_detail_wants_back(void);
 
