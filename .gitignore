@@ -1,0 +1,32 @@
+# OS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+env/
+
+# Node
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+
+# ---------- 考研助手：本机构建产物（禁止提交二进制测试/编译） ----------
+# 单元测试编译后的可执行文件
+tests/test_study_*
+!tests/test_study_*.c
+!tests/test_study_*.h
+
+# ESP-IDF 构建产物
+build/
+sdkconfig.old
+managed_components/
+
+# 临时文件
+*.bak
+*.tmp
+*.swp
+

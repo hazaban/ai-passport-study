@@ -1,0 +1,10 @@
+# Name,      Type, SubType, Offset,   Size,     Flags
+nvs,         data, nvs,     0x9000,   0x6000,
+phy_init,    data, phy,     0xf000,   0x1000,
+factory,     app,  factory, 0x10000,  0x300000,
+# 以下 cardid / recovery 是官方 BLE Recovery 安装器固定地址，二创不得改动
+cardid,      data, nvs,     0x356000, 0x4000,
+# ------- 考研助手：语音包 SPIFFS 分区（塞进 cardid 与 recovery 之间的空闲区）-------
+# 0x35A000 ~ 0x700000 为空闲区(约 3.8MB)。8kHz WAV 全套约 2.5MB，分区设 3.6MB 留足 SPIFFS 元数据。
+voicepack,   data, spiffs,  0x35A000, 0x3A0000,
+recovery,    app,  test,    0x700000, 0x100000,

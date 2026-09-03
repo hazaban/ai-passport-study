@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>考研日程助手 · 屏幕界面模拟 (240×320)</title>
+<style>
+  body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:#f2f4f7;margin:0;padding:24px;color:#222}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:#666;font-size:13px;margin-bottom:24px;line-height:1.7}
+  .sub b{color:#222}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+  .screen-card{width:440px;background:#fff;border-radius:14px;padding:14px;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+  .screen-card h3{margin:0 0 2px;font-size:15px}
+  .screen-card .desc{font-size:12px;color:#888;margin-bottom:10px;min-height:16px}
+  .frame{background:#333;border-radius:22px;padding:12px;display:inline-block}
+  .box{width:384px;height:512px;position:relative;overflow:hidden;border-radius:6px;background:#fff}
+  .scr{width:240px;height:320px;transform:scale(1.6);transform-origin:0 0;position:absolute;top:0;left:0}
+
+  /* ---------- 通用 ---------- */
+  .screen{width:240px;height:320px;position:relative;background:#fbfbfd;overflow:hidden;font-family:Montserrat,"PingFang SC",sans-serif}
+  .title{position:absolute;left:12px;top:10px;font-size:14px;font-weight:700;color:#2B2B2B}
+  .mascot{position:absolute;z-index:5;font-size:22px;line-height:1}
+  .panel{position:absolute;background:#ffffff;border-radius:8px;box-shadow:0 0 0 1px #eef0f3}
+  .hint{position:absolute;left:0;width:240px;text-align:center;font-size:10px;color:#4A90D9}
+
+  /* PAGE_TODO */
+  .sts-title{position:absolute;left:12px;top:6px;font-size:14px;font-weight:700;color:#2B2B2B;width:130px}
+  .sts-prog{position:absolute;left:150px;top:8px;font-size:12px;color:#4A90D9;width:80px;text-align:right}
+  .cd{position:absolute;left:12px;top:22px;font-size:10px;color:#4A90D9;width:216px;text-align:center}
+  .tab{position:absolute;left:12px;top:34px;font-size:12px;color:#2B2B2B;text-align:center;width:216px}
+  .ghead{position:absolute;left:6px;font-size:12px;color:#9aa0a6;font-weight:700;height:18px;line-height:18px}
+  .card{position:absolute;height:40px;background:#fff;border-radius:6px;box-shadow:0 0 0 1px #eef0f3}
+  .bar{position:absolute;left:6px;top:4px;width:6px;height:32px;border-radius:2px}
+  .ctime{position:absolute;left:20px;top:4px;font-size:12px;color:#2B2B2B}
+  .ctitle{position:absolute;left:20px;top:20px;font-size:14px;color:#2B2B2B;white-space:nowrap;overflow:hidden;width:180px}
+  .ctitle.done{color:#888}
+  .fbtn{position:absolute;top:284px;width:96px;height:36px;border-radius:8px;text-align:center;line-height:36px;font-size:12px;color:#2B2B2B}
+  .fbtn.sel{background:#4A90D9!important;color:#fff!important}
+
+  /* ENCOURAGE / SCENE 全屏 */
+  .e-full{width:240px;height:320px;position:relative;color:#fff;overflow:hidden}
+  .e-big{position:absolute;left:0;width:240px;text-align:center;font-size:14px;font-weight:700}
+  .e-msg{position:absolute;left:20px;width:200px;text-align:center;font-size:14px;white-space:pre-line;line-height:1.6}
+  .e-ok{position:absolute;left:0;width:240px;text-align:center;font-size:12px}
+
+  table.spec{border-collapse:collapse;margin:6px 0;font-size:12px}
+  table.spec td,table.spec th{border:1px solid #e4e7eb;padding:5px 9px;text-align:left}
+  table.spec th{background:#f7f8fa}
+  .chip{display:inline-block;padding:0 8px;border-radius:8px;color:#fff;font-size:12px;line-height:20px}
+</style>
+</head>
+<body>
+<h1>📱 考研日程助手 · 屏幕界面模拟</h1>
+<div class="sub">
+  依据 <b>FoloToy AI Passport</b> 屏幕参数：竖屏 <b>240×320</b>（RGB，使用 LVGL Montserrat 10/12/14 号像素字体）逐页还原。
+  每张界面按代码中的坐标、文案、配色绘制，供你在烧录前预览整体观感（<i>吉祥物「水豚噜噜」以占位图标示意</i>）。<br>
+  首页左右两页 = <b>日常秩序 / 各科学习</b>，每页内未完成在上、已完成在下，任务多时可上/下滚动；添加任务支持分页选择。<br>
+  点击二维码/链接可通过手机配网，见界面「WiFi 配网」。
+</div>
+
+<div class="grid">
+
+<!-- 屏幕1：日常秩序页 -->
+<div class="screen-card">
+  <h3>① 今日任务 · 日常秩序页（左页）</h3>
+  <div class="desc">左右两页 = 日常秩序 / 各科学习；每页内【未完成在上、已完成在下】。任务多时上/下键滚动看，选中项蓝色边框高亮</div>
+  <div class="frame"><div class="box"><div class="scr"><div class="screen" id="s_todo_daily">
+    <div class="sts-title">加油上岸!</div>
+    <div class="sts-prog">进度 2/7</div>
+    <div class="cd">考研倒计时 还剩 107 天</div>
+    <div class="tab">● 日常秩序　　○ 各科学习</div>
+    <div class="panel" style="left:10px;top:54px;width:220px;height:220px">
+      <div class="ghead" style="top:2px">· 日常秩序 ·</div>
+      <div class="card" style="left:4px;top:20px;width:224px;box-shadow:0 0 0 2px #4A90D9"><div class="bar" style="background:#82BE2D"></div><div class="ctime">07:00</div><div class="ctitle" style="top:20px">□&nbsp;早上洗漱</div></div>
+      <div class="card" style="left:4px;top:64px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">07:30</div><div class="ctitle" style="top:20px">□&nbsp;早饭</div></div>
+      <div class="card" style="left:4px;top:108px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">08:00</div><div class="ctitle" style="top:20px">□&nbsp;开始学习（放好手机）</div></div>
+      <div class="card" style="left:4px;top:152px;width:224px;background:#f6f7f8"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#9aa0a6">06:45</div><div class="ctitle done" style="top:20px">✓&nbsp;起床·叠被</div></div>
+      <div class="card" style="left:4px;top:196px;width:224px;background:#f6f7f8"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#9aa0a6">06:50</div><div class="ctitle done" style="top:20px">✓&nbsp;早起一杯水</div></div>
+    </div>
+    <div class="fbtn" style="left:16px;background:#eef0f3">＋ 添加任务</div>
+    <div class="fbtn" style="left:128px;background:#eef0f3">设置</div>
+    <div class="mascot" style="left:186px;top:282px">🐹</div>
+  </div></div></div></div>
+</div>
+
+<!-- 屏幕2：各科学习页 -->
+<div class="screen-card">
+  <h3>② 今日任务 · 各科学习页（右页）</h3>
+  <div class="desc">在列表顶部再按上键切到右页；各科任务同样未完成在上、已完成在下，已完成标题置灰 + ✓</div>
+  <div class="frame"><div class="box"><div class="scr"><div class="screen" id="s_todo_subjects">
+    <div class="sts-title">加油上岸!</div>
+    <div class="sts-prog">进度 2/7</div>
+    <div class="cd">考研倒计时 还剩 107 天</div>
+    <div class="tab">○ 日常秩序　　● 各科学习</div>
+    <div class="panel" style="left:10px;top:54px;width:220px;height:220px">
+      <div class="ghead" style="top:2px">· 各科学习 ·</div>
+      <div class="card" style="left:4px;top:20px;width:224px;box-shadow:0 0 0 2px #4A90D9"><div class="bar" style="background:#E43B2F"></div><div class="ctime">08:30</div><div class="ctitle" style="top:20px">□&nbsp;高等数学-每日一题</div></div>
+      <div class="card" style="left:4px;top:64px;width:224px"><div class="bar" style="background:#FF6B9D"></div><div class="ctime">09:30</div><div class="ctitle" style="top:20px">□&nbsp;英语-背单词</div></div>
+      <div class="card" style="left:4px;top:108px;width:224px"><div class="bar" style="background:#1689E8"></div><div class="ctime">10:30</div><div class="ctitle" style="top:20px">□&nbsp;数据结构-链表复习</div></div>
+      <div class="card" style="left:4px;top:152px;width:224px;background:#f6f7f8"><div class="bar" style="background:#C0392B;opacity:.5"></div><div class="ctime" style="color:#9aa0a6">07:20</div><div class="ctitle done" style="top:20px">✓&nbsp;政治-早读</div></div>
+      <div class="card" style="left:4px;top:196px;width:224px;background:#f6f7f8"><div class="bar" style="background:#FFB23E;opacity:.5"></div><div class="ctime" style="color:#9aa0a6">08:00</div><div class="ctitle done" style="top:20px">✓&nbsp;线性代数-课后题</div></div>
+    </div>
+    <div class="fbtn" style="left:16px;background:#eef0f3">＋ 添加任务</div>
+    <div class="fbtn" style="left:128px;background:#eef0f3;box-shadow:0 0 0 2px #4A90D9">设置</div>
+    <div class="mascot" style="left:186px;top:282px">🐹</div>
+  </div></div></div></div>
+</div>
+
+<!-- 屏幕3：添加任务 -->
+<div class="screen-card">
+  <h3>③ 添加任务 · 选模板（分页）</h3>
+  <div class="desc">按 OK 进入添加；共 26 个预设模板，每屏最多 6 条 → 按 ▲/▼ 自动翻页（第 x/5 页），选中项蓝色高亮</div>
+  <div class="frame"><div class="box"><div class="scr"><div class="screen" id="s_add">
+    <div class="title">添加任务 · 选模板</div>
+    <div class="panel" style="left:10px;top:44px;width:220px;height:230px">
+      <div style="position:absolute;left:6px;top:8px;width:208px;height:52px">
+        <div style="position:absolute;left:4px;top:4px;width:4px;height:44px;border-radius:2px;background:#82BE2D"></div>
+        <div style="position:absolute;left:16px;top:8px;font-size:12px;">早上洗漱</div>
+      </div>
+      <div style="position:absolute;left:6px;top:52px;width:208px;height:52px">
+        <div style="position:absolute;left:4px;top:4px;width:4px;height:44px;border-radius:2px;background:#82BE2D"></div>
+        <div style="position:absolute;left:16px;top:8px;font-size:12px;">开始学习（放好手机）</div>
+      </div>
+      <div style="position:absolute;left:6px;top:96px;width:208px;height:52px;box-shadow:0 0 0 2px #4A90D9">
+        <div style="position:absolute;left:4px;top:4px;width:4px;height:44px;border-radius:2px;background:#E43B2F"></div>
+        <div style="position:absolute;left:16px;top:8px;font-size:12px;">高等数学-每日一题</div>
+      </div>
+      <div style="position:absolute;left:6px;top:140px;width:208px;height:52px">
+        <div style="position:absolute;left:4px;top:4px;width:4px;height:44px;border-radius:2px;background:#FF6B9D"></div>
+        <div style="position:absolute;left:16px;top:8px;font-size:12px;">英语-背单词</div>
+      </div>
+      <div style="position:absolute;left:6px;top:184px;width:208px;height:52px">
+        <div style="position:absolute;left:4px;top:4px;width:4px;height:44px;border-radius:2px;background:#82BE2D"></div>
+        <div style="position:absolute;left:16px;top:8px;font-size:12px;">洗头发</div>
+      </div>
+    </div>
+    <div class="hint" style="top:296px">第 1/5 页  OK确认　上/下选择</div>
+    <div class="mascot" style="left:186px;top:278px">🐹</div>
+  </div></div></div></div>
+</div>
+
+<!-- 屏幕4：任务详情 -->
+<div class="screen-card">
+  <h3>④ 任务详情</h3>
+  <div class="desc">展示标题/类别·子分类/时间/状态；底部 [完成!][删除]，OK 切换完成状态</div>
+  <div class="frame"><div class="box"><div class="scr"><div class="screen" id="s_detail">
+    <div class="title" style="white-space:normal;width:216px">高等数学-每日一题</div>
+    <div class="panel" style="left:12px;top:56px;width:216px;height:190px">
+      <div style="position:absolute;left:10px;top:12px;width:12px;height:28px;border-radius:4px;background:#E43B2F"></div>
+      <div style="position:absolute;left:32px;top:16px;font-size:14px;font-weight:700">高等数学 · 每日一题</div>
+      <div style="position:absolute;left:12px;top:56px;font-size:12px">时间: 08:00</div>
+      <div style="position:absolute;left:12px;top:80px;font-size:12px">状态: □ 待完成</div>
+    </div>
+    <div style="position:absolute;left:12px;top:242px;font-size:10px;color:#4A90D9">OK:完成/取消 · 长按OK:返回</div>
+    <div class="fbtn" style="position:absolute;left:16px;top:258px;width:64px;background:#FFD928">完成!</div>
+    <div class="fbtn" style="position:absolute;left:160px;top:258px;width:64px;background:#E43B2F;color:#fff">删除</div>
+    <div class="mascot" style="left:186px;top:282px">🐹</div>
+  </div></div></div></div>
+</div>
+
+<!-- 屏幕5：设置 -->
+<div class="screen-card">
+  <h3>⑤ 设置</h3>
+  <div class="desc">7 项列表；首项「WiFi·连接/配网」按 OK 进入配网页（下方 ⑥）</div>
+  <div class="frame"><div class="box"><div class="scr"><div class="screen" id="s_settings">
+    <div class="title">设置</div>
+    <div class="panel" style="left:10px;top:40px;width:220px;height:230px">
+      <div style="position:absolute;left:8px;top:8px;width:204px;height:28px;background:#fff;box-shadow:0 0 0 2px #4A90D9"><span style="position:absolute;left:10px;top:5px;font-size:12px">WiFi · 连接/配网</span></div>
+      <div style="position:absolute;left:8px;top:40px;width:204px;height:28px;background:#f2f4f6"><span style="position:absolute;left:10px;top:5px;font-size:12px">音量 80%</span></div>
+      <div style="position:absolute;left:8px;top:72px;width:204px;height:28px;background:#f2f4f6"><span style="position:absolute;left:10px;top:5px;font-size:12px">起床时间 07:00</span></div>
+      <div style="position:absolute;left:8px;top:104px;width:204px;height:28px;background:#f2f4f6"><span style="position:absolute;left:10px;top:5px;font-size:12px">睡觉时间 23:00</span></div>
+      <div style="position:absolute;left:8px;top:136px;width:204px;height:28px;background:#f2f4f6"><span style="position:absolute;left:10px;top:5px;font-size:12px">语音包 · 水豚噜噜</span></div>
+      <div style="position:absolute;left:8px;top:168px;width:204px;height:28px;background:#f2f4f6"><span style="position:absolute;left:10px;top:5px;font-size:12px">清除已完成的单次任务</span></div>
+      <div style="position:absolute;left:8px;top:200px;width:204px;height:28px;background:#f2f4f6"><span style="position:absolute;left:10px;top:5px;font-size:12px">关于 考研助手 v1.0</span></div>
+    </div>
+    <div class="mascot" style="left:186px;top:282px">🐹</div>
+  </div></div></div></div>
+</div>
+
+<!-- 屏幕6：WiFi 配网 -->
+<div class="screen-card">
+  <h3>⑥ WiFi 配网（未联网/待配网）</h3>
+  <div class="desc">按 OK 开启 SoftAP 热点；手机连热点后打开网关即出现右侧手机配网页</div>
+  <div class="frame"><div class="box"><div class="scr"><div class="screen" id="s_wifi">
+    <div class="title">WiFi 配网</div>
+    <div class="panel" style="left:10px;top:44px;width:220px;height:200px">
+      <div style="position:absolute;left:12px;top:12px;font-size:12px;line-height:1.7;white-space:pre-line">按 OK 开热点
+
+1.连热点 STU_STUDY_xxxx
+  密码 12345678
+2.打开 http://192.168.4.1/
+3.填 WiFi 账号密码</div>
+    </div>
+    <div class="hint" style="top:250px">OK:开启 / 重配　长按:返回</div>
+    <div class="mascot" style="left:186px;top:282px">🐹</div>
+  </div></div></div></div>
+</div>
+
+<!-- 屏幕7：手机配网页 -->
+<div class="screen-card">
+  <h3>⑦ 手机配网页（浏览器）</h3>
+  <div class="desc">手机连接热点 <b>STU_STUDY_XXXX</b> → 打开 <b>http://192.168.4.1/</b> 出现此表单，填路由器账号密码即联网</div>
+  <div class="frame"><div class="box"><div class="scr"><div class="screen" style="background:#fff" id="s_web">
+    <div style="position:absolute;left:20px;top:24px;font-size:16px;font-weight:700">WiFi 配网</div>
+    <div style="position:absolute;left:20px;top:52px;font-size:12px;color:#666">请输入家里路由器（2.4GHz）的账号和密码：</div>
+    <div style="position:absolute;left:20px;top:80px;font-size:12px">WiFi 名称</div>
+    <div style="position:absolute;left:20px;top:98px;width:200px;height:30px;border:1px solid #ccc;border-radius:4px"></div>
+    <div style="position:absolute;left:20px;top:142px;font-size:12px">WiFi 密码</div>
+    <div style="position:absolute;left:20px;top:160px;width:200px;height:30px;border:1px solid #ccc;border-radius:4px"></div>
+    <div style="position:absolute;left:20px;top:208px;width:200px;height:34px;background:#2B6BE0;color:#fff;text-align:center;line-height:34px;font-size:14px;border-radius:6px">连接</div>
+  </div></div></div></div>
+</div>
+
+<!-- 屏幕8：完成鼓励弹窗 -->
+<div class="screen-card">
+  <h3>⑧ 完成鼓励弹窗（以高等数学为例·红）</h3>
+  <div class="desc">完成某科任务后整屏显示该科主题色 + 水豚噜噜鼓励文案 + RTTTL 提示音，按 OK 继续</div>
+  <div class="frame"><div class="box"><div class="scr"><div class="screen e-full" style="background:#E43B2F;border-radius:6px" id="s_enc">
+    <div class="e-big" style="top:80px">✨ 完成啦! ✨</div>
+    <div class="e-msg" style="top:130px">漂亮！又一道极限被洛必达法则拿下啦！泰勒展开、中值定理、二重积分，你正在一步步征服整个高数宇宙！再坚持一下，拉格朗日都会为你点赞的！</div>
+    <div class="e-ok" style="top:260px">[按OK继续]</div>
+  </div></div></div></div>
+</div>
+
+<!-- 屏幕9：场景提醒弹窗 -->
+<div class="screen-card">
+  <h3>⑨ 场景提醒弹窗（以"开始学习"为例·草绿）</h3>
+  <div class="desc">洗漱/开始学习/午饭/晚饭/睡前/睡觉/洗头 等关键时点弹提醒 + 专属语音</div>
+  <div class="frame"><div class="box"><div class="scr"><div class="screen e-full" style="background:#5E9C26;border-radius:6px" id="s_scene">
+    <div class="e-msg" style="top:120px">🎯 请把手机放到另一个房间!
+保持专注，你可以的！</div>
+    <div class="e-ok" style="top:260px">[OK 我知道了]</div>
+  </div></div></div></div>
+</div>
+
+</div>
+
+<h2 style="margin-top:40px;">配色速查表（10 大类别）</h2>
+<div class="sub" style="margin-bottom:8px">任务卡左侧色条与该科主题色一致，完成提示音(RTTTL)为 8 位短旋律；英语下细分背单词/阅读题有定制语音。</div>
+<table class="spec">
+  <tr><th>ID</th><th>类别</th><th>色</th><th>主题色</th><th>完成提示音</th></tr>
+  <tr><td>0</td><td>日常秩序</td><td><span class="chip" style="background:#82BE2D">● 草绿</span></td><td>#82BE2D</td><td>温暖上行琶音</td></tr>
+  <tr><td>1</td><td>高等数学</td><td><span class="chip" style="background:#E43B2F">● 红</span></td><td>#E43B2F</td><td>激昂大调胜利号角</td></tr>
+  <tr><td>2</td><td>线性代数</td><td><span class="chip" style="background:#FFB23E">● 橙</span></td><td>#FFB23E</td><td>音阶跑动</td></tr>
+  <tr><td>3</td><td>概率论</td><td><span class="chip" style="background:#FFD928">● 黄</span></td><td>#FFD928</td><td>轻快跳跃断奏</td></tr>
+  <tr><td>4</td><td>数据结构</td><td><span class="chip" style="background:#1689E8">● 蓝</span></td><td>#1689E8</td><td>科技感电子音</td></tr>
+  <tr><td>5</td><td>计算机组成原理</td><td><span class="chip" style="background:#9B59B6">● 紫</span></td><td>#9B59B6</td><td>沉稳低频节奏</td></tr>
+  <tr><td>6</td><td>操作系统</td><td><span class="chip" style="background:#8B4513">● 棕</span></td><td>#8B4513</td><td>多层节奏模拟调度</td></tr>
+  <tr><td>7</td><td>计算机网络</td><td><span class="chip" style="background:#1ABC9C">● 青</span></td><td>#1ABC9C</td><td>波浪音</td></tr>
+  <tr><td>8</td><td>英语</td><td><span class="chip" style="background:#FF6B9D">● 粉</span></td><td>#FF6B9D</td><td>轻柔优美（背单词/阅读定制）</td></tr>
+  <tr><td>9</td><td>政治</td><td><span class="chip" style="background:#C0392B">● 深红</span></td><td>#C0392B</td><td>庄严稳重进行曲</td></tr>
+</table>
+
+</body>
+</html>
