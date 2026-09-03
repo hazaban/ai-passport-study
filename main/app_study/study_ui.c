@@ -610,6 +610,17 @@ static int todo_last(void)  { return todo_card_n - 1; }
 void ui_todo_key(uint8_t btn_u, uint8_t ev_u) {
     bsp_btn_t btn = (bsp_btn_t)btn_u;
 
+    /* 双击 OK = 删除当前选中的任务 */
+    if (ev_u == BSP_BTN_DOUBLE && btn == BSP_BTN_OK) {
+        int tid = ui_todo_selected_task_id();
+        if (tid > 0) {
+            s_todo_wants_delete = true;
+            s_todo_want_delete_id = tid;
+            ui_todo_refresh();
+        }
+        return;
+    }
+
     /* 确认删除态：OK = 确认删除；其它键/长按 = 取消 */
     if (s_del_arm) {
         if (ev_u == BSP_BTN_CLICK && btn == BSP_BTN_OK) {

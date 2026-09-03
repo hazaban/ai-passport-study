@@ -548,23 +548,16 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
         return;
     }
 
-    /* 长按 OK = 返回上一页；封面页长按 = 退出回目录；
-     * Todo 里选中任务时长按 = 进入“确认删除”。 */
+    /* 长按 OK = 返回上一页（封面页长按 = 退出回目录）。删除请用“双击 OK”。 */
     if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {
         s_last_long_ok_ms = (uint32_t)(esp_timer_get_time() / 1000);  /* 抑制长按后的尾随单击 */
-        if (s_page == PAGE_HOME) {
-            s_wants_exit = true;
-        } else if (s_page == PAGE_TODO) {
-            if (ui_todo_delete_armed()) {
-                ui_todo_cancel_delete();          /* 长按再次 = 取消删除 */
-            } else {
-                int tid = ui_todo_selected_task_id();
-                if (tid > 0) ui_todo_arm_delete();   /* 选中任务 → 确认删除态 */
-                else         nav_back();
-            }
-        } else {
-            nav_back();
-        }
+        if (s_page == PAGE_HOME) s_wants_exit = true;
+        else                     nav_back();
+        bsp_lvgl_unlock();
+        return;
+    }
+    /* 刚长按完 600ms 内的单击可能是释放尾随，忽略，避免误触 */
+    if (ev == BSP_BTN_CLICK && (esp_timer_get_time() / 1000) - s_last_long_ok_ms < 600) {
         bsp_lvgl_unlock();
         return;
     }
@@ -604,13 +597,10 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
                 ui_home_build();
                 s_page = PAGE_HOME;
             } else if (ui_todo_wants_toggle(&tid) && tid > 0) {
-                /* OK：第一次=完成(鼓励+语音)，第二次=取消(不发声)。当天每个任务只出现一次。 */
-                uint32_t nowms = (uint32_t)(esp_timer_get_time() / 1000);
-                if (nowms - s_last_long_ok_ms >= 700) {   /* 长按后的尾随单击不触发完成 */
-                    study_task_t tt;
-                    if (study_task_get(tid, &tt) == 0) {
-                        on_task_done_changed(tid, !tt.done);
-                    }
+                /* OK 单击：第一次=完成(鼓励+语音)，第二次=取消(不发声)。当天每个任务一次。 */
+                study_task_t tt;
+                if (study_task_get(tid, &tt) == 0) {
+                    on_task_done_changed(tid, !tt.done);
                 }
                 ui_todo_refresh();
             } else if (ui_todo_wants_delete(&tid) && tid > 0) {
