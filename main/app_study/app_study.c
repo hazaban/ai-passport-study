@@ -447,54 +447,6 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
         return;
     }
 
-    /* 双击快捷交互：
-     * - 上/下 双击：在主页面集合中循环切换（PAGE_HOME -> PAGE_TODO -> PAGE_SETTINGS）
-     * - 在 Todo 页内 OK 双击：快速将当前选中任务标记为完成
-     */
-    if (ev == BSP_BTN_DOUBLE) {
-        if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
-            /* 仅在主页面集合间切换（避免进入编辑类子页被意外覆盖） */
-            study_page_t order[] = { PAGE_HOME, PAGE_TODO, PAGE_SETTINGS };
-            const int n = sizeof(order) / sizeof(order[0]);
-            int idx = 0;
-            for (int i = 0; i < n; i++) if (order[i] == s_page) { idx = i; break; }
-            int next = idx + (btn == BSP_BTN_DOWN ? 1 : -1);
-            if (next < 0) next = n - 1;
-            if (next >= n) next = 0;
-            study_page_t target = order[next];
-            if (target != s_page) {
-                /* 切页：销毁当前页并构建目标页 */
-                switch (s_page) {
-                    case PAGE_HOME: ui_home_destroy(); break;
-                    case PAGE_TODO: ui_todo_destroy(); break;
-                    case PAGE_SETTINGS: ui_settings_destroy(); break;
-                    default: break;
-                }
-                switch (target) {
-                    case PAGE_HOME: ui_home_build(); break;
-                    case PAGE_TODO: ui_todo_build(); break;
-                    case PAGE_SETTINGS: ui_settings_build(); break;
-                    default: break;
-                }
-                s_prev_page = PAGE_HOME;
-                s_page = target;
-            }
-            bsp_lvgl_unlock();
-            return;
-        }
-
-        if (btn == BSP_BTN_OK && s_page == PAGE_TODO) {
-            int sel = ui_todo_selected_task_id();
-            if (sel >= 0) {
-                /* 复用本文件的 on_task_done_changed 逻辑来统一标记并触发鼓励/语音 */
-                on_task_done_changed(sel, true);
-                ui_todo_refresh();
-            }
-            bsp_lvgl_unlock();
-            return;
-        }
-    }
-
     switch (s_page) {
         case PAGE_HOME:
             ui_home_key((uint8_t)btn, (uint8_t)ev);
