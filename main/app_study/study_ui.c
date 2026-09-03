@@ -194,8 +194,14 @@ static void home_time_refresh(void) {
     if (s_home_date) {
         char dbuf[36];
         if (ok) {
-            snprintf(dbuf, sizeof(dbuf), "%d年%d月%d日 %d",
-                     tv.tm_year + 1900, tv.tm_mon + 1, tv.tm_mday, tv.tm_wday);
+            /* 星期用大写中文数字，用 memcpy 追加以规避 -Werror=format-truncation */
+            static const char *wd = "日一二三四五六"; /* 每个 3 字节 UTF-8 */
+            int n = snprintf(dbuf, sizeof(dbuf), "%d年%d月%d日 ",
+                             tv.tm_year + 1900, tv.tm_mon + 1, tv.tm_mday);
+            if (n >= 0 && n + 3 < (int)sizeof(dbuf)) {
+                memcpy(dbuf + n, wd + tv.tm_wday * 3, 3);
+                dbuf[n + 3] = '\0';
+            }
         } else {
             snprintf(dbuf, sizeof(dbuf), "请设时间");
         }
