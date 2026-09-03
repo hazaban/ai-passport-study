@@ -1117,9 +1117,10 @@ bool ui_detail_wants_back(void) {
 }
 
 /* ==============================================================
- * PAGE_SETTINGS — 设置（WiFi / 亮度 / 电量 / 音量 / 时间 / 返回主界面）
+ * PAGE_SETTINGS — 设置（WiFi / 亮度 / 电量 / 音量 / 时间 / 睡眠记录 / 主题 / 返回）
  * ============================================================== */
-enum { SET_WIFI = 0, SET_BRIGHT, SET_VOL, SET_NOW, SET_WAKE, SET_SLEEP, SET_BATT, SET_HOME, SET_N };
+enum { SET_WIFI = 0, SET_BRIGHT, SET_VOL, SET_NOW, SET_WAKE, SET_SLEEP,
+       SET_REC_SLEEP, SET_REC_WAKE, SET_THEME, SET_BATT, SET_HOME, SET_N };
 static lv_obj_t *s_set_scr;
 static lv_obj_t *s_set_cards[SET_N];
 static int s_set_sel;
@@ -1143,10 +1144,12 @@ static int month_days(int y, int mo) {
     return (mo >= 1 && mo <= 12) ? md[mo - 1] : 30;
 }
 
-/* 该行可编辑单元数：亮度/音量=1；时间类=2(时/分)；当前日期时间=3(日/时/分) */
+/* 该行可编辑单元数：亮度/音量=1；时间类=2(时/分)；当前日期时间=3(日/时/分)；
+   睡眠/早起记录与主题行=0(按OK即生效，无步进编辑) */
 static int row_units(int i) {
     if (i == SET_NOW) return 3;
     if (i == SET_WAKE || i == SET_SLEEP) return 2;
+    if (i == SET_REC_SLEEP || i == SET_REC_WAKE || i == SET_THEME) return 0;
     return 1;
 }
 
@@ -1182,8 +1185,9 @@ void ui_settings_build(void) {
     lv_obj_t *title = ui_pixel_label(head, "设置", F_STUDY, C_INK);
     lv_obj_set_pos(title, 16, 8);
 
+    /* 11 行，320px 屏：行距 24 以容纳全部设置项 */
     for (int i = 0; i < SET_N; i++) {
-        lv_obj_t *card = mod_card(s_set_scr, 12, 58 + i * 30, 216, 26, C_CARD, 10, true);
+        lv_obj_t *card = mod_card(s_set_scr, 12, 52 + i * 24, 216, 22, C_CARD, 10, true);
         lv_obj_t *l = ui_pixel_label(card, "", F_STUDY, C_INK);
         lv_obj_set_pos(l, 12, 2);
         lv_label_set_long_mode(l, LV_LABEL_LONG_CLIP);
@@ -1224,6 +1228,23 @@ static void render_one_row(int i) {
         case SET_SLEEP: {
             int h = cfg_geti("sleep_h", 23), mi = cfg_geti("sleep_m", 0);
             snprintf(buf, sizeof(buf), "睡觉时间 %02d:%02d", h, mi); break;
+        }
+        case SET_REC_SLEEP: {
+            int h = cfg_geti("rec_sleep_h", -1), mi = cfg_geti("rec_sleep_m", -1);
+            if (h < 0 || mi < 0) strcpy(buf, "记录睡眠 (OK记录当前)");
+            else snprintf(buf, sizeof(buf), "睡眠记录 %02d:%02d", h, mi);
+            break;
+        }
+        case SET_REC_WAKE: {
+            int h = cfg_geti("rec_wake_h", -1), mi = cfg_geti("rec_wake_m", -1);
+            if (h < 0 || mi < 0) strcpy(buf, "记录早起 (OK记录当前)");
+            else snprintf(buf, sizeof(buf), "早起记录 %02d:%02d", h, mi);
+            break;
+        }
+        case SET_THEME: {
+            int th = cfg_geti("theme", 0);   /* 0=夜间 1=白天 */
+            snprintf(buf, sizeof(buf), "界面模式 %s", th ? "白天" : "夜间");
+            break;
         }
         default: strcpy(buf, "返回主界面"); break;
     }
