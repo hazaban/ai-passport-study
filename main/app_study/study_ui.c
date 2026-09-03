@@ -24,6 +24,7 @@
 #include "bsp_display.h"
 #include "bsp_button.h"
 #include "bsp_battery.h"
+#include "esp_timer.h"
 
 /* ==============================================================
  * 现代扁平设计令牌
@@ -121,6 +122,7 @@ static lv_obj_t *s_home_clock;       /* 首页当前时间(秒级走表) */
 static lv_timer_t *s_home_timer;     /* 每秒刷新日期与时间 */
 static lv_obj_t *s_home_btn[2];      /* 0=进入学习 1=设置 */
 static int s_home_sel;
+static uint32_t s_home_key_ms;   /* 上次接受的导航事件的时刻(ms),用于按键去抖 */
 static bool s_home_wants_study;
 static bool s_home_wants_settings;
 
@@ -216,6 +218,7 @@ static void home_timer_cb(lv_timer_t *t) { (void)t; home_time_refresh(); }
 
 void ui_home_build(void) {
     s_home_sel = 0;
+    s_home_key_ms = 0;
     s_home_wants_study = false;
     s_home_wants_settings = false;
 
@@ -331,6 +334,14 @@ void ui_home_destroy(void) {
 void ui_home_key(uint8_t btn_u, uint8_t ev_u) {
     if (ev_u != BSP_BTN_CLICK) return;
     bsp_btn_t btn = (bsp_btn_t)btn_u;
+    if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
+        /* 去抖:三键共用一路 ADC,按下/松开瞬间的电压会短暂穿越相邻档位窗口,
+           从而在同一次按键里紧跟着产生一次"幽灵"的相反方向点击。
+           忽略 250ms 内紧跟的 UP/DOWN 反弹事件,避免“刚选中设置又立刻被弹回变灰”。 */
+        uint32_t now = (uint32_t)(esp_timer_get_time() / 1000);
+        if (now - s_home_key_ms < 250) { home_refresh_buttons(); return; }
+        s_home_key_ms = now;
+    }
     if (btn == BSP_BTN_UP && s_home_sel > 0) s_home_sel--;
     if (btn == BSP_BTN_DOWN && s_home_sel < 1) s_home_sel++;
     if (btn == BSP_BTN_OK) {
