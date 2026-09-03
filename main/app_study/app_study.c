@@ -488,6 +488,13 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
                 ui_todo_destroy();
                 ui_settings_build();
                 s_page = PAGE_SETTINGS;
+            } else if (ui_todo_wants_toggle(&tid) && tid > 0) {
+                /* OK = 点勾选框快速完成/取消（同一任务再次 OK 即取消） */
+                study_task_t tt;
+                if (study_task_get(tid, &tt) == 0) {
+                    on_task_done_changed(tid, !tt.done);
+                }
+                ui_todo_refresh();
             }
             break;
         }

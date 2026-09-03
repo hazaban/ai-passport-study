@@ -173,18 +173,19 @@ struct scene_kw {
     study_sched_scene_t scene;
 };
 static const struct scene_kw s_scene_keywords[] = {
+    /* 特化项在前，避免"睡前洗漱"被泛关键词"洗漱"误判成"早上洗漱"(§3.2) */
     { "早上洗漱",      STUDY_SCENE_MORNING_WASH },
-    { "洗漱",          STUDY_SCENE_MORNING_WASH },  /* 通用兜底 */
-    { "早饭",          STUDY_SCENE_START_STUDY  },
+    { "睡前洗漱",      STUDY_SCENE_NIGHT_WASH   },
+    { "洗头发",        STUDY_SCENE_HAIR_WASH    },
     { "开始学习",      STUDY_SCENE_START_STUDY  },
+    { "早饭",          STUDY_SCENE_START_STUDY  },
     { "午饭",          STUDY_SCENE_LUNCH        },
     { "午休",          STUDY_SCENE_LUNCH        },
     { "晚饭",          STUDY_SCENE_DINNER       },
     { "散步",          STUDY_SCENE_DINNER       },
-    { "睡前洗漱",      STUDY_SCENE_NIGHT_WASH   },
     { "睡觉",          STUDY_SCENE_SLEEP        },
     { "回顾今日",      STUDY_SCENE_SLEEP        },
-    { "洗头发",        STUDY_SCENE_HAIR_WASH    },
+    { "洗漱",          STUDY_SCENE_MORNING_WASH },  /* 通用兜底放最后 */
 };
 #define N_KW (int)(sizeof(s_scene_keywords) / sizeof(s_scene_keywords[0]))
 

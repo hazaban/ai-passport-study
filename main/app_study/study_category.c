@@ -21,7 +21,7 @@ static const study_category_t s_categories[STUDY_CATEGORY_COUNT] = {
         .name = "daily",
         .name_cn = "日常秩序",
         .color_hex = 0x82BE2D,
-        .encouragement = "早安！崭新的一天开始啦，冲鸭！洗漱完毕立刻把手机放远一点哦，别让消息偷走你的专注时间，今天也一定能超额完成计划的！",
+        .encouragement = "生活节奏稳稳的，学习才能更高效哦～",
         .rtttl = "DailyCalm:d=8,o=5,b=120:c5,e5,g5,c6,p,c6,g5,e5,c5"
     },
 

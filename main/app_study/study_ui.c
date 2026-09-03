@@ -281,6 +281,8 @@ static bool s_todo_wants_detail;
 static int  s_todo_want_detail_id;
 static bool s_todo_wants_add;
 static bool s_todo_wants_settings;
+static bool s_todo_wants_toggle;      /* OK 快速勾选/取消当前任务 */
+static int  s_todo_want_toggle_id;
 static lv_obj_t *todo_scr;
 static lv_obj_t *todo_title_label;   /* 标题「考研助手」 */
 static lv_obj_t *todo_cnt_label;     /* 倒计时 pill */
@@ -368,15 +370,28 @@ static void render_todo_cards(void) {
         lv_obj_set_style_border_width(tab, 0, 0);
         lv_obj_set_style_bg_color(tab, lv_color_hex(cat ? cat->color_hex : C_PRIMARY), 0);
 
-        /* 复选框 + 标题 */
-        char title_buf[TASK_TITLE_LEN + 8];
-        snprintf(title_buf, sizeof(title_buf), "%s %s",
-                 t.done ? "✓" : "○", t.title);
-        lv_obj_t *title = ui_pixel_label(card, title_buf, F_STUDY,
+        /* 复选框(真实方框，按 OK 快速勾选/取消) + 标题 */
+        lv_obj_t *cb = lv_obj_create(card);
+        lv_obj_remove_flag(cb, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_size(cb, 18, 18);
+        lv_obj_set_pos(cb, 10, (CARD_H - 18) / 2);
+        lv_obj_set_style_radius(cb, 5, 0);
+        if (t.done) {
+            lv_obj_set_style_bg_color(cb, lv_color_hex(0x2FBF71), 0);
+            lv_obj_set_style_border_width(cb, 0, 0);
+            lv_obj_t *tick = ui_pixel_label(cb, "✓", F_STUDY, 0xFFFFFF);
+            lv_obj_center(tick);
+        } else {
+            lv_obj_set_style_bg_color(cb, lv_color_hex(0xFFFFFF), 0);
+            lv_obj_set_style_border_width(cb, 2, 0);
+            lv_obj_set_style_border_color(cb, lv_color_hex(C_MUTED), 0);
+        }
+        lv_obj_t *title = ui_pixel_label(card, t.title, F_STUDY,
                                          t.done ? C_MUTED : C_INK);
-        lv_obj_set_pos(title, 22, 2);
-        lv_obj_set_width(title, 140);
+        lv_obj_set_pos(title, 36, 2);
+        lv_obj_set_width(title, 118);
         lv_label_set_long_mode(title, LV_LABEL_LONG_CLIP);
+        if (t.done) lv_obj_set_style_text_decor(title, LV_TEXT_DECOR_STRIKETHROUGH, 0);
 
         /* 右上角时间 */
         if (t.hour >= 0 && t.minute >= 0) {
@@ -422,12 +437,18 @@ static void render_header(void) {
     else          snprintf(cbuf, sizeof(cbuf), "距考研 %d天", left);
     lv_label_set_text(todo_cnt_label, cbuf);
 
-    /* 日期 */
+    /* 日期（未校时显示"未同步"，避免 1970） */
     time_t now = time(NULL);
     struct tm tv;
     localtime_r(&now, &tv);
     char dbuf[24];
-    snprintf(dbuf, sizeof(dbuf), "%d月%d日", tv.tm_mon + 1, tv.tm_mday);
+    if (tv.tm_year < 70) {
+        snprintf(dbuf, sizeof(dbuf), "时间未同步");
+    } else {
+        static const char *wd[] = {"日","一","二","三","四","五","六"};
+        snprintf(dbuf, sizeof(dbuf), "%d月%d日 %s",
+                 tv.tm_mon + 1, tv.tm_mday, wd[tv.tm_wday]);
+    }
     lv_label_set_text(todo_date_label, dbuf);
 
     /* 进度 */
@@ -452,6 +473,8 @@ void ui_todo_build(void) {
     s_todo_want_detail_id = -1;
     s_todo_wants_add = false;
     s_todo_wants_settings = false;
+    s_todo_wants_toggle = false;
+    s_todo_want_toggle_id = -1;
 
     /* 干净的现代背景（不再有草地/云朵） */
     todo_scr = lv_obj_create(NULL);
@@ -531,56 +554,69 @@ void ui_todo_refresh(void) {
     render_todo_cards();
 }
 
+/* 任务列表中的可选项区间 [first..last]，索引 0 是分组标题，不参与选中 */
+static int todo_first(void) { return (todo_card_n > 1) ? 1 : 0; }
+static int todo_last(void)  { return todo_card_n - 1; }
+
 void ui_todo_key(uint8_t btn_u, uint8_t ev_u) {
-    if (ev_u != BSP_BTN_CLICK) return;
     bsp_btn_t btn = (bsp_btn_t)btn_u;
 
+    /* 长按 上/下 = 切换大页签：日常任务 ⇄ 学习科目 */
+    if (ev_u == BSP_BTN_LONG && (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN)) {
+        s_tab = (s_tab == TAB_DAILY) ? TAB_SUBJECTS : TAB_DAILY;
+        s_bottom_focus = false;
+        s_bottom_idx = 0;
+        s_sel = todo_first();
+        s_scroll = 0;
+        ui_todo_refresh();
+        return;
+    }
+
+    if (ev_u != BSP_BTN_CLICK) return;
+
     if (btn == BSP_BTN_OK) {
-        if (s_seg_focus) {
-            /* 页签聚焦：确认进入当前页签列表 */
-            s_seg_focus = false;
-            s_sel = 0; s_scroll = 0;
-        } else if (!s_bottom_focus) {
-            int ci = s_sel;
-            if (ci >= 0 && ci < todo_card_n) {
-                int tid = todo_card_ids[ci];
-                if (tid > 0) {
-                    s_todo_wants_detail = true;
-                    s_todo_want_detail_id = tid;
-                }
-            }
-        } else {
+        if (s_bottom_focus) {
             if (s_bottom_idx == 0) s_todo_wants_add = true;
             else                   s_todo_wants_settings = true;
+        } else if (s_sel >= 1 && s_sel < todo_card_n) {
+            int tid = todo_card_ids[s_sel];
+            if (tid > 0) {
+                /* OK = 点勾选框：快速完成/取消（app_study 统一处理 + 语音） */
+                s_todo_wants_toggle = true;
+                s_todo_want_toggle_id = tid;
+            }
         }
         ui_todo_refresh();
         return;
     }
 
     if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
-        if (s_seg_focus) {
-            /* 页签左右切换：上=左(日常) 下=右(各科)，由上下键完成左右移动 */
-            if (btn == BSP_BTN_UP) s_tab = TAB_DAILY;
-            else                   s_tab = TAB_SUBJECTS;
-            s_sel = 0; s_scroll = 0;
-        } else if (!s_bottom_focus) {
-            if (btn == BSP_BTN_UP) {
-                if (s_sel <= 0) s_seg_focus = true;   /* 列表到顶 → 聚焦页签 */
-                else s_sel--;
-            } else {
-                if (s_sel >= todo_card_n - 1) { s_bottom_focus = true; s_bottom_idx = 0; }
-                else s_sel++;
-            }
-            if (!s_bottom_focus && !s_seg_focus) clamp_scroll_to_selection();
-        } else {
+        if (s_bottom_focus) {
             if (btn == BSP_BTN_UP) {
                 s_bottom_focus = false;
-                s_sel = (todo_card_n > 0) ? todo_card_n - 1 : 0;
+                s_sel = todo_last();
                 clamp_scroll_to_selection();
-            } else s_bottom_idx = (s_bottom_idx + 1) % 2;
+            } else {
+                s_bottom_idx = (s_bottom_idx + 1) % 2;
+            }
+        } else {
+            if (btn == BSP_BTN_DOWN) {
+                if (s_sel < todo_last()) s_sel++;
+                else { s_bottom_focus = true; s_bottom_idx = 0; }
+            } else {
+                if (s_sel > todo_first()) s_sel--;
+            }
+            if (!s_bottom_focus) clamp_scroll_to_selection();
         }
     }
     ui_todo_refresh();
+}
+
+bool ui_todo_wants_toggle(int *out_task_id) {
+    if (out_task_id) *out_task_id = s_todo_want_toggle_id;
+    bool r = s_todo_wants_toggle;
+    s_todo_wants_toggle = false;
+    return r;
 }
 
 bool ui_todo_wants_detail(int *out_task_id) {
