@@ -15,21 +15,32 @@ jobs:
       with:
         submodules: 'recursive'
 
+    - name: Cache ESP-IDF (clone + toolchain)
+      id: cache-idf
+      uses: actions/cache@v4
+      with:
+        path: |
+          $HOME/esp
+          $HOME/.espressif
+        key: esp-idf-${{ runner.os }}-v5.5.3
+
     - name: Install prerequisites and ESP-IDF
       run: |
         set -e
         mkdir -p $HOME/esp
         cd $HOME/esp
-        # Retry clone to tolerate transient network errors
         # NOTE: components/bsp requires esp_driver_i2c/i2s which only exist in
         # IDF >= v5.3; dependencies.lock was resolved against v5.5.3. Keep in sync.
-        for i in 1 2 3; do
-          git clone --branch v5.5.3 --depth 1 --recurse-submodules https://github.com/espressif/esp-idf.git esp-idf && break || sleep 10
-        done
+        # 命中缓存时跳过 clone 与工具链安装，避免每次构建重新下载 IDF。
+        if [ ! -d esp-idf ]; then
+          for i in 1 2 3; do
+            git clone --branch v5.5.3 --depth 1 --recurse-submodules https://github.com/espressif/esp-idf.git esp-idf && break || sleep 10
+          done
+        fi
         cd esp-idf
         sudo apt-get update || true
         sudo apt-get install -y ffmpeg   # 语音包：mp3 -> wav 转码用
-        ./install.sh
+        if [ ! -d $HOME/.espressif ]; then ./install.sh; fi
         # Source the export script for the rest of the steps
         . $HOME/esp/esp-idf/export.sh
         idf.py --version

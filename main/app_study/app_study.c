@@ -92,10 +92,15 @@ static void voice_fs_init(void) {
     };
     /* 若 voicepack.bin 未烧入或分区未格式化，首次挂载会同步格式化整个分区。
      * 3.6MB 格式化耗时可能超过任务看门狗 5s → 看门狗复位 → 重启再格式化 → 无限复位循环。
-     * 因此挂载期间暂时摘除当前任务看门狗，让格式化一次完成。 */
+     * 因此挂载期间暂时摘除当前任务看门狗，让格式化一次完成。
+     * (看门狗在 sdkconfig 中已默认关闭时, esp_task_wdt_* 不编译, 需 #if 保护) */
+#if CONFIG_ESP_TASK_WDT
     esp_task_wdt_delete(NULL);            /* 若未注册会返回错误，忽略即可 */
+#endif
     esp_err_t err = esp_vfs_spiffs_register(&conf);
+#if CONFIG_ESP_TASK_WDT
     esp_task_wdt_add(NULL);               /* 挂载结束立即恢复看门狗 */
+#endif
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "voicepack SPIFFS 挂载失败(%s)，语音将回落到 RTTTL 提示音",
                  esp_err_to_name(err));
@@ -349,7 +354,9 @@ static void tick_worker(void *arg) {
 void app_study_enter(void) {
     /* 子应用接管后，调用任务(main)可能长时间阻塞(连 WiFi/首次格式化 SPIFFS)，
      * 默认 5s 任务看门狗会误判"main 未喂狗"导致复位循环；先摘除其订阅。 */
+#if CONFIG_ESP_TASK_WDT
     esp_task_wdt_delete(NULL);   /* 若未注册返回错误，忽略即可 */
+#endif
 
     /* 0) 联网 + 时间源：先连 WiFi（有凭证直连 / 无凭证自动开配网热点），
      *    联网后 SNTP 才能校时；未联网回落手动时间 */
