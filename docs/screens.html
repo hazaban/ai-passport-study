@@ -236,21 +236,21 @@
 
 <!-- 屏幕5：设置（夜间模式 · 新行） -->
 <div class="screen-card">
-  <h3>⑤ 设置（早起/睡眠记录 = 按 OK 记时间戳 · 洗头间隔可调）</h3>
-  <div class="desc">原「起床时间/睡觉时间」两行改为 <b>早起记录 / 睡眠记录</b>：选中后按 OK 把当前时刻记下来；「界面模式」行按 OK 在 夜间/白天 间切换；新增 <b>洗头间隔 X 天</b>：OK 进入编辑，▲/▼ 调整（3~30 天），改动立即影响洗头发卡片的"下次时间"。共 10 行。</div>
+  <h3>⑤ 设置（列表可滚动 · 早起/睡眠记录 = 按 OK 记时间戳 · 洗头间隔可调）</h3>
+  <div class="desc">设置项做成<b>可滚动列表</b>：行距/字体与之前完全一致，不压缩；新增「洗头间隔 X 天」行 OK 进入编辑、▲/▼ 调整（3~30 天）；10 行超出可视区时随选中自动滚动（滚动条示意）。</div>
   <div class="frame"><div class="box"><div class="scr"><div class="screen scr-night" id="s_settings">
     <div class="title">设置</div>
-    <div class="panel" style="left:8px;top:40px;width:224px;height:260px;background:transparent;box-shadow:none">
-      <div style="position:absolute;left:8px;top:8px;width:208px;height:24px;background:#1D2834;border-radius:6px;box-shadow:0 0 0 2px #7EA6D6"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">WiFi 连接/配网</span></div>
-      <div style="position:absolute;left:8px;top:34px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">屏幕亮度 45%</span></div>
-      <div style="position:absolute;left:8px;top:60px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">音量 80%</span></div>
-      <div style="position:absolute;left:8px;top:86px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">当前时间 2026-09-04 08:45</span></div>
-      <div style="position:absolute;left:8px;top:112px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">早起记录 06:30（OK记录当前）</span></div>
-      <div style="position:absolute;left:8px;top:138px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">睡眠记录 23:15（OK记录当前）</span></div>
-      <div style="position:absolute;left:8px;top:164px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">界面模式 夜间 ▸</span></div>
-      <div style="position:absolute;left:8px;top:190px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">洗头间隔 7 天 ▸</span></div>
-      <div style="position:absolute;left:8px;top:216px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">电池电量 85%</span></div>
-      <div style="position:absolute;left:8px;top:242px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">返回主界面</span></div>
+    <div class="panel" style="left:8px;top:40px;width:224px;height:234px;background:transparent;box-shadow:none;overflow-y:auto">
+      <div style="position:absolute;left:8px;top:0px;width:208px;height:24px;background:#1D2834;border-radius:6px;box-shadow:0 0 0 2px #7EA6D6"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">WiFi 连接/配网</span></div>
+      <div style="position:absolute;left:8px;top:26px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">屏幕亮度 45%</span></div>
+      <div style="position:absolute;left:8px;top:52px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">音量 80%</span></div>
+      <div style="position:absolute;left:8px;top:78px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">当前时间 2026-09-04 08:45</span></div>
+      <div style="position:absolute;left:8px;top:104px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">早起记录 06:30（OK记录当前）</span></div>
+      <div style="position:absolute;left:8px;top:130px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">睡眠记录 23:15（OK记录当前）</span></div>
+      <div style="position:absolute;left:8px;top:156px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">界面模式 夜间 ▸</span></div>
+      <div style="position:absolute;left:8px;top:182px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">洗头间隔 7 天 ▸</span></div>
+      <div style="position:absolute;left:8px;top:208px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">电池电量 85%</span></div>
+      <div style="position:absolute;left:8px;top:234px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">返回主界面</span></div>
     </div>
     <div class="mascot" style="left:186px;top:282px">🐹</div>
   </div></div></div></div>

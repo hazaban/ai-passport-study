@@ -1188,6 +1188,7 @@ bool ui_detail_wants_back(void) {
 enum { SET_WIFI = 0, SET_BRIGHT, SET_VOL, SET_NOW, SET_WAKE, SET_SLEEP,
        SET_THEME, SET_HAIR, SET_BATT, SET_HOME, SET_N };
 static lv_obj_t *s_set_scr;
+static lv_obj_t *s_set_list;   /* 设置列表滚动容器：行距/字体不压缩，行多时上下滚动 */
 static lv_obj_t *s_set_cards[SET_N];
 static int s_set_sel;
 static bool s_set_wants_wifi;
@@ -1247,9 +1248,18 @@ void ui_settings_build(void) {
     lv_obj_t *title = ui_pixel_label(head, "设置", F_STUDY, thm()->ink);
     lv_obj_set_pos(title, 16, 8);
 
-    /* 10 行，320px 屏：行距 24 可容纳全部设置项 */
+    /* 设置列表：可滚动容器，行距 26（与 9 行时一致，字体/行高不压缩），
+     * 可视约 9 行，第 10 行通过 ▲/▼ 选中时自动滚动可见 */
+    s_set_list = lv_obj_create(s_set_scr);
+    lv_obj_set_pos(s_set_list, 12, 52);
+    lv_obj_set_size(s_set_list, 216, 234);
+    lv_obj_set_style_bg_opa(s_set_list, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(s_set_list, 0, 0);
+    lv_obj_set_style_pad_all(s_set_list, 0, 0);
+    lv_obj_set_scroll_dir(s_set_list, LV_DIR_VER);   /* 只垂直滚动 */
+
     for (int i = 0; i < SET_N; i++) {
-        lv_obj_t *card = mod_card(s_set_scr, 12, 52 + i * 24, 216, 24, thm()->card, 10, true);
+        lv_obj_t *card = mod_card(s_set_list, 0, i * 26, 216, 24, thm()->card, 10, true);
         lv_obj_t *l = ui_pixel_label(card, "", F_STUDY, thm()->ink);
         lv_obj_set_pos(l, 12, 2);
         lv_label_set_long_mode(l, LV_LABEL_LONG_CLIP);
@@ -1327,7 +1337,9 @@ static void persist_now(void) {
     study_time_set_manual(s_man[0], s_man[1], s_man[2], s_man[3], s_man[4]);
 }
 
-void ui_settings_destroy(void) { if (s_set_scr) { lv_obj_delete(s_set_scr); s_set_scr = NULL; } }
+void ui_settings_destroy(void) {
+    if (s_set_scr) { lv_obj_delete(s_set_scr); s_set_scr = NULL; s_set_list = NULL; }
+}
 
 void ui_settings_key(uint8_t btn_u, uint8_t ev_u) {
     if (ev_u != BSP_BTN_CLICK) return;
@@ -1436,6 +1448,7 @@ void ui_settings_refresh_highlight(void) {
         bool sel = (i == s_set_sel);
         lv_obj_set_style_bg_color(s_set_cards[i], lv_color_hex(sel ? thm()->sel : thm()->card), 0);
         lv_obj_set_style_border_width(s_set_cards[i], sel ? 2 : 0, 0);
+        if (sel && s_set_list) lv_obj_scroll_to_view(s_set_cards[i], LV_ANIM_OFF);
     }
 }
 
