@@ -251,7 +251,7 @@ void ui_home_build(void) {
             lv_obj_set_style_radius(nb, 0, 0);
             lv_obj_set_style_bg_color(nb, lv_color_hex(0x7A8BA0), 0);
             lv_obj_set_style_border_width(nb, 0, 0);
-            lv_obj_align(nb, LV_ALIGN_RIGHT_MID);
+            lv_obj_set_align(nb, LV_ALIGN_RIGHT_MID);
             lv_obj_set_pos(nb, 1, 0);
             /* 电量横向格线：5 行，亮的行越多电量越高 */
             const int R = 5;
