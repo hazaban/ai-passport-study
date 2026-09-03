@@ -5,7 +5,7 @@ REM  用法: 把本文件夹里所有文件拷到 D:\Aa考研\esp 后双击本�
 REM  首次需安装 esptool (只需一次):  pip install esptool
 REM  设备连接 USB, 按住 BOOT 键再点击复位进入下载模式
 REM ============================================================
-set PORT=COM3
+set PORT=COM5
 if not "%1"=="" set PORT=%1
 
 echo 使用端口: %PORT%
