@@ -21,8 +21,10 @@ jobs:
         mkdir -p $HOME/esp
         cd $HOME/esp
         # Retry clone to tolerate transient network errors
+        # NOTE: components/bsp requires esp_driver_i2c/i2s which only exist in
+        # IDF >= v5.3; dependencies.lock was resolved against v5.5.3. Keep in sync.
         for i in 1 2 3; do
-          git clone --branch v5.2 --depth 1 --recurse-submodules https://github.com/espressif/esp-idf.git esp-idf && break || sleep 10
+          git clone --branch v5.5.3 --depth 1 --recurse-submodules https://github.com/espressif/esp-idf.git esp-idf && break || sleep 10
         done
         cd esp-idf
         sudo apt-get update || true
