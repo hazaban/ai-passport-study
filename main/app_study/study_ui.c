@@ -137,13 +137,14 @@ static lv_obj_t *home_big_button(int y, bool primary) {
     lv_obj_t *b = lv_obj_create(s_home_scr);
     lv_obj_remove_flag(b, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_pos(b, 12, y);
-    lv_obj_set_size(b, 216, 44);
-    lv_obj_set_style_radius(b, 22, 0);
-    lv_obj_set_style_bg_color(b, lv_color_hex(primary ? C_PRIMARY : C_CARD), 0);
-    lv_obj_set_style_border_width(b, primary ? 0 : 2, 0);
-    lv_obj_set_style_border_color(b, lv_color_hex(C_PRIMARY), 0);
+    lv_obj_set_size(b, 216, 48);
+    lv_obj_set_style_radius(b, 24, 0);
     lv_obj_set_style_pad_all(b, 0, 0);
-    (void)primary;   /* 扁平风格：不启用阴影 */
+    /* 默认中性卡片外观；选中态由 home_refresh_buttons() 统一绘制（避免两个都显蓝） */
+    lv_obj_set_style_bg_color(b, lv_color_hex(C_CARD), 0);
+    lv_obj_set_style_border_width(b, 2, 0);
+    lv_obj_set_style_border_color(b, lv_color_hex(C_PRIMARY), 0);
+    (void)primary;
     return b;
 }
 
@@ -151,17 +152,17 @@ static void home_refresh_buttons(void) {
     for (int i = 0; i < 2; i++) {
         if (!s_home_btn[i]) continue;
         bool sel = (s_home_sel == i);
-        if (i == 0) {
-            lv_obj_set_style_bg_color(s_home_btn[i],
-                lv_color_hex(sel ? C_PRIMARY_D : C_PRIMARY), 0);
+        if (sel) {
+            lv_obj_set_style_bg_color(s_home_btn[i], lv_color_hex(C_PRIMARY), 0);
+            lv_obj_set_style_border_width(s_home_btn[i], 0, 0);
         } else {
-            lv_obj_set_style_bg_color(s_home_btn[i],
-                lv_color_hex(sel ? 0x4C7DFF : C_CARD), 0);
-            lv_obj_set_style_border_width(s_home_btn[i], sel ? 0 : 2, 0);
+            lv_obj_set_style_bg_color(s_home_btn[i], lv_color_hex(C_CARD), 0);
+            lv_obj_set_style_border_width(s_home_btn[i], 2, 0);
+            lv_obj_set_style_border_color(s_home_btn[i], lv_color_hex(C_PRIMARY), 0);
         }
         lv_obj_t *lab = lv_obj_get_child(s_home_btn[i], 0);
         if (lab) lv_obj_set_style_text_color(lab,
-            lv_color_hex((i == 0 || sel) ? 0xFFFFFF : C_PRIMARY), 0);
+            lv_color_hex(sel ? 0xFFFFFF : C_PRIMARY), 0);
     }
 }
 
@@ -178,7 +179,7 @@ void ui_home_build(void) {
     s_cur_scr = s_home_scr;
 
     /* 顶部应用名 + 日期 */
-    lv_obj_t *head = home_card(8, 44, C_CARD);
+    lv_obj_t *head = home_card(8, 40, C_CARD);
     lv_obj_t *t = ui_pixel_label(head, "考研日程助手", F_STUDY, C_INK);
     lv_obj_set_pos(t, 16, 10);
 
@@ -186,44 +187,51 @@ void ui_home_build(void) {
     struct tm tv;
     localtime_r(&now, &tv);
     char dbuf[24];
-    snprintf(dbuf, sizeof(dbuf), "%d月%d日", tv.tm_mon + 1, tv.tm_mday);
+    if (tv.tm_year < 70) {
+        snprintf(dbuf, sizeof(dbuf), "未校时");
+    } else {
+        static const char *wd[] = {"日","一","二","三","四","五","六"};
+        snprintf(dbuf, sizeof(dbuf), "%d月%d日 %s", tv.tm_mon + 1, tv.tm_mday, wd[tv.tm_wday]);
+    }
     lv_obj_t *d = ui_pixel_label(head, dbuf, F_STUDY, C_MUTED);
     lv_obj_set_align(d, LV_ALIGN_TOP_RIGHT);
     lv_obj_set_pos(d, -16, 10);
 
-    /* 中部倒计时大卡片 */
-    lv_obj_t *cnt = home_card(60, 150, 0x22314D);
-    lv_obj_t *cap = ui_pixel_label(cnt, "距离考研", F_STUDY, 0xAAB6D0);
+    /* 倒计时卡（紧凑）：标题 + 大数字 + 单位 + 考试日期 */
+    lv_obj_t *cnt = home_card(54, 108, 0x22314D);
+    lv_obj_t *cap = ui_pixel_label(cnt, "考研倒计时", F_STUDY, 0xAAB6D0);
     lv_obj_set_align(cap, LV_ALIGN_TOP_MID);
-    lv_obj_set_pos(cap, 0, 18);
+    lv_obj_set_pos(cap, 0, 8);
     lv_obj_set_style_text_align(cap, LV_TEXT_ALIGN_CENTER, 0);
 
-    /* 大数字：APP-style 用日期字体太小时放大，用稍大字重 */
-    char nbuf[16];
     int left = study_time_days_until(STUDY_EXAM_MONTH, STUDY_EXAM_DAY);
+    char nbuf[16];
     if (left < 0) snprintf(nbuf, sizeof(nbuf), "GO");
     else          snprintf(nbuf, sizeof(nbuf), "%d", left);
-    s_home_cnt = ui_pixel_label(cnt, nbuf, F_STUDY, 0xFFFFFF);
-    lv_obj_center(s_home_cnt);
-    /* 放大视觉效果：与大卡片垂直居中偏下 */
-    lv_obj_set_style_text_font(s_home_cnt, F_STUDY, 0);
-    lv_obj_set_pos(s_home_cnt, 0, 48);
-    lv_obj_set_style_text_align(s_home_cnt, LV_TEXT_ALIGN_CENTER, 0);
+    s_home_cnt = ui_pixel_label(cnt, nbuf, &lv_font_montserrat_20, 0xFFFFFF);
+    lv_obj_set_align(s_home_cnt, LV_ALIGN_CENTER);
+    lv_obj_set_pos(s_home_cnt, -16, 8);
 
     lv_obj_t *unit = ui_pixel_label(cnt, "天", F_STUDY, C_ACCENT);
-    lv_obj_set_align(unit, LV_ALIGN_BOTTOM_MID);
-    lv_obj_set_pos(unit, 0, -18);
+    lv_obj_set_align(unit, LV_ALIGN_CENTER);
+    lv_obj_set_pos(unit, 26, 8);
 
-    lv_obj_t *sub = ui_pixel_label(cnt, "学习，让每一天都有意义", F_STUDY, 0x8B9BB5);
-    lv_obj_set_align(sub, LV_ALIGN_BOTTOM_MID);
-    lv_obj_set_pos(sub, 0, -2);
+    if (left < 0) {
+        lv_obj_t *g = ui_pixel_label(cnt, "考研日已过，继续加油", F_STUDY, 0x8B9BB5);
+        lv_obj_set_align(g, LV_ALIGN_BOTTOM_MID); lv_obj_set_pos(g, 0, -10);
+    } else {
+        char s2[48];
+        snprintf(s2, sizeof(s2), "距离 %d月%d日", STUDY_EXAM_MONTH, STUDY_EXAM_DAY);
+        lv_obj_t *g = ui_pixel_label(cnt, s2, F_STUDY, 0x8B9BB5);
+        lv_obj_set_align(g, LV_ALIGN_BOTTOM_MID); lv_obj_set_pos(g, 0, -10);
+    }
 
-    /* 底部两个入口按钮 */
-    s_home_btn[0] = home_big_button(216, true);
-    lv_obj_t *b0 = ui_pixel_label(s_home_btn[0], "进入学习", F_STUDY, 0xFFFFFF);
+    /* 两个入口按钮：未选中=白卡，仅选中的变蓝（避免两个都显蓝） */
+    s_home_btn[0] = home_big_button(184, true);
+    lv_obj_t *b0 = ui_pixel_label(s_home_btn[0], "进入学习", F_STUDY, C_PRIMARY);
     lv_obj_center(b0);
 
-    s_home_btn[1] = home_big_button(266, false);
+    s_home_btn[1] = home_big_button(252, false);
     lv_obj_t *b1 = ui_pixel_label(s_home_btn[1], "设置", F_STUDY, C_PRIMARY);
     lv_obj_center(b1);
 
