@@ -518,10 +518,22 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
         return;
     }
 
-    /* 长按 OK = 返回上一页；封面页长按 = 完全退出回目录 */
+    /* 长按 OK = 返回上一页；封面页长按 = 退出回目录；
+     * Todo 里选中任务时长按 = 进入“确认删除”。 */
     if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {
-        if (s_page == PAGE_HOME) s_wants_exit = true;
-        else                     nav_back();
+        if (s_page == PAGE_HOME) {
+            s_wants_exit = true;
+        } else if (s_page == PAGE_TODO) {
+            if (ui_todo_delete_armed()) {
+                ui_todo_cancel_delete();          /* 长按再次 = 取消删除 */
+            } else {
+                int tid = ui_todo_selected_task_id();
+                if (tid > 0) ui_todo_arm_delete();   /* 选中任务 → 确认删除态 */
+                else         nav_back();
+            }
+        } else {
+            nav_back();
+        }
         bsp_lvgl_unlock();
         return;
     }
@@ -567,6 +579,9 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
                 } else if (study_task_get(tid, &tt) == 0 && tt.done) {
                     on_task_done_changed(tid, true);   /* 已完成再点 = 再来一次 */
                 }
+                ui_todo_refresh();
+            } else if (ui_todo_wants_delete(&tid) && tid > 0) {
+                on_task_deleted(tid);          /* 确认删除：从存储移除并刷新 */
                 ui_todo_refresh();
             }
             break;

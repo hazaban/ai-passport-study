@@ -289,6 +289,10 @@ static bool s_todo_wants_add;
 static bool s_todo_wants_settings;
 static bool s_todo_wants_toggle;      /* OK 快速勾选/取消当前任务 */
 static int  s_todo_want_toggle_id;
+static bool s_del_arm;                /* 长按OK后的“确认删除”态 */
+static int  s_del_id;
+static bool s_todo_wants_delete;
+static int  s_todo_want_delete_id;
 static lv_obj_t *todo_scr;
 static lv_obj_t *todo_title_label;   /* 标题「考研助手」 */
 static lv_obj_t *todo_cnt_label;     /* 倒计时 pill */
@@ -360,12 +364,13 @@ static void render_todo_cards(void) {
         if (study_task_get(tid, &t) != 0) continue;
         const study_category_t *cat = study_category_get(t.category);
         bool selected = !s_bottom_focus && (ci == s_sel);
+        bool armed = selected && s_del_arm;      /* 确认删除态：变红警示 */
 
         /* 白色圆角任务卡 */
         lv_obj_t *card = mod_card(todo_panel, 2, y, 218, CARD_H,
-                                  selected ? 0xEDF2FF : C_CARD, 12, true);
-        if (selected) lv_obj_set_style_border_width(card, 2, 0);
-        lv_obj_set_style_border_color(card, lv_color_hex(C_PRIMARY), 0);
+                                  armed ? 0xFFE2E2 : (selected ? 0xEDF2FF : C_CARD), 12, true);
+        if (selected || armed) lv_obj_set_style_border_width(card, 2, 0);
+        lv_obj_set_style_border_color(card, lv_color_hex(armed ? 0xE43B2F : C_PRIMARY), 0);
 
         /* 左侧类别色条（圆角胶囊） */
         lv_obj_t *tab = lv_obj_create(card);
@@ -504,6 +509,10 @@ void ui_todo_build(void) {
     s_todo_wants_settings = false;
     s_todo_wants_toggle = false;
     s_todo_want_toggle_id = -1;
+    s_del_arm = false;
+    s_del_id = -1;
+    s_todo_wants_delete = false;
+    s_todo_want_delete_id = -1;
 
     /* 干净的现代背景（不再有草地/云朵） */
     todo_scr = lv_obj_create(NULL);
@@ -585,6 +594,9 @@ void ui_todo_refresh(void) {
     render_todo_seg();
     render_todo_cards();
     render_todo_bottom();
+    if (s_del_arm && todo_title_label) {
+        lv_label_set_text(todo_title_label, "删除？OK删 · 上下取消");
+    }
 }
 
 /* 任务列表中的可选项区间 [first..last]，索引 0 是分组标题，不参与选中 */
@@ -593,6 +605,21 @@ static int todo_last(void)  { return todo_card_n - 1; }
 
 void ui_todo_key(uint8_t btn_u, uint8_t ev_u) {
     bsp_btn_t btn = (bsp_btn_t)btn_u;
+
+    /* 确认删除态：OK = 确认删除；其它键/长按 = 取消 */
+    if (s_del_arm) {
+        if (ev_u == BSP_BTN_CLICK && btn == BSP_BTN_OK) {
+            s_todo_wants_delete = true;
+            s_todo_want_delete_id = s_del_id;
+        } else {
+            s_todo_wants_delete = false;
+            s_todo_want_delete_id = -1;
+        }
+        s_del_arm = false;
+        s_del_id = -1;
+        ui_todo_refresh();
+        return;
+    }
 
     /* 长按 上/下 = 切换大页签：日常任务 ⇄ 学习科目 */
     if (ev_u == BSP_BTN_LONG && (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN)) {
@@ -649,6 +676,28 @@ bool ui_todo_wants_toggle(int *out_task_id) {
     if (out_task_id) *out_task_id = s_todo_want_toggle_id;
     bool r = s_todo_wants_toggle;
     s_todo_wants_toggle = false;
+    return r;
+}
+
+/* 删除任务：长按 OK 进入“确认删除”，再按一次 OK 执行 */
+void ui_todo_arm_delete(void) {
+    int tid = ui_todo_selected_task_id();
+    if (tid <= 0) return;
+    s_del_arm = true;
+    s_del_id = tid;
+    ui_todo_refresh();
+}
+bool ui_todo_delete_armed(void) { return s_del_arm; }
+void ui_todo_cancel_delete(void) {
+    if (!s_del_arm) return;
+    s_del_arm = false;
+    s_del_id = -1;
+    ui_todo_refresh();
+}
+bool ui_todo_wants_delete(int *out_task_id) {
+    if (out_task_id) *out_task_id = s_todo_want_delete_id;
+    bool r = s_todo_wants_delete;
+    s_todo_wants_delete = false;
     return r;
 }
 

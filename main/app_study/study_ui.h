@@ -78,6 +78,10 @@ bool ui_todo_wants_detail(int *out_task_id);
 bool ui_todo_wants_add(void);
 bool ui_todo_wants_settings(void);
 bool ui_todo_wants_toggle(int *out_task_id);
+void ui_todo_arm_delete(void);
+bool ui_todo_delete_armed(void);
+void ui_todo_cancel_delete(void);
+bool ui_todo_wants_delete(int *out_task_id);
 
 /* -------- 添加任务页 (PAGE_ADD_TASK) --------
  * 步骤：1) 预设模板列表 (快速添加)
