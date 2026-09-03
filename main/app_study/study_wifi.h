@@ -51,4 +51,4 @@ void study_wifi_set_callback(study_wifi_cb_t cb, void *user);
 /* 配网热点默认端口 */
 #define STUDY_WIFI_AP_PORT     80
 /* 配网热点密码（手机连接热点时需输入，屏幕会显示） */
-#define STUDY_WIFI_AP_PASS     "12345678"
+#define STUDY_WIFI_AP_PASS     "liyufan"

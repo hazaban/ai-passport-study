@@ -45,6 +45,8 @@
 
 static const char *TAG = "app_study";
 
+static uint32_t s_last_long_ok_ms = 0;   /* 上次长按OK时间戳(ms)，用于抑制尾随单击 */
+
 static int  cfg_get(const char *k, int def);
 static void cfg_set(const char *k, int v);
 
@@ -148,30 +150,46 @@ static void cfg_set(const char *k, int v) {
     if (s && s->save_meta_int) s->save_meta_int(k, v);
 }
 
-/* ---------- 首次运行：把预设任务导入(日常+科目)，晚上洗漱/睡觉不给固定时间 ---------- */
-static void seed_default_tasks(void) {
-    if (cfg_get("seed_v1", 0) != 0) return;
-    const study_preset_t *ps = NULL;
-    int n = study_task_presets(&ps);
-    int added = 0;
-    for (int i = 0; i < n; i++) {
-        study_task_t t;
-        memset(&t, 0, sizeof(t));
-        strncpy(t.title, ps[i].title, sizeof(t.title) - 1);
-        t.title[sizeof(t.title) - 1] = '\0';
-        t.category = ps[i].category;
-        t.subtype  = ps[i].subtype;
-        t.hour     = ps[i].hour;
-        t.minute   = ps[i].minute;
-        /* 按用户要求：睡前洗漱、睡觉 不给时间 → 做成“待办”不自动响，手动点完成 */
-        if (strstr(t.title, "睡前洗漱") != NULL || strstr(t.title, "睡觉") != NULL) {
-            t.hour = -1; t.minute = -1;
+/* ---------- 首次/升级后：只保留“日常任务”预置（科目按需自己在添加页加） ----------
+ * 旧版本曾把全部科目预置进列表，此处按 v2 清理掉非日常任务；若日常为空则重新预置。
+ * 睡前洗漱 / 睡觉 不给固定时间(做成“待办”，手动点完成)。 */
+static void ensure_daily_seed(void) {
+    if (cfg_get("seed_v2", 0) != 0) return;
+    int cap = TASK_MAX_COUNT;
+    int *ids = (int *)malloc(sizeof(int) * cap);
+    int daily = 0;
+    if (ids) {
+        int n = study_task_list_today(ids, cap);
+        for (int i = 0; i < n; i++) {
+            study_task_t t;
+            if (study_task_get(ids[i], &t) != 0) continue;
+            if (t.category == CAT_DAILY) daily++;
+            else study_task_delete(ids[i]);       /* 清掉旧版预置的科目任务 */
         }
-        t.repeat = STUDY_REPEAT_DAILY;   /* 每天重复，方便反复完成 */
-        if (study_task_add(&t) == 0) added++;
+        free(ids);
     }
-    cfg_set("seed_v1", 1);
-    ESP_LOGI(TAG, "已导入 %d 个预设任务", added);
+    if (daily == 0) {
+        const study_preset_t *ps = NULL;
+        int n = study_task_presets(&ps);
+        for (int i = 0; i < n; i++) {
+            if (ps[i].category != CAT_DAILY) continue;   /* 只预置日常 */
+            study_task_t t;
+            memset(&t, 0, sizeof(t));
+            strncpy(t.title, ps[i].title, sizeof(t.title) - 1);
+            t.title[sizeof(t.title) - 1] = '\0';
+            t.category = ps[i].category;
+            t.subtype  = ps[i].subtype;
+            t.hour     = ps[i].hour;
+            t.minute   = ps[i].minute;
+            if (strstr(t.title, "睡前洗漱") != NULL || strstr(t.title, "睡觉") != NULL) {
+                t.hour = -1; t.minute = -1;              /* 不给时间 */
+            }
+            t.repeat = STUDY_REPEAT_DAILY;               /* 每天一次，次日自动复位 */
+            study_task_add(&t);
+        }
+    }
+    cfg_set("seed_v2", 1);
+    ESP_LOGI(TAG, "日常任务已就绪(科目按需添加)");
 }
 
 /* 开机/跨日：把“重复类”任务今天的 done 复位，便于新一天重新开始 */
@@ -188,14 +206,20 @@ static void clear_daily_done(void) {
     free(ids);
 }
 
-/* 从 NVS 恢复手动时间（离线时日期/倒计时/提醒以此为准） */
+/* 从 NVS 恢复手动时间（离线时日期/倒计时/提醒以此为准）。
+ * 出厂/首次：直接写入“今天”日期(2026-09-03)作基础时钟，用户只需校准时分。 */
 static void restore_manual_time(void) {
     int y  = cfg_get("t_y", 0);
     int mo = cfg_get("t_mo", 0);
     int d  = cfg_get("t_d", 0);
     int h  = cfg_get("t_h", 0);
     int mi = cfg_get("t_mi", 0);
-    if (y >= 2000) study_time_set_manual(y, mo, d, h, mi);
+    if (y < 2000) {
+        y = 2026; mo = 9; d = 3; h = 0; mi = 0;   /* 今天的基础时钟 */
+        cfg_set("t_y", y); cfg_set("t_mo", mo); cfg_set("t_d", d);
+        cfg_set("t_h", h); cfg_set("t_mi", mi);
+    }
+    study_time_set_manual(y, mo, d, h, mi);
 }
 
 /* ---------- 洗头发：每 7 天周期 ----------
@@ -421,7 +445,7 @@ void app_study_enter(void) {
     }
     study_scheduler_reset();
     restore_manual_time();        /* 离线时可用的手动日期/时间 */
-    seed_default_tasks();         /* 首次运行预置日常+科目任务 */
+    ensure_daily_seed();          /* 只预置日常(旧版多余科目会被清理) */
     clear_daily_done();           /* 开机把重复任务 done 复位(新的一天) */
 
     /* 洗头发周期：重启后从 NVS 恢复上次洗头天数，保持每 7 天节奏 */
@@ -506,14 +530,20 @@ static void nav_back(void) {
 void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
     if (!bsp_lvgl_lock(500)) return;
 
-    /* 如果有鼓励/场景弹窗，优先响应（按任意确认关闭） */
+    /* 有鼓励/场景弹窗（完成语音正在播）时：短按/长按 OK 都=停止语音并关闭弹窗 */
     if (ui_encourage_is_showing()) {
-        if (ev == BSP_BTN_CLICK) ui_encourage_close();
+        if (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG) {
+            study_voice_stop();
+            ui_encourage_close();
+        }
         bsp_lvgl_unlock();
         return;
     }
     if (ui_scene_is_showing()) {
-        if (ev == BSP_BTN_CLICK) ui_scene_close();
+        if (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG) {
+            study_voice_stop();
+            ui_scene_close();
+        }
         bsp_lvgl_unlock();
         return;
     }
@@ -521,6 +551,7 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
     /* 长按 OK = 返回上一页；封面页长按 = 退出回目录；
      * Todo 里选中任务时长按 = 进入“确认删除”。 */
     if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {
+        s_last_long_ok_ms = (uint32_t)(esp_timer_get_time() / 1000);  /* 抑制长按后的尾随单击 */
         if (s_page == PAGE_HOME) {
             s_wants_exit = true;
         } else if (s_page == PAGE_TODO) {
@@ -567,17 +598,19 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
                 ui_add_build();
                 s_page = PAGE_ADD_TASK;
             } else if (ui_todo_wants_settings()) {
+                /* Todo 底部第二项 = 回“主页面”(封面)，避免与封面入口重复 */
                 s_prev_page = s_page;
                 ui_todo_destroy();
-                ui_settings_build();
-                s_page = PAGE_SETTINGS;
+                ui_home_build();
+                s_page = PAGE_HOME;
             } else if (ui_todo_wants_toggle(&tid) && tid > 0) {
-                /* OK = 点勾选框“完成一次”：重复类任务可反复点完成(每次都鼓励+语音) */
-                study_task_t tt;
-                if (study_task_get(tid, &tt) == 0 && !tt.done) {
-                    on_task_done_changed(tid, true);
-                } else if (study_task_get(tid, &tt) == 0 && tt.done) {
-                    on_task_done_changed(tid, true);   /* 已完成再点 = 再来一次 */
+                /* OK：第一次=完成(鼓励+语音)，第二次=取消(不发声)。当天每个任务只出现一次。 */
+                uint32_t nowms = (uint32_t)(esp_timer_get_time() / 1000);
+                if (nowms - s_last_long_ok_ms >= 700) {   /* 长按后的尾随单击不触发完成 */
+                    study_task_t tt;
+                    if (study_task_get(tid, &tt) == 0) {
+                        on_task_done_changed(tid, !tt.done);
+                    }
                 }
                 ui_todo_refresh();
             } else if (ui_todo_wants_delete(&tid) && tid > 0) {

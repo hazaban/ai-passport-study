@@ -184,16 +184,20 @@ void ui_home_build(void) {
     lv_obj_set_pos(t, 16, 10);
 
     struct tm tv;
-    char dbuf[24];
+    char dbuf[32];
+    bool wi = (study_wifi_get_state() == WIFI_STATE_CONNECTED);
     if (study_time_civil_tm(&tv)) {
         static const char *wd[] = {"日","一","二","三","四","五","六"};
-        snprintf(dbuf, sizeof(dbuf), "%d月%d日 %s", tv.tm_mon + 1, tv.tm_mday, wd[tv.tm_wday]);
+        if (wi) snprintf(dbuf, sizeof(dbuf), "%s %d月%d日 %s",
+                         LV_SYMBOL_WIFI, tv.tm_mon + 1, tv.tm_mday, wd[tv.tm_wday]);
+        else    snprintf(dbuf, sizeof(dbuf), "%d月%d日 %s",
+                         tv.tm_mon + 1, tv.tm_mday, wd[tv.tm_wday]);
     } else {
-        snprintf(dbuf, sizeof(dbuf), "请设时间");
+        snprintf(dbuf, sizeof(dbuf), "%s 请设时间", wi ? LV_SYMBOL_WIFI : "");
     }
-    lv_obj_t *d = ui_pixel_label(head, dbuf, F_STUDY, C_MUTED);
+    lv_obj_t *d = ui_pixel_label(head, dbuf, F_STUDY, wi ? 0x2FBF71 : C_MUTED);  /* 联网=绿色WiFi图标 */
     lv_obj_set_align(d, LV_ALIGN_TOP_RIGHT);
-    lv_obj_set_pos(d, -16, 10);
+    lv_obj_set_pos(d, -12, 10);
 
     /* 倒计时卡（紧凑）：标题 + 大数字 + 单位 + 考试日期 */
     lv_obj_t *cnt = home_card(54, 108, 0x22314D);
@@ -570,7 +574,7 @@ void ui_todo_build(void) {
     btn_add = mod_button(todo_scr, 12, BOT_Y, 104, 30, C_CARD, C_PRIMARY, false);
     mod_button_label(btn_add, "+ 添加任务", C_PRIMARY);
     btn_set = mod_button(todo_scr, 124, BOT_Y, 104, 30, C_CARD, C_PRIMARY, false);
-    mod_button_label(btn_set, "设置", C_PRIMARY);
+    mod_button_label(btn_set, "主页面", C_PRIMARY);
 
     fill_card_ids_for_tab();
     ensure_todo_selection();
@@ -731,27 +735,56 @@ int ui_todo_selected_task_id(void) {
 #define ADD_PER_PAGE 6
 static int s_add_step;
 static int s_add_sel;
+static int s_add_tab;             /* 0=日常任务 1=学习任务 */
 static study_task_t s_draft;
 static lv_obj_t *s_add_panel;
 static lv_obj_t *s_add_hint;
+static lv_obj_t *s_add_tabs[2];
+
+/* 返回当前栏的全局预设下标（tab0=日常 cat0；tab1=其余学习科目） */
+static int add_filter_ids(int *out_ids, int max) {
+    const study_preset_t *ps;
+    int n = study_task_presets(&ps);
+    int c = 0;
+    for (int i = 0; i < n && c < max; i++)
+        if ((ps[i].category == 0) == (s_add_tab == 0)) out_ids[c++] = i;
+    return c;
+}
+
+static void add_render_tabs(void) {
+    for (int i = 0; i < 2; i++) {
+        if (!s_add_tabs[i]) continue;
+        bool sel = (s_add_tab == i);
+        lv_obj_set_style_bg_color(s_add_tabs[i], lv_color_hex(sel ? C_PRIMARY : C_CARD), 0);
+        lv_obj_t *l = lv_obj_get_child(s_add_tabs[i], 0);
+        if (l) lv_obj_set_style_text_color(l, lv_color_hex(sel ? 0xFFFFFF : C_PRIMARY), 0);
+    }
+}
 
 static void add_render_preset_list(void) {
-    const study_preset_t *presets;
-    int total = study_task_presets(&presets);
-    if (total <= 0) return;
-
+    int ids[48];
+    int total = add_filter_ids(ids, 48);
     lv_obj_clean(s_add_panel);
+    if (total <= 0) { lv_label_set_text(s_add_hint, "本栏暂无模板"); add_render_tabs(); return; }
+    if (s_add_sel >= total) s_add_sel = total - 1;
+    if (s_add_sel < 0) s_add_sel = 0;
+
+    const study_preset_t *presets;
+    study_task_presets(&presets);
     int page = s_add_sel / ADD_PER_PAGE;
     int first = page * ADD_PER_PAGE;
     int cnt = total - first; if (cnt > ADD_PER_PAGE) cnt = ADD_PER_PAGE;
 
-    for (int i = 0; i < cnt; i++) {
-        int idx = first + i;
-        int y = 2 + i * (CARD_H + 4);
+    for (int k = 0; k < cnt; k++) {
+        int row = first + k;
+        int idx = ids[row];
+        int y = 2 + k * (CARD_H + 4);
         lv_obj_t *card = mod_card(s_add_panel, 0, y, 220, CARD_H,
-                                  (idx == s_add_sel) ? 0xEDF2FF : C_CARD, 12, true);
-        if (idx == s_add_sel) lv_obj_set_style_border_width(card, 2, 0);
-        lv_obj_set_style_border_color(card, lv_color_hex(C_PRIMARY), 0);
+                                  (row == s_add_sel) ? 0xEDF2FF : C_CARD, 12, true);
+        if (row == s_add_sel) {
+            lv_obj_set_style_border_width(card, 2, 0);
+            lv_obj_set_style_border_color(card, lv_color_hex(C_PRIMARY), 0);
+        }
         const study_category_t *cat = study_category_get(presets[idx].category);
         lv_obj_t *tab = lv_obj_create(card);
         lv_obj_remove_flag(tab, LV_OBJ_FLAG_SCROLLABLE);
@@ -764,17 +797,20 @@ static void add_render_preset_list(void) {
     }
 
     int total_pages = (total + ADD_PER_PAGE - 1) / ADD_PER_PAGE;
-    char h[64];
-    snprintf(h, sizeof(h), "第%d/%d页 · OK确认 · 上下选择", page + 1, total_pages);
+    char h[72];
+    snprintf(h, sizeof(h), "第%d/%d页 · 长按上下换栏 · OK添加", page + 1, total_pages);
     lv_label_set_text(s_add_hint, h);
+    add_render_tabs();
 }
 
 void ui_add_build(void) {
     s_add_step = 0;
     s_add_sel = 0;
+    s_add_tab = 0;
     memset(&s_draft, 0, sizeof(s_draft));
     s_draft.hour = -1; s_draft.minute = -1;
     s_draft.repeat = STUDY_REPEAT_ONCE;
+    s_add_tabs[0] = s_add_tabs[1] = NULL;
 
     s_cur_scr = lv_obj_create(NULL);
     lv_obj_remove_flag(s_cur_scr, LV_OBJ_FLAG_SCROLLABLE);
@@ -786,10 +822,19 @@ void ui_add_build(void) {
     lv_obj_t *title = ui_pixel_label(head, "添加任务", F_STUDY, C_INK);
     lv_obj_set_pos(title, 16, 8);
 
+    /* 两栏页签：日常任务 / 学习任务 */
+    for (int i = 0; i < 2; i++) {
+        s_add_tabs[i] = mod_button(s_cur_scr, 12 + i * 112, 50, 104, 24,
+                                   (i == 0) ? C_PRIMARY : C_CARD,
+                                   (i == 0) ? C_PRIMARY : C_PRIMARY, i == 0);
+        mod_button_label(s_add_tabs[i], (i == 0) ? "日常任务" : "学习任务",
+                         (i == 0) ? 0xFFFFFF : C_PRIMARY);
+    }
+
     s_add_panel = lv_obj_create(s_cur_scr);
     lv_obj_remove_flag(s_add_panel, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_pos(s_add_panel, 8, 56);
-    lv_obj_set_size(s_add_panel, 224, 220);
+    lv_obj_set_pos(s_add_panel, 8, 80);
+    lv_obj_set_size(s_add_panel, 224, 190);
     lv_obj_set_style_bg_opa(s_add_panel, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(s_add_panel, 0, 0);
     lv_obj_set_style_pad_all(s_add_panel, 0, 0);
@@ -813,29 +858,42 @@ bool ui_add_is_finished(int *out_newly_added_id) {
 }
 
 void ui_add_key(uint8_t btn_u, uint8_t ev_u) {
-    if (ev_u != BSP_BTN_CLICK) return;
     bsp_btn_t btn = (bsp_btn_t)btn_u;
 
+    /* 长按 上/下 = 切换栏（日常任务 ⇄ 学习任务） */
+    if (ev_u == BSP_BTN_LONG && (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN)) {
+        s_add_tab = (s_add_tab == 0) ? 1 : 0;
+        s_add_sel = 0;
+        add_render_preset_list();
+        return;
+    }
+    if (ev_u != BSP_BTN_CLICK) return;
+
     if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
-        const study_preset_t *presets;
-        int total = study_task_presets(&presets);
+        int ids[48];
+        int total = add_filter_ids(ids, 48);
         int old = s_add_sel;
         if (btn == BSP_BTN_UP)   { if (s_add_sel > 0) s_add_sel--; }
         else                     { if (s_add_sel < total - 1) s_add_sel++; }
         if (s_add_sel != old) add_render_preset_list();
+        return;
     }
 
     if (btn == BSP_BTN_OK) {
-        const study_preset_t *presets;
-        int pn = study_task_presets(&presets);
+        int ids[48];
+        int total = add_filter_ids(ids, 48);
+        if (total <= 0) return;
         if (s_add_step == 0) {
-            if (s_add_sel < pn) {
-                strncpy(s_draft.title, presets[s_add_sel].title, TASK_TITLE_LEN - 1);
-                s_draft.category = presets[s_add_sel].category;
-                s_draft.subtype  = presets[s_add_sel].subtype;
-                s_draft.hour     = presets[s_add_sel].hour;
-                s_draft.minute   = presets[s_add_sel].minute;
-            }
+            const study_preset_t *presets;
+            study_task_presets(&presets);
+            int idx = ids[s_add_sel < total ? s_add_sel : 0];
+            strncpy(s_draft.title, presets[idx].title, TASK_TITLE_LEN - 1);
+            s_draft.title[TASK_TITLE_LEN - 1] = '\0';
+            s_draft.category = presets[idx].category;
+            s_draft.subtype  = presets[idx].subtype;
+            s_draft.hour     = presets[idx].hour;
+            s_draft.minute   = presets[idx].minute;
+            s_draft.repeat   = STUDY_REPEAT_DAILY;   /* 每天重复，次日自动复位 */
             if (s_cb && s_cb->on_task_added) {
                 study_task_t tmp = s_draft;
                 (void)s_cb->on_task_added(&tmp);
@@ -1173,6 +1231,32 @@ bool ui_settings_wants_todo(void) { return s_set_wants_todo; }
  * PAGE_WIFI — WiFi 状态 / 配网引导
  * ============================================================== */
 static lv_obj_t *s_wifi_scr;
+static lv_obj_t *s_wifi_info;
+static lv_timer_t *s_wifi_timer;
+
+static void ui_wifi_refresh(void) {
+    if (!s_wifi_info) return;
+    const char *ap_ssid = study_wifi_get_ap_ssid();
+    if (!ap_ssid || !ap_ssid[0]) ap_ssid = "STU_STUDY_xxxx";
+    study_wifi_state_t st = study_wifi_get_state();
+    char buf[230];
+    if (st == WIFI_STATE_CONNECTED) {
+        snprintf(buf, sizeof(buf), "状态：已联网 ✓\n\n网络   %s\n信号   %d dBm\n\n联网校时后日期/倒计时自动准确。",
+                 study_wifi_get_ssid(), study_wifi_get_rssi());
+    } else if (st == WIFI_STATE_CONNECTING) {
+        snprintf(buf, sizeof(buf), "状态：正在连接…\n\n请稍候；成功后会自动校时。");
+    } else if (st == WIFI_STATE_FAILED) {
+        snprintf(buf, sizeof(buf), "状态：连接失败\n\n请让手机连热点 %s\n密码 %s\n打开 http://%s/ 重填 WiFi 账号密码",
+                 ap_ssid, STUDY_WIFI_AP_PASS, STUDY_WIFI_AP_GATEWAY);
+    } else {
+        snprintf(buf, sizeof(buf), "状态：未连接（热点已开）\n\n①手机连热点  %s\n②密码        %s\n③手机浏览器打开 http://%s/\n④填你家的WiFi 名称与密码并保存",
+                 ap_ssid, STUDY_WIFI_AP_PASS, STUDY_WIFI_AP_GATEWAY);
+    }
+    lv_label_set_text(s_wifi_info, buf);
+}
+
+static void wifi_timer_cb(lv_timer_t *t) { (void)t; ui_wifi_refresh(); }
+
 void ui_wifi_build(void) {
     s_wifi_scr = lv_obj_create(NULL);
     lv_obj_remove_flag(s_wifi_scr, LV_OBJ_FLAG_SCROLLABLE);
@@ -1187,40 +1271,31 @@ void ui_wifi_build(void) {
 
     lv_obj_t *panel = mod_card(s_wifi_scr, 8, 56, 224, 200, C_CARD, 16, true);
 
-    const char *ap_ssid = study_wifi_get_ap_ssid();
-    if (!ap_ssid || !ap_ssid[0]) ap_ssid = "STU_STUDY_xxxx";
+    s_wifi_info = ui_pixel_label(panel, "", F_STUDY, C_INK);
+    lv_obj_set_width(s_wifi_info, 200);
+    lv_obj_set_pos(s_wifi_info, 12, 12);
+    lv_label_set_long_mode(s_wifi_info, LV_LABEL_LONG_WRAP);
 
-    study_wifi_state_t st = study_wifi_get_state();
-    char buf[220];
-    if (st == WIFI_STATE_CONNECTED) {
-        snprintf(buf, sizeof(buf), "已联网\n\n网络  %s\n信号  %d dBm\n\n按 OK 重新配网",
-                 study_wifi_get_ssid(), study_wifi_get_rssi());
-    } else if (st == WIFI_STATE_CONNECTING) {
-        snprintf(buf, sizeof(buf), "连接中…\n\n请稍候");
-    } else if (st == WIFI_STATE_FAILED) {
-        snprintf(buf, sizeof(buf), "连接失败\n\n1.连热点 %s\n2.打开 http://%s/\n3.重填账号密码",
-                 ap_ssid, STUDY_WIFI_AP_GATEWAY);
-    } else {
-        snprintf(buf, sizeof(buf), "按 OK 开热点\n\n1.连热点 %s\n2.打开 http://%s/\n3.填 WiFi 账号密码",
-                 ap_ssid, STUDY_WIFI_AP_GATEWAY);
-    }
-    lv_obj_t *info = ui_pixel_label(panel, buf, F_STUDY, C_INK);
-    lv_obj_set_width(info, 200);
-    lv_obj_set_pos(info, 12, 12);
-    lv_label_set_long_mode(info, LV_LABEL_LONG_WRAP);
+    lv_obj_t *hint = ui_pixel_label(s_wifi_scr, "长按返回 · 自动刷新状态", F_STUDY, C_MUTED);
+    lv_obj_set_pos(hint, 40, 296);
 
-    lv_obj_t *hint = ui_pixel_label(s_wifi_scr, "OK 开启/重配 · 长按返回", F_STUDY, C_MUTED);
-    lv_obj_set_pos(hint, 50, 296);
+    ui_wifi_refresh();
+    if (!s_wifi_timer) s_wifi_timer = lv_timer_create(wifi_timer_cb, 800, NULL);  /* 800ms 自动刷新 */
     lv_screen_load(s_wifi_scr);
 }
-void ui_wifi_destroy(void) { if (s_wifi_scr) { lv_obj_delete(s_wifi_scr); s_wifi_scr = NULL; } }
+void ui_wifi_destroy(void) {
+    if (s_wifi_timer) { lv_timer_del(s_wifi_timer); s_wifi_timer = NULL; }
+    s_wifi_info = NULL;
+    if (s_wifi_scr) { lv_obj_delete(s_wifi_scr); s_wifi_scr = NULL; }
+}
 void ui_wifi_key(uint8_t btn_u, uint8_t ev_u) {
+    (void)btn_u; (void)ev_u;
+    ui_wifi_refresh();   /* 按键即刷新一次状态 */
     if (ev_u != BSP_BTN_CLICK) return;
     bsp_btn_t btn = (bsp_btn_t)btn_u;
     if (btn == BSP_BTN_OK) {
         study_wifi_start_ap_config();
-        ui_wifi_destroy();
-        ui_wifi_build();
+        ui_wifi_refresh();
     }
 }
 
