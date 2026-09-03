@@ -295,7 +295,7 @@ void ui_home_build(void) {
                 lv_obj_set_style_border_width(seg, 0, 0);
                 lv_obj_set_style_bg_color(seg, lv_color_hex((i < fill) ? col : 0x2A3A4C), 0);
             }
-            char pb[8];
+            char pb[16];
             snprintf(pb, sizeof(pb), "%d%%", soc);
             lv_obj_t *ptxt = ui_pixel_label(cnt, pb, F_STUDY, col);
             lv_obj_set_align(ptxt, LV_ALIGN_TOP_RIGHT);
