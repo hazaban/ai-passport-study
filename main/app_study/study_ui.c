@@ -262,26 +262,17 @@ void ui_home_build(void) {
         int soc = bsp_battery_soc();
         if (soc >= 0) {
             uint32_t col = (soc <= 20) ? 0xFF6B5A : ((soc <= 40) ? 0xE8A84C : 0x2FBF71);
+            /* 小号横向电池 + 竖条 */
             lv_obj_t *body = lv_obj_create(cnt);
             lv_obj_remove_flag(body, LV_OBJ_FLAG_SCROLLABLE);
-            lv_obj_set_size(body, 30, 14);
-            lv_obj_set_style_radius(body, 3, 0);
+            lv_obj_set_size(body, 20, 9);
+            lv_obj_set_style_radius(body, 2, 0);
             lv_obj_set_style_bg_color(body, lv_color_hex(0x1B2836), 0);
             lv_obj_set_style_border_width(body, 1, 0);
             lv_obj_set_style_border_color(body, lv_color_hex(0x7A8BA0), 0);
             lv_obj_set_style_pad_all(body, 0, 0);
             lv_obj_set_align(body, LV_ALIGN_TOP_RIGHT);
-            lv_obj_set_pos(body, -12, 13);
-            /* 电池头（右侧小凸点） */
-            lv_obj_t *tip = lv_obj_create(cnt);
-            lv_obj_remove_flag(tip, LV_OBJ_FLAG_SCROLLABLE);
-            lv_obj_set_size(tip, 3, 6);
-            lv_obj_set_style_radius(tip, 1, 0);
-            lv_obj_set_style_bg_color(tip, lv_color_hex(0x7A8BA0), 0);
-            lv_obj_set_style_border_width(tip, 0, 0);
-            lv_obj_set_align(tip, LV_ALIGN_TOP_RIGHT);
-            lv_obj_set_pos(tip, 12, 17);   /* 紧贴电池右侧 */
-            /* 内部竖条：6 格，亮格数=电量 */
+            lv_obj_set_pos(body, -12, 9);
             const int N = 6;
             int fill = (soc * N + 99) / 100;
             if (fill < 1) fill = 1;
@@ -289,22 +280,19 @@ void ui_home_build(void) {
             for (int i = 0; i < N; i++) {
                 lv_obj_t *seg = lv_obj_create(body);
                 lv_obj_remove_flag(seg, LV_OBJ_FLAG_SCROLLABLE);
-                lv_obj_set_size(seg, 3, 8);
-                lv_obj_set_pos(seg, 2 + i * 4, 3);
+                lv_obj_set_size(seg, 2, 5);
+                lv_obj_set_pos(seg, 1 + i * 3, 2);
                 lv_obj_set_style_radius(seg, 1, 0);
                 lv_obj_set_style_border_width(seg, 0, 0);
                 lv_obj_set_style_bg_color(seg, lv_color_hex((i < fill) ? col : 0x2A3A4C), 0);
             }
+            /* 百分比放电池图标正下方 */
             char pb[16];
-            snprintf(pb, sizeof(pb), "%d%%", soc);
+            if (soc <= 20) snprintf(pb, sizeof(pb), "低电");
+            else           snprintf(pb, sizeof(pb), "%d%%", soc);
             lv_obj_t *ptxt = ui_pixel_label(cnt, pb, F_STUDY, col);
             lv_obj_set_align(ptxt, LV_ALIGN_TOP_RIGHT);
-            lv_obj_set_pos(ptxt, -48, 13);
-            if (soc <= 20) {
-                lv_obj_t *warn = ui_pixel_label(cnt, "请充电", F_STUDY, 0xFF6B5A);
-                lv_obj_set_align(warn, LV_ALIGN_TOP_RIGHT);
-                lv_obj_set_pos(warn, -86, 13);
-            }
+            lv_obj_set_pos(ptxt, -25, 20);
         }
     }
 
