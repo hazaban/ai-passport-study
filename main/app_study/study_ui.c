@@ -425,7 +425,7 @@ static void render_todo_cards(void) {
         if (t.done) lv_obj_set_style_text_decor(title, LV_TEXT_DECOR_STRIKETHROUGH, 0);
 
         /* 右上角时间（洗头发：显示“下次洗头日期”） */
-        char tbuf[16];
+        char tbuf[24];
         if (t.hour < 0 && strstr(t.title, "洗头发") != NULL) {
             long nd = study_sched_hair_next_epoch_day();
             if (nd > 0) {
