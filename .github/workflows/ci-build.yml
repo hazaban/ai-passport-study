@@ -12,15 +12,20 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
 
     - name: Install prerequisites and ESP-IDF
       run: |
         set -e
         mkdir -p $HOME/esp
         cd $HOME/esp
-        # Clone esp-idf (use a stable release tag - adjust as needed)
-        git clone --branch v5.2 --depth 1 https://github.com/espressif/esp-idf.git esp-idf
+        # Retry clone to tolerate transient network errors
+        for i in 1 2 3; do
+          git clone --branch v5.2 --depth 1 --recurse-submodules https://github.com/espressif/esp-idf.git esp-idf && break || sleep 10
+        done
         cd esp-idf
+        sudo apt-get update || true
         ./install.sh
         # Source the export script for the rest of the steps
         . $HOME/esp/esp-idf/export.sh
