@@ -82,6 +82,17 @@ int  study_sched_minutes_until(int from_h, int from_m, int to_h, int to_m);
  */
 bool study_sched_scene_after_done(int task_id, study_sched_scene_t *scene);
 
+/* ---------- 每日固定闹钟：早上温柔唤醒（默认 7:00，可在设置里改） ---------- */
+/* 检查当前时间是否触发起床闹钟（每天仅一次，跨日复位后重置触发标记）。
+ * 返回 true 时应播放 wakeup_alarm 语音。 */
+bool study_sched_check_wakeup_alarm(int now_h, int now_m);
+
+/* 设置起床闹钟时间（设置页「起床闹钟」行可步进调整） */
+void study_sched_set_wake_time(int h, int m);
+
+/* 手动重置闹钟触发标记（跨日时随 scheduler reset 一并复位） */
+void study_sched_reset_wakeup_alarm(void);
+
 /* ---------- 洗头发：周期性提醒（间隔天数可在设置中调整，默认 7 天） ---------- */
 #define STUDY_HAIR_INTERVAL_MIN      3    /* 最少每 3 天 */
 #define STUDY_HAIR_INTERVAL_MAX      30   /* 最多每 30 天 */

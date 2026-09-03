@@ -421,6 +421,9 @@ static void tick_worker(void *arg) {
             now_m = cfg_get("sim_m", 0);
         }
 
+        /* 起床闹钟时间跟随设置页(wake_h/wake_m)变化，修改后立即生效 */
+        study_sched_set_wake_time(cfg_get("wake_h", 7), cfg_get("wake_m", 0));
+
         /* 跨日复位每日任务与提醒状态 */
         if (ctm.tm_year >= 0) {   /* civil 可用(含手动) */
             int cd = (ctm.tm_year + 1900) * 10000 + (ctm.tm_mon + 1) * 100 + ctm.tm_mday;
@@ -437,6 +440,13 @@ static void tick_worker(void *arg) {
         }
 
         study_sched_ev_t ev;
+        /* ----- 1) 起床闹钟：到点只播温柔唤醒语音（无 RTTTL 铃声） ----- */
+        if (study_sched_check_wakeup_alarm(now_h, now_m)) {
+            voice_cmd_t cmd = { .kind = VCMD_SCENE };   /* 场景通路：直接播人声，无提示音 */
+            strncpy(cmd.key, "wakeup_alarm", sizeof(cmd.key) - 1);
+            xQueueSend(s_voice_cmd_q, &cmd, 0);
+        }
+
         /* ----- 0) 洗头发：每 7 天早晨固定时刻语音提醒（需先联网校时） ----- */
         if (study_time_synced()) {
             long today_day = study_time_get_epoch_day();
@@ -475,6 +485,8 @@ void app_study_enter(void) {
         if (s) study_task_set_store(s);
     }
     study_scheduler_reset();
+    /* 起床闹钟时间从设置读取（默认 7:00；tick 循环也会跟随设置变化） */
+    study_sched_set_wake_time(cfg_get("wake_h", 7), cfg_get("wake_m", 0));
     restore_manual_time();        /* 离线时可用的手动日期/时间 */
     ensure_daily_seed();          /* 只预置日常(旧版多余科目会被清理) */
     clear_daily_done();           /* 开机把重复任务 done 复位(新的一天) */

@@ -1183,10 +1183,10 @@ bool ui_detail_wants_back(void) {
 }
 
 /* ==============================================================
- * PAGE_SETTINGS — 设置（WiFi / 亮度 / 电量 / 音量 / 时间 / 早起记录 / 睡眠记录 / 主题 / 洗头间隔 / 返回）
+ * PAGE_SETTINGS — 设置（WiFi / 亮度 / 电量 / 音量 / 时间 / 早起记录 / 睡眠记录 / 起床闹钟 / 主题 / 洗头间隔 / 返回）
  * ============================================================== */
 enum { SET_WIFI = 0, SET_BRIGHT, SET_VOL, SET_NOW, SET_WAKE, SET_SLEEP,
-       SET_THEME, SET_HAIR, SET_BATT, SET_HOME, SET_N };
+       SET_WAKE_ALARM, SET_THEME, SET_HAIR, SET_BATT, SET_HOME, SET_N };
 static lv_obj_t *s_set_scr;
 static lv_obj_t *s_set_list;   /* 设置列表滚动容器：行距/字体不压缩，行多时上下滚动 */
 static lv_obj_t *s_set_cards[SET_N];
@@ -1208,10 +1208,11 @@ static int month_days(int y, int mo) {
     return (mo >= 1 && mo <= 12) ? md[mo - 1] : 30;
 }
 
-/* 该行可编辑单元数：亮度/音量/洗头间隔=1；当前日期时间=3(日/时/分)；
+/* 该行可编辑单元数：亮度/音量/洗头间隔=1；起床闹钟=2(时/分)；当前日期时间=3(日/时/分)；
    早起/睡眠记录与主题行=0(按OK即生效，无步进编辑) */
 static int row_units(int i) {
     if (i == SET_NOW) return 3;
+    if (i == SET_WAKE_ALARM) return 2;
     if (i == SET_WAKE || i == SET_SLEEP || i == SET_THEME) return 0;
     return 1;
 }
@@ -1305,6 +1306,11 @@ static void render_one_row(int i) {
             else snprintf(buf, sizeof(buf), "睡眠记录 %02d:%02d", h, mi);
             break;
         }
+        case SET_WAKE_ALARM: {
+            int h = cfg_geti("wake_h", 7), mi = cfg_geti("wake_m", 0);
+            snprintf(buf, sizeof(buf), "起床闹钟 %02d:%02d", h, mi);
+            break;
+        }
         case SET_THEME: {
             int th = cfg_geti("theme", 0);   /* 0=夜间 1=白天 */
             snprintf(buf, sizeof(buf), "界面模式 %s", th ? "白天" : "夜间");
@@ -1381,7 +1387,7 @@ void ui_settings_key(uint8_t btn_u, uint8_t ev_u) {
             return;
         }
         if (s_set_sel == SET_BRIGHT || s_set_sel == SET_VOL || s_set_sel == SET_NOW ||
-            s_set_sel == SET_HAIR) {
+            s_set_sel == SET_HAIR || s_set_sel == SET_WAKE_ALARM) {
             /* 进入编辑：先依据当前来源初始化工作值 */
             if (s_set_sel == SET_NOW && !s_man_valid && !study_time_synced()) {
                 s_man[0] = 2026; s_man[1] = 1; s_man[2] = 1; s_man[3] = 8; s_man[4] = 0;
@@ -1418,6 +1424,14 @@ void ui_settings_key(uint8_t btn_u, uint8_t ev_u) {
         } else if (row == SET_HAIR) {
             study_sched_hair_set_interval(study_sched_hair_interval_days() + dir);
             cfg_seti("hair_interval", study_sched_hair_interval_days());
+        } else if (row == SET_WAKE_ALARM) {
+            /* 起床闹钟：时/分两个单元步进，修改即时写入配置 */
+            int h  = cfg_geti("wake_h", 7);
+            int mi = cfg_geti("wake_m", 0);
+            if (s_edit_unit == 0) h  = (h  + dir + 24) % 24;
+            else                  mi = (mi + dir * 5 + 60) % 60;
+            cfg_seti("wake_h", h);
+            cfg_seti("wake_m", mi);
         } else if (row == SET_NOW) {
             if (!s_man_valid) return;
             if (s_edit_unit == 0) {   /* 日(步进1天，自动跨月/年) */

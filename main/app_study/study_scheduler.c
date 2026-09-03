@@ -12,6 +12,9 @@
 #define SCHED_FIRED_BITS  256
 static uint8_t s_fired[(SCHED_FIRED_BITS + 7) / 8];
 
+/* 每日起床闹钟只响一次 */
+static bool s_wakeup_alarm_fired = false;
+
 static inline void fired_set(int id, bool v) {
     int bit = id & (SCHED_FIRED_BITS - 1);
     if (v) s_fired[bit >> 3] |=  (uint8_t)(1u << (bit & 7));
@@ -24,10 +27,33 @@ static inline bool fired_get(int id) {
 
 void study_scheduler_reset(void) {
     memset(s_fired, 0, sizeof(s_fired));
+    s_wakeup_alarm_fired = false;
 }
 
 void study_scheduler_new_day(void) {
     study_scheduler_reset();
+}
+
+/* ---------- 早上温柔唤醒闹钟（默认 7:00，可在设置里改） ---------- */
+#define WAKEUP_WINDOW  2   /* 唤醒时间 ~ +2 分钟内触发均可（每 30s tick 不会错过）*/
+static int s_wake_h = 7;
+static int s_wake_m = 0;
+
+void study_sched_set_wake_time(int h, int m) {
+    if (h >= 0 && h < 24) s_wake_h = h;
+    if (m >= 0 && m < 60) s_wake_m = m;
+}
+
+bool study_sched_check_wakeup_alarm(int now_h, int now_m) {
+    if (s_wakeup_alarm_fired) return false;
+    if (now_h != s_wake_h) return false;
+    if (now_m < s_wake_m || now_m > s_wake_m + WAKEUP_WINDOW) return false;
+    s_wakeup_alarm_fired = true;
+    return true;
+}
+
+void study_sched_reset_wakeup_alarm(void) {
+    s_wakeup_alarm_fired = false;
 }
 
 /* ---------- 洗头发：周期性提醒（间隔天数可配置） ---------- */
