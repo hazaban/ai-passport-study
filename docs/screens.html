@@ -48,6 +48,22 @@
   table.spec td,table.spec th{border:1px solid #e4e7eb;padding:5px 9px;text-align:left}
   table.spec th{background:#f7f8fa}
   .chip{display:inline-block;padding:0 8px;border-radius:8px;color:#fff;font-size:12px;line-height:20px}
+
+  /* PAGE_HOME — 封面（柔和浅色新排版） */
+  .hm{width:240px;height:320px;position:relative;background:#F1F5FB;overflow:hidden}
+  .hm-card{border:1px solid #DFE7F1;border-radius:16px}
+  .hm-title{position:absolute;left:16px;top:8px;font-size:14px;font-weight:700;color:#35435E}
+  .hm-date{position:absolute;left:16px;top:33px;font-size:12px;color:#93A1B5}
+  .hm-clock{position:absolute;right:14px;top:34px;font-size:13px;color:#93A1B5}
+  .hm-batt{position:absolute;right:14px;top:9px;width:42px;height:18px;border:1px solid #B9C6D6;border-radius:4px;background:#F6F9FD}
+  .hm-batt-fill{position:absolute;left:2px;top:3px;width:30px;height:12px;border-radius:2px;background:#53A66A}
+  .hm-batt-nub{position:absolute;right:-4px;top:5px;width:4px;height:8px;border-radius:2px;background:#B9C6D6}
+  .hm-cd-cap{position:absolute;left:0;top:10px;width:224px;text-align:center;font-size:12px;color:#93A1B5}
+  .hm-cd-num{position:absolute;left:0;top:36px;width:224px;text-align:center;font-size:22px;font-weight:700;color:#35435E}
+  .hm-cd-unit{font-size:12px;color:#E8923C;font-weight:600}
+  .hm-cd-dist{position:absolute;left:0;top:78px;width:224px;text-align:center;font-size:12px;color:#93A1B5}
+  .hm-btn{position:absolute;left:8px;width:224px;text-align:center;border-radius:23px;font-size:15px}
+  .hm-foot{position:absolute;left:0;bottom:12px;width:240px;text-align:center;font-size:10px;color:#93A1B5}
 </style>
 </head>
 <body>
@@ -60,6 +76,28 @@
 </div>
 
 <div class="grid">
+
+<!-- 屏幕0：封面首页 -->
+<div class="screen-card">
+  <h3>⓪ 封面首页（柔和浅色新排版）</h3>
+  <div class="desc">第一行=应用名+右侧电池(进度条式填充,无数字)；第二行=年月日周几+时分秒；中部考研倒计时；底部两个入口按钮。浅色但更柔和：近白卡片+淡描边+低饱和蓝。</div>
+  <div class="frame"><div class="box"><div class="scr"><div class="hm">
+    <div class="hm-card" style="position:absolute;left:8px;top:8px;width:224px;height:52px;background:#fff">
+      <div class="hm-title">考研日程助手</div>
+      <div class="hm-batt"><div class="hm-batt-fill"></div><div class="hm-batt-nub"></div></div>
+      <div class="hm-date">2026年9月3日 周四</div>
+      <div class="hm-clock">08:45:12</div>
+    </div>
+    <div class="hm-card" style="position:absolute;left:8px;top:64px;width:224px;height:96px;background:#EAF1FB">
+      <div class="hm-cd-cap">考研倒计时</div>
+      <div class="hm-cd-num">107<span class="hm-cd-unit"> 天</span></div>
+      <div class="hm-cd-dist">距离 12月21日</div>
+    </div>
+    <div class="hm-btn" style="top:172px;height:46px;background:#7A9BCC;color:#fff;line-height:46px">进入学习</div>
+    <div class="hm-btn" style="top:226px;height:42px;border-radius:21px;background:#fff;border:2px solid #7A9BCC;color:#7A9BCC;line-height:42px">设置</div>
+    <div class="hm-foot">保持专注 · 每天进步一点</div>
+  </div></div></div></div>
+</div>
 
 <!-- 屏幕1：日常秩序页 -->
 <div class="screen-card">
