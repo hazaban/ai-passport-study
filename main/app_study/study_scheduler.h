@@ -101,3 +101,4 @@ void study_sched_hair_set_last_day(long last_day);
 /* 当前是否已过洗头日且正处于早晨窗口内 → 需要语音提醒。
  * 每个洗头日后只提醒一次（s_hair_fired 置位，直到下次洗头才复位）。 */
 bool study_sched_hair_should_remind(long today_day, int now_h, int now_m);
+long study_sched_hair_next_epoch_day(void);

@@ -70,6 +70,12 @@ void study_sched_hair_set_last_day(long last_day) {
     s_hair_fired    = false;
 }
 
+/* 下一次洗头发应在哪天（epoch 日序号）；从未洗过返回 -1 */
+long study_sched_hair_next_epoch_day(void) {
+    if (s_hair_last_day < 0) return -1L;
+    return s_hair_last_day + STUDY_HAIR_INTERVAL_DAYS;
+}
+
 bool study_sched_hair_should_remind(long today_day, int now_h, int now_m) {
     if (s_hair_last_day < 0) return false;        /* 从未洗过头，无从提醒 */
     if (s_hair_fired) return false;               /* 本周期已提醒过 */

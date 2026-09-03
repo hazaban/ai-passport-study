@@ -11,6 +11,7 @@
 #include "study_category.h"
 #include "study_wifi.h"
 #include "study_time.h"
+#include "study_scheduler.h"
 #include "study_font.h"
 #include <string.h>
 #include <stdio.h>
@@ -228,6 +229,21 @@ void ui_home_build(void) {
         lv_obj_set_align(g, LV_ALIGN_BOTTOM_MID); lv_obj_set_pos(g, 0, -10);
     }
 
+    /* 电池电量（倒计时卡右上角；低电变红提醒充电） */
+    {
+        int soc = bsp_battery_soc();
+        if (soc >= 0) {
+            char bb[28];
+            uint32_t bcol;
+            if (soc <= 20) { snprintf(bb, sizeof(bb), "低电 %d%% 请充电", soc); bcol = 0xFF5A5A; }
+            else if (soc <= 40) { snprintf(bb, sizeof(bb), "%s %d%%", LV_SYMBOL_BATTERY_1, soc); bcol = 0xFFB23E; }
+            else { snprintf(bb, sizeof(bb), "%s %d%%", LV_SYMBOL_BATTERY_FULL, soc); bcol = 0x2FBF71; }
+            lv_obj_t *bat = ui_pixel_label(cnt, bb, F_STUDY, bcol);
+            lv_obj_set_align(bat, LV_ALIGN_TOP_RIGHT);
+            lv_obj_set_pos(bat, -12, 12);
+        }
+    }
+
     /* 两个入口按钮：未选中=白卡，仅选中的变蓝（避免两个都显蓝） */
     s_home_btn[0] = home_big_button(184, true);
     lv_obj_t *b0 = ui_pixel_label(s_home_btn[0], "进入学习", F_STUDY, C_PRIMARY);
@@ -408,20 +424,26 @@ static void render_todo_cards(void) {
         lv_label_set_long_mode(title, LV_LABEL_LONG_CLIP);
         if (t.done) lv_obj_set_style_text_decor(title, LV_TEXT_DECOR_STRIKETHROUGH, 0);
 
-        /* 右上角时间 */
-        if (t.hour >= 0 && t.minute >= 0) {
-            char tbuf[8];
+        /* 右上角时间（洗头发：显示“下次洗头日期”） */
+        char tbuf[16];
+        if (t.hour < 0 && strstr(t.title, "洗头发") != NULL) {
+            long nd = study_sched_hair_next_epoch_day();
+            if (nd > 0) {
+                time_t tt = nd * 86400L;
+                struct tm hm;
+                localtime_r(&tt, &hm);
+                snprintf(tbuf, sizeof(tbuf), "下次%d/%d", hm.tm_mon + 1, hm.tm_mday);
+            } else {
+                strncpy(tbuf, "周期提醒", sizeof(tbuf));
+            }
+        } else if (t.hour >= 0 && t.minute >= 0) {
             snprintf(tbuf, sizeof(tbuf), "%02d:%02d", t.hour, t.minute);
-            lv_obj_t *tt = ui_pixel_label(card, tbuf, F_STUDY, C_MUTED);
-            lv_obj_set_align(tt, LV_ALIGN_TOP_RIGHT);
-            lv_obj_set_pos(tt, -8, 4);
         } else {
-            char tbuf[8];
             snprintf(tbuf, sizeof(tbuf), "待办");
-            lv_obj_t *tt = ui_pixel_label(card, tbuf, F_STUDY, C_MUTED);
-            lv_obj_set_align(tt, LV_ALIGN_TOP_RIGHT);
-            lv_obj_set_pos(tt, -8, 4);
         }
+        lv_obj_t *tt = ui_pixel_label(card, tbuf, F_STUDY, C_MUTED);
+        lv_obj_set_align(tt, LV_ALIGN_TOP_RIGHT);
+        lv_obj_set_pos(tt, -8, 4);
 
         todo_card_objs[ci] = card;
     }
