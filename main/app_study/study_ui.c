@@ -195,7 +195,7 @@ static void home_time_refresh(void) {
         char dbuf[36];
         if (ok) {
             static const char *wd[] = {"日","一","二","三","四","五","六"};
-            snprintf(dbuf, sizeof(dbuf), "%d年%d月%d日 周%s",
+            snprintf(dbuf, sizeof(dbuf), "%d年%d月%d日 周%.3s",
                      tv.tm_year + 1900, tv.tm_mon + 1, tv.tm_mday, wd[tv.tm_wday]);
         } else {
             snprintf(dbuf, sizeof(dbuf), "请设时间");
