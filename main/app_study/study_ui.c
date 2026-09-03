@@ -736,13 +736,22 @@ void ui_todo_key(uint8_t btn_u, uint8_t ev_u) {
         return;
     }
 
-    /* 长按 上/下 = 切换大页签：日常任务 ⇄ 学习科目 */
-    if (ev_u == BSP_BTN_LONG && (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN)) {
+    /* 长按 上 = 切换大页签：日常任务 ⇄ 学习科目 */
+    if (ev_u == BSP_BTN_LONG && btn == BSP_BTN_UP) {
         s_tab = (s_tab == TAB_DAILY) ? TAB_SUBJECTS : TAB_DAILY;
         s_bottom_focus = false;
         s_bottom_idx = 0;
         s_sel = todo_first();
         s_scroll = 0;
+        ui_todo_refresh();
+        return;
+    }
+    /* 长按 下 = 快捷添加：切到各科学习页签并直接打开添加任务页（默认学习任务栏） */
+    if (ev_u == BSP_BTN_LONG && btn == BSP_BTN_DOWN) {
+        s_tab = TAB_SUBJECTS;
+        s_bottom_focus = false;
+        s_todo_wants_add = true;
+        s_todo_wants_settings = false;
         ui_todo_refresh();
         return;
     }
@@ -917,7 +926,7 @@ static void add_render_preset_list(void) {
 void ui_add_build(void) {
     s_add_step = 0;
     s_add_sel = 0;
-    s_add_tab = 0;
+    s_add_tab = 1;   /* 进入添加页默认展示「学习任务」(各科学习)栏 */
     memset(&s_draft, 0, sizeof(s_draft));
     s_draft.hour = -1; s_draft.minute = -1;
     s_draft.repeat = STUDY_REPEAT_ONCE;

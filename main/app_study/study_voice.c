@@ -283,6 +283,20 @@ static int play_blocking_rtttl_then_voice(const char *rtttl, const char *voice_k
     return 0;
 }
 
+/* 直接播放一段上传语音(不含任何提示音) */
+static int play_blocking_voice_only(const char *voice_key) {
+    if (s_playing) return -1;
+    s_playing = true;
+    s_stop = false;
+
+    if (!s_stop && voice_key && study_voice_file_exists(voice_key)) {
+        play_wav_blocking(voice_key);
+    }
+
+    s_playing = false;
+    return 0;
+}
+
 int study_voice_play_complete(int category_id) {
     return study_voice_play_complete_with_subtype(category_id, -1);
 }
@@ -291,13 +305,20 @@ int study_voice_play_complete_with_subtype(int category_id, int subtype) {
     const study_category_t *cat = study_category_get(category_id);
     if (!cat) return -1;
     const char *vkey = study_voice_resolve_key(category_id, subtype);
-    /* 完成音改为柔和“叮咚”，再接鼓励人声 */
+    /* 不再先播“叮咚”提示音：直接播上传的语音(MP3→WAV)。
+       仅当该语音文件缺失时才回落到柔和提示音兜底。 */
+    if (vkey && study_voice_file_exists(vkey)) {
+        return play_blocking_voice_only(vkey);
+    }
     return play_blocking_rtttl_then_voice(STUDY_VOICE_CHIME_RTTTL, vkey);
 }
 
 int study_voice_play_scene(const char *voice_key) {
     if (!voice_key) return -1;
-    /* 场景类：先用柔和“叮咚”，再接场景语音 */
+    /* 场景类：直接播上传语音，缺失时才回落到“叮咚”+语音 */
+    if (study_voice_file_exists(voice_key)) {
+        return play_blocking_voice_only(voice_key);
+    }
     return play_blocking_rtttl_then_voice(STUDY_VOICE_CHIME_RTTTL, voice_key);
 }
 
