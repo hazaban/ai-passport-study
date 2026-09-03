@@ -28,6 +28,7 @@ jobs:
         done
         cd esp-idf
         sudo apt-get update || true
+        sudo apt-get install -y ffmpeg   # 语音包：mp3 -> wav 转码用
         ./install.sh
         # Source the export script for the rest of the steps
         . $HOME/esp/esp-idf/export.sh
@@ -56,6 +57,10 @@ jobs:
         cd "${{ steps.detect.outputs.project }}"
         . $HOME/esp/esp-idf/export.sh
         idf.py set-target esp32c3
+        # 语音包：把 assets/voice_packs/*.mp3 转成 build/voicepack/*.wav，
+        # 之后编译期 spiffs_create_partition_image(voicepack ...) 会生成 voicepack.bin 并纳入产物。
+        # 注意必须在 set-target(会清空 build/) 之后执行。
+        python3 tools/build_voice_spiffs.py
         idf.py build
       shell: bash
 

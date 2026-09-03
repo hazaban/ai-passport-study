@@ -8645,7 +8645,7 @@ static lv_font_fmt_txt_dsc_t font_dsc = {
     .cmap_num = 2,
     .bpp = 2,
     .kern_classes = 0,
-    .bitmap_format = 2,
+    .bitmap_format = 0,   /* 0=PLAIN: 位图实为普通 bpp2 原始像素；原为 2(COMPRESSED_NO_PREFILTER)导致汉字被压缩解码成空白 */
 #if LVGL_VERSION_MAJOR == 8
     .cache = &cache
 #endif

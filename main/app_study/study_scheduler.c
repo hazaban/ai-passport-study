@@ -5,6 +5,7 @@
 #include "study_task.h"
 #include "study_category.h"
 #include <string.h>
+#include <stdlib.h>
 
 /* fired 位图：按 task_id 的低 255 位记录今日是否已经响过铃。
  * task_id 是自增正整数，每天最多 256 个任务，完全够用。 */
@@ -92,7 +93,10 @@ int study_sched_minutes_until(int from_h, int from_m, int to_h, int to_m) {
 bool study_sched_find_next(int now_h, int now_m, study_sched_ev_t *ev) {
     if (!ev) return false;
 
-    int ids[TASK_MAX_COUNT];
+    /* TASK_MAX_COUNT=256 → 1KB 栈上数组。在 study_tick(原 3KB 栈) 上会把栈用爆
+     * （实测 Guru Meditation stack protection fault，仅越界 ~20B）。改堆分配。 */
+    int *ids = (int *)malloc(TASK_MAX_COUNT * sizeof(int));
+    if (!ids) return false;
     int n = study_task_list_today(ids, TASK_MAX_COUNT);
 
     int best_id = -1;
@@ -148,13 +152,14 @@ bool study_sched_find_next(int now_h, int now_m, study_sched_ev_t *ev) {
         }
     }
 
-    if (best_id < 0) return false;
+    if (best_id < 0) { free(ids); return false; }
 
     ev->kind = STUDY_SCHED_TASK_DUE;
     ev->task_id = best_id;
     ev->due_hour = (int8_t)best_due_h;
     ev->due_minute = (int8_t)best_due_m;
     ev->overdue_minutes = best_ordiff;
+    free(ids);
     return true;
 }
 

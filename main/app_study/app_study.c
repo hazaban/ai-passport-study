@@ -109,6 +109,20 @@ static void voice_fs_init(void) {
     study_voice_set_fs(&s_voice_fs);
 }
 
+/* study_voice.c 里的 study_voice_file_exists() 只是 weak 默认(恒返回 false)；
+ * 这里给出 ESP32 强实现：探测 /spiffs/<key>.wav 是否真实存在。
+ * 缺了它 play_wav_blocking() 永远不被调用 → 只有 RTTTL 旋律、人声静音。 */
+bool study_voice_file_exists(const char *voice_key) {
+    if (!voice_key) return false;
+    char path[96];
+    int n = snprintf(path, sizeof(path), "/spiffs/%s.wav", voice_key);
+    if (n < 0 || n >= (int)sizeof(path)) return false;
+    FILE *f = fopen(path, "rb");
+    if (!f) return false;
+    fclose(f);
+    return true;
+}
+
 /* ---------- voice_cmd：给播放 worker 的命令 ---------- */
 typedef enum { VCMD_STOP, VCMD_COMPLETE, VCMD_SCENE, VCMD_RTTTL } vcmd_kind_t;
 typedef struct {
@@ -333,6 +347,10 @@ static void tick_worker(void *arg) {
 
 /* ---------- DEMO 入口 ---------- */
 void app_study_enter(void) {
+    /* 子应用接管后，调用任务(main)可能长时间阻塞(连 WiFi/首次格式化 SPIFFS)，
+     * 默认 5s 任务看门狗会误判"main 未喂狗"导致复位循环；先摘除其订阅。 */
+    esp_task_wdt_delete(NULL);   /* 若未注册返回错误，忽略即可 */
+
     /* 0) 联网 + 时间源：先连 WiFi（有凭证直连 / 无凭证自动开配网热点），
      *    联网后 SNTP 才能校时；未联网回落手动时间 */
     study_wifi_init("STU_STUDY");
@@ -355,7 +373,7 @@ void app_study_enter(void) {
     voice_fs_init();
     study_voice_set_output(audio_output_cb, audio_format_hint);
     s_voice_cmd_q = xQueueCreate(8, sizeof(voice_cmd_t));
-    xTaskCreate(voice_worker, "study_voice", 4096, NULL, 4, &s_voice_task);
+    xTaskCreate(voice_worker, "study_voice", 8192, NULL, 4, &s_voice_task);
 
     /* 3) UI 初始化 & 载入首屏（封面主页面） */
     study_ui_init(&s_ui_cb);
@@ -373,7 +391,7 @@ void app_study_enter(void) {
     }
 
     /* 4) tick 任务 (调度器) */
-    xTaskCreate(tick_worker, "study_tick", 3072, NULL, 3, &s_tick_task);
+    xTaskCreate(tick_worker, "study_tick", 8192, NULL, 3, &s_tick_task);
 
     ESP_LOGI(TAG, "考研助手已启动");
 }
