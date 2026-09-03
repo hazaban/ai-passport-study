@@ -45,7 +45,7 @@
 
 static const char *TAG = "app_study";
 
-static uint32_t s_last_long_ok_ms = 0;   /* 上次长按OK时间戳(ms)，用于抑制尾随单击 */
+static uint32_t s_last_long_ok_ms = 0;   /* 上次长按任意键的时间戳(ms)，用于抑制长按后的尾随/幽灵单击 */
 
 static int  cfg_get(const char *k, int def);
 static void cfg_set(const char *k, int v);
@@ -563,15 +563,19 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
         return;
     }
 
+    /* 记录任意键的“长按”时刻：三键共用一路 ADC，长按后的释放尾随/ADC 反弹会产生
+       幽灵单击，若不抑制就会误触发任务选中（例如长按上/下切页签后立刻冒出一串选中）。 */
+    if (ev == BSP_BTN_LONG) {
+        s_last_long_ok_ms = (uint32_t)(esp_timer_get_time() / 1000);
+    }
     /* 长按 OK = 返回上一页（封面页长按 = 退出回目录）。删除请用“双击 OK”。 */
     if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {
-        s_last_long_ok_ms = (uint32_t)(esp_timer_get_time() / 1000);  /* 抑制长按后的尾随单击 */
         if (s_page == PAGE_HOME) s_wants_exit = true;
         else                     nav_back();
         bsp_lvgl_unlock();
         return;
     }
-    /* 刚长按完 600ms 内的单击可能是释放尾随，忽略，避免误触 */
+    /* 刚长按完 600ms 内的单击可能是释放尾随或 ADC 反弹，忽略，避免误触 */
     if (ev == BSP_BTN_CLICK && (esp_timer_get_time() / 1000) - s_last_long_ok_ms < 600) {
         bsp_lvgl_unlock();
         return;
