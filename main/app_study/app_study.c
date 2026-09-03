@@ -355,6 +355,8 @@ static void voice_worker(void *arg) {
     voice_cmd_t cmd;
     for (;;) {
         if (xQueueReceive(s_voice_cmd_q, &cmd, pdMS_TO_TICKS(200)) != pdPASS) continue;
+        ESP_LOGI(TAG, "语音播放: kind=%d key=%s", (int)cmd.kind,
+                 (cmd.kind == VCMD_COMPLETE) ? "complete" : cmd.key);
         study_voice_stop();
         switch (cmd.kind) {
             case VCMD_COMPLETE:
