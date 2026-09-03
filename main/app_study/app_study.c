@@ -241,8 +241,8 @@ static void restore_manual_time(void) {
     study_time_set_manual(y, mo, d, h, mi);
 }
 
-/* ---------- 洗头发：每 7 天周期 ----------
- * 完成洗头 → 记录当天 epoch 天数；之后第 7 天早晨语音提醒。
+/* ---------- 洗头发：周期性（间隔天数可配置，默认 7 天） ----------
+ * 完成洗头 → 记录当天 epoch 天数；之后第 interval 天早晨语音提醒。
  * 天数存 NVS(config.hair_last_day)，重启后仍能累计周期。 */
 static void record_hair_wash(void) {
     long d = study_time_get_epoch_day();
@@ -253,11 +253,26 @@ static void record_hair_wash(void) {
 
 /* ---------- UI callbacks 实现 ---------- */
 static void on_task_done_changed(int task_id, bool done) {
-    if (study_task_mark_done(task_id, done) != 0) return;
-    if (!done) return;   /* 取消完成不弹鼓励 */
-
     study_task_t t;
     if (study_task_get(task_id, &t) != 0) return;
+
+    /* 洗头发特殊处理：OK 确认后不划线（不做完成标记），只记录本次洗头日，
+     * 任务卡右上角随即自动显示下一次洗头时间（"还有X天"/"下次M/D"）。 */
+    if (t.hour < 0 && strstr(t.title, "洗头发") != NULL) {
+        if (!done) return;                     /* 洗头发无"取消完成"态 */
+        record_hair_wash();
+        if (bsp_lvgl_lock(100)) {
+            ui_scene_show(SCENE_MSG_HAIR_WASH);
+            bsp_lvgl_unlock();
+        }
+        voice_cmd_t cmd = { .kind = VCMD_SCENE };
+        strncpy(cmd.key, "hair_wash", sizeof(cmd.key) - 1);
+        xQueueSend(s_voice_cmd_q, &cmd, 0);
+        return;
+    }
+
+    if (study_task_mark_done(task_id, done) != 0) return;
+    if (!done) return;   /* 取消完成不弹鼓励 */
 
     /* 日常秩序 → 场景钩子 */
     if (t.category == CAT_DAILY) {
@@ -464,10 +479,11 @@ void app_study_enter(void) {
     ensure_daily_seed();          /* 只预置日常(旧版多余科目会被清理) */
     clear_daily_done();           /* 开机把重复任务 done 复位(新的一天) */
 
-    /* 洗头发周期：重启后从 NVS 恢复上次洗头天数，保持每 7 天节奏 */
+    /* 洗头发周期：重启后从 NVS 恢复上次洗头天数与间隔天数 */
     {
         int hd = cfg_get("hair_last_day", -1);
         if (hd > 0) study_sched_hair_set_last_day((long)hd);
+        study_sched_hair_set_interval(cfg_get("hair_interval", STUDY_HAIR_INTERVAL_DEFAULT));
     }
 
     /* 2) voice 输出注入 + 语音文件系统挂载 */

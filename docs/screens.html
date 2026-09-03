@@ -102,7 +102,7 @@
   依据 <b>FoloToy AI Passport</b> 屏幕参数：竖屏 <b>240×320</b>（RGB，使用 LVGL Montserrat 10/12/14 号像素字体）逐页还原。
   本次预览包含待确认的改动：<b>① 首页倒计时：标题变橙调大、数字变黑调大；② 其他页面蓝色降饱和（柔和蓝）；③ 非首页新增「白天模式」（夜间=当前黑底白字）</b>。
   设置页的「起床/睡觉时间」已改为 <b>早起记录 / 睡眠记录</b>（按 OK 记录当前时刻，不新增行）；早起/睡觉<b>闹钟提醒已删除</b>。<br>
-  <b>洗头发</b>任务块直接展示下次洗的时间（如「还有3天」「今天洗」）；已添加的日程和学习科目<b>每过 24 点自动重置为未完成</b>。<br>
+  <b>洗头发</b>任务卡与其它任务不同：OK 确认后<b>不划线</b>，只记录本次洗头，右上角自动显示下一次时间（「还有X天」/「今天洗」/「下次M/D」）；间隔天数在设置页<b>洗头间隔</b>行调整（▲/▼，3~30 天）。已添加的日程和学习科目<b>每过 24 点自动重置为未完成</b>。<br>
   首页左右两页 = <b>日常秩序 / 各科学习</b>，每页内未完成在上、已完成在下，任务多时可上/下滚动；添加任务支持分页选择。<br>
   点击二维码/链接可通过手机配网，见界面「WiFi 配网」。
 </div>
@@ -133,7 +133,7 @@
 <!-- 屏幕1：日常秩序页 · 夜间模式 -->
 <div class="screen-card">
   <h3>① 今日任务 · 日常秩序页（夜间模式 = 当前黑底白字）</h3>
-  <div class="desc">夜间为当前深色方案；蓝色由 <b>#6FA8FF → 柔和蓝 #7EA6D6</b>（选项文字、选中边框、倒计时胶囊），饱和度明显降低不晃眼。</div>
+  <div class="desc">夜间为当前深色方案；蓝色由 <b>#6FA8FF → 柔和蓝 #7EA6D6</b>。底部<b>洗头发</b>卡与其它任务不同：OK 确认后<b>不划线</b>，只记录本次洗头，右上角自动变为下一次时间（<b>点击卡片</b>预览「还有3天 ⇄ 下次9/11」两态）。</div>
   <div class="frame"><div class="box"><div class="scr"><div class="screen scr-night" id="s_todo_daily_night">
     <div class="sts-title">加油上岸!</div>
     <div class="sts-prog">进度 2/7</div>
@@ -146,7 +146,7 @@
       <div class="card" style="left:0;top:104px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">08:00</div><div class="ctitle" style="top:20px">□&nbsp;开始学习（放好手机）</div></div>
       <div class="card" style="left:0;top:146px;width:224px;background:#1A2530;box-shadow:none"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#9AA8B8">06:45</div><div class="ctitle done" style="top:20px">✓&nbsp;起床·叠被</div></div>
       <div class="card" style="left:0;top:188px;width:224px;background:#1A2530;box-shadow:none"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#9AA8B8">06:50</div><div class="ctitle done" style="top:20px">✓&nbsp;早起一杯水</div></div>
-      <div class="card" style="left:0;top:230px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">还有3天</div><div class="ctitle" style="top:20px">□&nbsp;洗头发</div></div>
+      <div class="card" style="left:0;top:230px;width:224px" onclick="toggleHair('hair_n')"><div class="bar" style="background:#82BE2D"></div><div class="ctime"><span id="hair_n">还有3天</span></div><div class="ctitle" style="top:20px">□&nbsp;洗头发</div></div>
     </div>
     <div class="fbtn" style="left:16px">＋ 添加任务</div>
     <div class="fbtn" style="left:128px">设置</div>
@@ -157,7 +157,7 @@
 <!-- 屏幕2：日常秩序页 · 白天模式 -->
 <div class="screen-card">
   <h3>② 今日任务 · 日常秩序页（白天模式 = 新增柔和浅色）</h3>
-  <div class="desc">白天模式：<b>背景 #F2F5F9</b>（柔和浅蓝灰）、白色卡片、深藏青文字 #2B3A4A 清晰不刺眼；选中边框用<b>降饱和灰蓝 #9BB1C6（不用主蓝）</b>；<b>洗头发</b>块直接显示「还有3天」。在设置页「界面模式」切换。</div>
+  <div class="desc">白天模式：<b>背景 #F2F5F9</b>（柔和浅蓝灰）、白色卡片、深藏青文字 #2B3A4A 清晰不刺眼；选中边框用<b>降饱和灰蓝 #9BB1C6（不用主蓝）</b>；<b>洗头发</b>卡 OK 确认后不划线、自动显示下次时间（<b>点击卡片</b>预览）。在设置页「界面模式」切换。</div>
   <div class="frame"><div class="box"><div class="scr"><div class="screen scr-day" id="s_todo_daily_day">
     <div class="sts-title">加油上岸!</div>
     <div class="sts-prog">进度 2/7</div>
@@ -170,7 +170,7 @@
       <div class="card" style="left:0;top:104px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">08:00</div><div class="ctitle" style="top:20px">□&nbsp;开始学习（放好手机）</div></div>
       <div class="card" style="left:0;top:146px;width:224px;background:#F5F7FA;box-shadow:none"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#8A97A8">06:45</div><div class="ctitle done" style="top:20px">✓&nbsp;起床·叠被</div></div>
       <div class="card" style="left:0;top:188px;width:224px;background:#F5F7FA;box-shadow:none"><div class="bar" style="background:#82BE2D;opacity:.5"></div><div class="ctime" style="color:#8A97A8">06:50</div><div class="ctitle done" style="top:20px">✓&nbsp;早起一杯水</div></div>
-      <div class="card" style="left:0;top:230px;width:224px"><div class="bar" style="background:#82BE2D"></div><div class="ctime">还有3天</div><div class="ctitle" style="top:20px">□&nbsp;洗头发</div></div>
+      <div class="card" style="left:0;top:230px;width:224px" onclick="toggleHair('hair_d')"><div class="bar" style="background:#82BE2D"></div><div class="ctime"><span id="hair_d">还有3天</span></div><div class="ctitle" style="top:20px">□&nbsp;洗头发</div></div>
     </div>
     <div class="fbtn" style="left:16px">＋ 添加任务</div>
     <div class="fbtn" style="left:128px">设置</div>
@@ -236,20 +236,21 @@
 
 <!-- 屏幕5：设置（夜间模式 · 新行） -->
 <div class="screen-card">
-  <h3>⑤ 设置（早起记录/睡眠记录 = 按 OK 记时间戳，不新增行）</h3>
-  <div class="desc">原「起床时间/睡觉时间」两行改为 <b>早起记录 / 睡眠记录</b>：选中后按 OK 把当前时刻记下来；「界面模式」行按 OK 在 夜间/白天 间切换。共 9 行，无新增行。</div>
+  <h3>⑤ 设置（早起/睡眠记录 = 按 OK 记时间戳 · 洗头间隔可调）</h3>
+  <div class="desc">原「起床时间/睡觉时间」两行改为 <b>早起记录 / 睡眠记录</b>：选中后按 OK 把当前时刻记下来；「界面模式」行按 OK 在 夜间/白天 间切换；新增 <b>洗头间隔 X 天</b>：OK 进入编辑，▲/▼ 调整（3~30 天），改动立即影响洗头发卡片的"下次时间"。共 10 行。</div>
   <div class="frame"><div class="box"><div class="scr"><div class="screen scr-night" id="s_settings">
     <div class="title">设置</div>
     <div class="panel" style="left:8px;top:40px;width:224px;height:260px;background:transparent;box-shadow:none">
       <div style="position:absolute;left:8px;top:8px;width:208px;height:24px;background:#1D2834;border-radius:6px;box-shadow:0 0 0 2px #7EA6D6"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">WiFi 连接/配网</span></div>
-      <div style="position:absolute;left:8px;top:36px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">屏幕亮度 45%</span></div>
-      <div style="position:absolute;left:8px;top:64px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">音量 80%</span></div>
-      <div style="position:absolute;left:8px;top:92px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">当前时间 2026-09-04 08:45</span></div>
-      <div style="position:absolute;left:8px;top:120px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">早起记录 06:30（OK记录当前）</span></div>
-      <div style="position:absolute;left:8px;top:148px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">睡眠记录 23:15（OK记录当前）</span></div>
-      <div style="position:absolute;left:8px;top:176px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">界面模式 夜间 ▸</span></div>
-      <div style="position:absolute;left:8px;top:204px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">电池电量 85%</span></div>
-      <div style="position:absolute;left:8px;top:232px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">返回主界面</span></div>
+      <div style="position:absolute;left:8px;top:34px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">屏幕亮度 45%</span></div>
+      <div style="position:absolute;left:8px;top:60px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">音量 80%</span></div>
+      <div style="position:absolute;left:8px;top:86px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">当前时间 2026-09-04 08:45</span></div>
+      <div style="position:absolute;left:8px;top:112px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">早起记录 06:30（OK记录当前）</span></div>
+      <div style="position:absolute;left:8px;top:138px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">睡眠记录 23:15（OK记录当前）</span></div>
+      <div style="position:absolute;left:8px;top:164px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">界面模式 夜间 ▸</span></div>
+      <div style="position:absolute;left:8px;top:190px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">洗头间隔 7 天 ▸</span></div>
+      <div style="position:absolute;left:8px;top:216px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">电池电量 85%</span></div>
+      <div style="position:absolute;left:8px;top:242px;width:208px;height:24px;background:#1D2834;border-radius:6px"><span style="position:absolute;left:10px;top:3px;font-size:12px;color:#EDF3F8">返回主界面</span></div>
     </div>
     <div class="mascot" style="left:186px;top:282px">🐹</div>
   </div></div></div></div>
@@ -342,6 +343,15 @@
   <tr><td>选中态边框</td><td>选中卡片外框</td><td>#7EA6D6</td><td>#9BB1C6 降饱和灰蓝（不用主蓝）</td></tr>
   <tr><td>强调橙</td><td>首页倒计时</td><td colspan="2">#F08A24（仅首页）</td></tr>
 </table>
+
+<script>
+/* 洗头发卡两态预览：OK 确认前「还有X天」；确认后不划线，右上角自动变为「下次 M/D」 */
+function toggleHair(id){
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = (el.textContent === '还有3天') ? '下次9/11' : '还有3天';
+}
+</script>
 
 </body>
 </html>

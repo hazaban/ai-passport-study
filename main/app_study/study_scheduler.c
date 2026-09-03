@@ -30,7 +30,7 @@ void study_scheduler_new_day(void) {
     study_scheduler_reset();
 }
 
-/* ---------- 洗头发：每 7 天周期性提醒 ---------- */
+/* ---------- 洗头发：周期性提醒（间隔天数可配置） ---------- */
 /* 早晨提醒窗口：8:00 ~ 8:05（每 30s tick 不会错过） */
 #define HAIR_HOUR        8
 #define HAIR_MINUTE      0
@@ -38,22 +38,31 @@ void study_scheduler_new_day(void) {
 
 static long s_hair_last_day = -1;
 static bool s_hair_fired    = false;
+static int  s_hair_interval = STUDY_HAIR_INTERVAL_DEFAULT;
 
 void study_sched_hair_set_last_day(long last_day) {
     s_hair_last_day = last_day;
     s_hair_fired    = false;
 }
 
+int study_sched_hair_interval_days(void) { return s_hair_interval; }
+
+void study_sched_hair_set_interval(int days) {
+    if (days < STUDY_HAIR_INTERVAL_MIN) days = STUDY_HAIR_INTERVAL_MIN;
+    if (days > STUDY_HAIR_INTERVAL_MAX) days = STUDY_HAIR_INTERVAL_MAX;
+    s_hair_interval = days;
+}
+
 /* 下一次洗头发应在哪天（epoch 日序号）；从未洗过返回 -1 */
 long study_sched_hair_next_epoch_day(void) {
     if (s_hair_last_day < 0) return -1L;
-    return s_hair_last_day + STUDY_HAIR_INTERVAL_DAYS;
+    return s_hair_last_day + s_hair_interval;
 }
 
 bool study_sched_hair_should_remind(long today_day, int now_h, int now_m) {
     if (s_hair_last_day < 0) return false;        /* 从未洗过头，无从提醒 */
     if (s_hair_fired) return false;               /* 本周期已提醒过 */
-    if (today_day < s_hair_last_day + STUDY_HAIR_INTERVAL_DAYS) return false;  /* 未到洗头日 */
+    if (today_day < s_hair_last_day + s_hair_interval) return false;  /* 未到洗头日 */
 
     /* 只在早晨固定窗口内触发一次 */
     int now  = now_h * 60 + now_m;

@@ -1183,10 +1183,10 @@ bool ui_detail_wants_back(void) {
 }
 
 /* ==============================================================
- * PAGE_SETTINGS — 设置（WiFi / 亮度 / 电量 / 音量 / 时间 / 早起记录 / 睡眠记录 / 主题 / 返回）
+ * PAGE_SETTINGS — 设置（WiFi / 亮度 / 电量 / 音量 / 时间 / 早起记录 / 睡眠记录 / 主题 / 洗头间隔 / 返回）
  * ============================================================== */
 enum { SET_WIFI = 0, SET_BRIGHT, SET_VOL, SET_NOW, SET_WAKE, SET_SLEEP,
-       SET_THEME, SET_BATT, SET_HOME, SET_N };
+       SET_THEME, SET_HAIR, SET_BATT, SET_HOME, SET_N };
 static lv_obj_t *s_set_scr;
 static lv_obj_t *s_set_cards[SET_N];
 static int s_set_sel;
@@ -1207,7 +1207,7 @@ static int month_days(int y, int mo) {
     return (mo >= 1 && mo <= 12) ? md[mo - 1] : 30;
 }
 
-/* 该行可编辑单元数：亮度/音量=1；当前日期时间=3(日/时/分)；
+/* 该行可编辑单元数：亮度/音量/洗头间隔=1；当前日期时间=3(日/时/分)；
    早起/睡眠记录与主题行=0(按OK即生效，无步进编辑) */
 static int row_units(int i) {
     if (i == SET_NOW) return 3;
@@ -1247,9 +1247,9 @@ void ui_settings_build(void) {
     lv_obj_t *title = ui_pixel_label(head, "设置", F_STUDY, thm()->ink);
     lv_obj_set_pos(title, 16, 8);
 
-    /* 9 行，320px 屏：行距 26 可容纳全部设置项 */
+    /* 10 行，320px 屏：行距 24 可容纳全部设置项 */
     for (int i = 0; i < SET_N; i++) {
-        lv_obj_t *card = mod_card(s_set_scr, 12, 52 + i * 26, 216, 24, thm()->card, 10, true);
+        lv_obj_t *card = mod_card(s_set_scr, 12, 52 + i * 24, 216, 24, thm()->card, 10, true);
         lv_obj_t *l = ui_pixel_label(card, "", F_STUDY, thm()->ink);
         lv_obj_set_pos(l, 12, 2);
         lv_label_set_long_mode(l, LV_LABEL_LONG_CLIP);
@@ -1300,6 +1300,9 @@ static void render_one_row(int i) {
             snprintf(buf, sizeof(buf), "界面模式 %s", th ? "白天" : "夜间");
             break;
         }
+        case SET_HAIR:
+            snprintf(buf, sizeof(buf), "洗头间隔 %d 天", study_sched_hair_interval_days());
+            break;
         default: strcpy(buf, "返回主界面"); break;
     }
     if (s_set_edit && s_set_sel == i) {
@@ -1365,7 +1368,8 @@ void ui_settings_key(uint8_t btn_u, uint8_t ev_u) {
             ui_settings_render_all();
             return;
         }
-        if (s_set_sel == SET_BRIGHT || s_set_sel == SET_VOL || s_set_sel == SET_NOW) {
+        if (s_set_sel == SET_BRIGHT || s_set_sel == SET_VOL || s_set_sel == SET_NOW ||
+            s_set_sel == SET_HAIR) {
             /* 进入编辑：先依据当前来源初始化工作值 */
             if (s_set_sel == SET_NOW && !s_man_valid && !study_time_synced()) {
                 s_man[0] = 2026; s_man[1] = 1; s_man[2] = 1; s_man[3] = 8; s_man[4] = 0;
@@ -1399,6 +1403,9 @@ void ui_settings_key(uint8_t btn_u, uint8_t ev_u) {
         } else if (row == SET_VOL) {
             s_vol += dir * 5; if (s_vol < 0) s_vol = 0; if (s_vol > 100) s_vol = 100;
             cfg_seti("volume", s_vol);
+        } else if (row == SET_HAIR) {
+            study_sched_hair_set_interval(study_sched_hair_interval_days() + dir);
+            cfg_seti("hair_interval", study_sched_hair_interval_days());
         } else if (row == SET_NOW) {
             if (!s_man_valid) return;
             if (s_edit_unit == 0) {   /* 日(步进1天，自动跨月/年) */

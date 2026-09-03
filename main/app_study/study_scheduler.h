@@ -82,12 +82,18 @@ int  study_sched_minutes_until(int from_h, int from_m, int to_h, int to_m);
  */
 bool study_sched_scene_after_done(int task_id, study_sched_scene_t *scene);
 
-/* ---------- 洗头发：每 7 天周期性提醒（早晨固定时刻语音播报） ---------- */
-#define STUDY_HAIR_INTERVAL_DAYS  7     /* 洗头间隔天数 */
+/* ---------- 洗头发：周期性提醒（间隔天数可在设置中调整，默认 7 天） ---------- */
+#define STUDY_HAIR_INTERVAL_MIN      3    /* 最少每 3 天 */
+#define STUDY_HAIR_INTERVAL_MAX      30   /* 最多每 30 天 */
+#define STUDY_HAIR_INTERVAL_DEFAULT  7    /* 默认 7 天 */
 
 /* 记录"刚完成了一次洗头"：把 last_day 记为当天，并清空"已提醒"标记。
- * 之后第 7 天早晨会触发一次提醒。 */
+ * 之后第 interval 天早晨会触发一次提醒。 */
 void study_sched_hair_set_last_day(long last_day);
+
+/* 当前洗头间隔天数（默认 7）；设置后下次时间立即按新间隔计算 */
+int  study_sched_hair_interval_days(void);
+void study_sched_hair_set_interval(int days);   /* clamp 到 [MIN, MAX] */
 
 /* 当前是否已过洗头日且正处于早晨窗口内 → 需要语音提醒。
  * 每个洗头日后只提醒一次（s_hair_fired 置位，直到下次洗头才复位）。 */
