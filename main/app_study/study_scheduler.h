@@ -86,6 +86,7 @@ bool study_sched_scene_after_done(int task_id, study_sched_scene_t *scene);
 /* 检查当前时间是否触发 7:00 闹钟（每天仅一次，跨日复位后重置触发标记）。
  * 返回 true 时应播放 wakeup_alarm 语音。*/
 bool study_sched_check_wakeup_alarm(int now_h, int now_m);
+void study_sched_set_wake_time(int h, int m);
 
 /* 手动重置闹钟标记（用于单元测试/跨日复位） */
 void study_sched_reset_wakeup_alarm(void);

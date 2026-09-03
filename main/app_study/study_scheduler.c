@@ -34,15 +34,20 @@ void study_scheduler_new_day(void) {
     study_scheduler_reset();
 }
 
-/* ---------- 早上 7:00 温柔唤醒闹钟 ---------- */
-#define WAKEUP_HOUR    7
-#define WAKEUP_MINUTE  0
-#define WAKEUP_WINDOW  2   /* 7:00 ~ 7:02 内触发均可（每 30s tick 不会错过）*/
+/* ---------- 早上温柔唤醒闹钟（默认 7:00，可在设置里改） ---------- */
+#define WAKEUP_WINDOW  2   /* 唤醒时间 ~ +2 分钟内触发均可（每 30s tick 不会错过）*/
+static int s_wake_h = 7;
+static int s_wake_m = 0;
+
+void study_sched_set_wake_time(int h, int m) {
+    if (h >= 0 && h < 24) s_wake_h = h;
+    if (m >= 0 && m < 60) s_wake_m = m;
+}
 
 bool study_sched_check_wakeup_alarm(int now_h, int now_m) {
     if (s_wakeup_alarm_fired) return false;
-    if (now_h != WAKEUP_HOUR) return false;
-    if (now_m > WAKEUP_WINDOW) return false;
+    if (now_h != s_wake_h) return false;
+    if (now_m < s_wake_m || now_m > s_wake_m + WAKEUP_WINDOW) return false;
     s_wakeup_alarm_fired = true;
     return true;
 }

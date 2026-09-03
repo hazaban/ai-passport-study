@@ -39,8 +39,14 @@
 #include "freertos/queue.h"
 #include <stdio.h>
 #include <inttypes.h>
+#include <time.h>
+#include <stdlib.h>
+#include <string.h>
 
 static const char *TAG = "app_study";
+
+static int  cfg_get(const char *k, int def);
+static void cfg_set(const char *k, int v);
 
 /* ---------- 页面状态 ---------- */
 static study_page_t s_page = PAGE_HOME;
@@ -53,7 +59,7 @@ static QueueHandle_t s_voice_cmd_q = NULL;
 /* ---------- audio 输出回调：直接写 bsp_audio ---------- */
 static void audio_format_hint(void) {
     bsp_audio_set_format(VOICE_SAMPLE_RATE, 16, 1);
-    bsp_audio_set_volume(80);
+    bsp_audio_set_volume(cfg_get("volume", 80));   /* 音量 0..100，可在设置改 */
 }
 static void audio_output_cb(const int16_t *buf, int num_samples) {
     bsp_audio_write(buf, (size_t)num_samples * 2);
@@ -140,6 +146,56 @@ static void cfg_set(const char *k, int v) {
     extern const study_task_store_t *study_task_nvs_store(void);
     const study_task_store_t *s = study_task_nvs_store();
     if (s && s->save_meta_int) s->save_meta_int(k, v);
+}
+
+/* ---------- 首次运行：把预设任务导入(日常+科目)，晚上洗漱/睡觉不给固定时间 ---------- */
+static void seed_default_tasks(void) {
+    if (cfg_get("seed_v1", 0) != 0) return;
+    const study_preset_t *ps = NULL;
+    int n = study_task_presets(&ps);
+    int added = 0;
+    for (int i = 0; i < n; i++) {
+        study_task_t t;
+        memset(&t, 0, sizeof(t));
+        strncpy(t.title, ps[i].title, sizeof(t.title) - 1);
+        t.title[sizeof(t.title) - 1] = '\0';
+        t.category = ps[i].category;
+        t.subtype  = ps[i].subtype;
+        t.hour     = ps[i].hour;
+        t.minute   = ps[i].minute;
+        /* 按用户要求：睡前洗漱、睡觉 不给时间 → 做成“待办”不自动响，手动点完成 */
+        if (strstr(t.title, "睡前洗漱") != NULL || strstr(t.title, "睡觉") != NULL) {
+            t.hour = -1; t.minute = -1;
+        }
+        t.repeat = STUDY_REPEAT_DAILY;   /* 每天重复，方便反复完成 */
+        if (study_task_add(&t) == 0) added++;
+    }
+    cfg_set("seed_v1", 1);
+    ESP_LOGI(TAG, "已导入 %d 个预设任务", added);
+}
+
+/* 开机/跨日：把“重复类”任务今天的 done 复位，便于新一天重新开始 */
+static void clear_daily_done(void) {
+    int cap = TASK_MAX_COUNT;
+    int *ids = (int *)malloc(sizeof(int) * cap);
+    if (!ids) return;
+    int n = study_task_list_today(ids, cap);
+    for (int i = 0; i < n; i++) {
+        study_task_t t;
+        if (study_task_get(ids[i], &t) != 0) continue;
+        if (t.done && t.repeat != STUDY_REPEAT_ONCE) study_task_mark_done(ids[i], false);
+    }
+    free(ids);
+}
+
+/* 从 NVS 恢复手动时间（离线时日期/倒计时/提醒以此为准） */
+static void restore_manual_time(void) {
+    int y  = cfg_get("t_y", 0);
+    int mo = cfg_get("t_mo", 0);
+    int d  = cfg_get("t_d", 0);
+    int h  = cfg_get("t_h", 0);
+    int mi = cfg_get("t_mi", 0);
+    if (y >= 2000) study_time_set_manual(y, mo, d, h, mi);
 }
 
 /* ---------- 洗头发：每 7 天周期 ----------
@@ -276,19 +332,31 @@ static void voice_worker(void *arg) {
 static void tick_worker(void *arg) {
     (void)arg;
     TickType_t last = xTaskGetTickCount();
-    int last_fire_min = -1;
+    static int s_last_day = -1;
     for (;;) {
         vTaskDelayUntil(&last, pdMS_TO_TICKS(30 * 1000));  /* 每 30 秒粗轮询 */
 
-        /* 时间源：SNTP 同步后优先用真实墙钟时间；未同步回落 NVS 手动时间 */
+        /* 时间源：SNTP 同步后优先真实墙钟；离线用手动时间(可设置) */
+        struct tm ctm = {0};
         int now_h, now_m;
-        if (study_time_synced()) {
-            study_time_get_now(&now_h, &now_m);
+        if (study_time_civil_tm(&ctm)) {
+            now_h = ctm.tm_hour;
+            now_m = ctm.tm_min;
         } else {
             now_h = cfg_get("sim_h", 9);
             now_m = cfg_get("sim_m", 0);
         }
-        (void)last_fire_min;
+
+        /* 起床闹钟时间从设置读取；跨日复位每日任务与提醒状态 */
+        study_sched_set_wake_time(cfg_get("wake_h", 7), cfg_get("wake_m", 0));
+        if (ctm.tm_year >= 0) {   /* civil 可用(含手动) */
+            int cd = (ctm.tm_year + 1900) * 10000 + (ctm.tm_mon + 1) * 100 + ctm.tm_mday;
+            if (s_last_day > 0 && cd != s_last_day) {
+                study_scheduler_new_day();
+                clear_daily_done();
+            }
+            s_last_day = cd;
+        }
 
         study_sched_ev_t ev;
         /* ----- 0) 洗头发：每 7 天早晨固定时刻语音提醒（需先联网校时） ----- */
@@ -301,7 +369,7 @@ static void tick_worker(void *arg) {
             }
         }
 
-        /* ----- 1) 7:00 温柔唤醒闹钟（每天仅一次） ----- */
+        /* ----- 1) 温柔唤醒闹钟（时间可在设置改，每天仅一次） ----- */
         if (study_sched_check_wakeup_alarm(now_h, now_m)) {
             /* 闹钟专属：轻柔 RTTTL + 温柔唤醒语音 */
             static const char wakeup_rtttl[] =
@@ -352,6 +420,9 @@ void app_study_enter(void) {
         if (s) study_task_set_store(s);
     }
     study_scheduler_reset();
+    restore_manual_time();        /* 离线时可用的手动日期/时间 */
+    seed_default_tasks();         /* 首次运行预置日常+科目任务 */
+    clear_daily_done();           /* 开机把重复任务 done 复位(新的一天) */
 
     /* 洗头发周期：重启后从 NVS 恢复上次洗头天数，保持每 7 天节奏 */
     {
@@ -489,10 +560,12 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
                 ui_settings_build();
                 s_page = PAGE_SETTINGS;
             } else if (ui_todo_wants_toggle(&tid) && tid > 0) {
-                /* OK = 点勾选框快速完成/取消（同一任务再次 OK 即取消） */
+                /* OK = 点勾选框“完成一次”：重复类任务可反复点完成(每次都鼓励+语音) */
                 study_task_t tt;
-                if (study_task_get(tid, &tt) == 0) {
-                    on_task_done_changed(tid, !tt.done);
+                if (study_task_get(tid, &tt) == 0 && !tt.done) {
+                    on_task_done_changed(tid, true);
+                } else if (study_task_get(tid, &tt) == 0 && tt.done) {
+                    on_task_done_changed(tid, true);   /* 已完成再点 = 再来一次 */
                 }
                 ui_todo_refresh();
             }

@@ -183,15 +183,13 @@ void ui_home_build(void) {
     lv_obj_t *t = ui_pixel_label(head, "考研日程助手", F_STUDY, C_INK);
     lv_obj_set_pos(t, 16, 10);
 
-    time_t now = time(NULL);
     struct tm tv;
-    localtime_r(&now, &tv);
     char dbuf[24];
-    if (tv.tm_year < 70) {
-        snprintf(dbuf, sizeof(dbuf), "未校时");
-    } else {
+    if (study_time_civil_tm(&tv)) {
         static const char *wd[] = {"日","一","二","三","四","五","六"};
         snprintf(dbuf, sizeof(dbuf), "%d月%d日 %s", tv.tm_mon + 1, tv.tm_mday, wd[tv.tm_wday]);
+    } else {
+        snprintf(dbuf, sizeof(dbuf), "请设时间");
     }
     lv_obj_t *d = ui_pixel_label(head, dbuf, F_STUDY, C_MUTED);
     lv_obj_set_align(d, LV_ALIGN_TOP_RIGHT);
@@ -445,17 +443,15 @@ static void render_header(void) {
     else          snprintf(cbuf, sizeof(cbuf), "距考研 %d天", left);
     lv_label_set_text(todo_cnt_label, cbuf);
 
-    /* 日期（未校时显示"未同步"，避免 1970） */
-    time_t now = time(NULL);
+    /* 日期（民用时间：已校时用真实时间，离线用手动时间） */
     struct tm tv;
-    localtime_r(&now, &tv);
     char dbuf[24];
-    if (tv.tm_year < 70) {
-        snprintf(dbuf, sizeof(dbuf), "时间未同步");
-    } else {
+    if (study_time_civil_tm(&tv)) {
         static const char *wd[] = {"日","一","二","三","四","五","六"};
         snprintf(dbuf, sizeof(dbuf), "%d月%d日 %s",
                  tv.tm_mon + 1, tv.tm_mday, wd[tv.tm_wday]);
+    } else {
+        snprintf(dbuf, sizeof(dbuf), "请设时间");
     }
     lv_label_set_text(todo_date_label, dbuf);
 
@@ -468,6 +464,31 @@ static void render_header(void) {
     int pct = (st.total > 0) ? (st.done * 100 / st.total) : 0;
     if (pct > 100) pct = 100;
     lv_obj_set_width(todo_prog_bar, (int)(192 * pct / 100));
+}
+
+/* 底部栏（+添加 / 设置）选中态：只有选中项变蓝，避免默认全蓝 */
+static void render_todo_bottom(void) {
+    lv_obj_t *b[2] = { btn_add, btn_set };
+    for (int i = 0; i < 2; i++) {
+        if (!b[i]) continue;
+        bool sel = s_bottom_focus && (s_bottom_idx == i);
+        lv_obj_set_style_bg_color(b[i], lv_color_hex(sel ? C_PRIMARY : C_CARD), 0);
+        lv_obj_set_style_border_width(b[i], sel ? 0 : 2, 0);
+        lv_obj_t *lab = lv_obj_get_child(b[i], 0);
+        if (lab) lv_obj_set_style_text_color(lab, lv_color_hex(sel ? 0xFFFFFF : C_PRIMARY), 0);
+    }
+}
+
+/* 修正选中位置：任务列表存在→选中第一条；为空→自动落到底部栏"+添加" */
+static void ensure_todo_selection(void) {
+    if (s_bottom_focus) return;
+    if (todo_card_n > 1) {
+        if (s_sel < 1) s_sel = 1;
+        if (s_sel > todo_card_n - 1) s_sel = todo_card_n - 1;
+    } else {
+        s_bottom_focus = true;
+        s_bottom_idx = 0;
+    }
 }
 
 void ui_todo_build(void) {
@@ -537,15 +558,17 @@ void ui_todo_build(void) {
     lv_obj_set_style_clip_corner(todo_panel, true, 0);
 
     /* 底部操作按钮 */
-    btn_add = mod_button(todo_scr, 12, BOT_Y, 104, 30, C_PRIMARY, 0xFFFFFF, true);
-    mod_button_label(btn_add, "+ 添加任务", 0xFFFFFF);
+    btn_add = mod_button(todo_scr, 12, BOT_Y, 104, 30, C_CARD, C_PRIMARY, false);
+    mod_button_label(btn_add, "+ 添加任务", C_PRIMARY);
     btn_set = mod_button(todo_scr, 124, BOT_Y, 104, 30, C_CARD, C_PRIMARY, false);
     mod_button_label(btn_set, "设置", C_PRIMARY);
 
     fill_card_ids_for_tab();
+    ensure_todo_selection();
     render_header();
     render_todo_seg();
     render_todo_cards();
+    render_todo_bottom();
     lv_screen_load(todo_scr);
 }
 
@@ -557,9 +580,11 @@ void ui_todo_destroy(void) {
 void ui_todo_refresh(void) {
     if (!todo_scr) return;
     fill_card_ids_for_tab();
+    ensure_todo_selection();
     render_header();
     render_todo_seg();
     render_todo_cards();
+    render_todo_bottom();
 }
 
 /* 任务列表中的可选项区间 [first..last]，索引 0 是分组标题，不参与选中 */
@@ -867,40 +892,57 @@ bool ui_detail_wants_back(void) {
 /* ==============================================================
  * PAGE_SETTINGS — 设置（WiFi / 亮度 / 电量 / 音量 / 时间 / 返回主界面）
  * ============================================================== */
-enum {
-    SET_WIFI = 0,
-    SET_BRIGHT,
-    SET_BATT,
-    SET_VOL,
-    SET_WAKE,
-    SET_SLEEP,
-    SET_HOME,
-    SET_N
-};
+enum { SET_WIFI = 0, SET_BRIGHT, SET_VOL, SET_NOW, SET_WAKE, SET_SLEEP, SET_BATT, SET_HOME, SET_N };
 static lv_obj_t *s_set_scr;
 static lv_obj_t *s_set_cards[SET_N];
 static int s_set_sel;
 static bool s_set_wants_wifi;
 static bool s_set_wants_home;
 static bool s_set_wants_todo;
-static int  s_bright;            /* 当前亮度 0..100 */
-static bool s_bright_editing;
+static bool s_set_edit;      /* 正在编辑某数值行 */
+static int  s_edit_unit;     /* 多单元行当前编辑的单元 */
+static int  s_bright;        /* 亮度 0..100 */
+static int  s_vol;           /* 音量 0..100 */
+static int  s_man[5];        /* 手动时间编辑用: y mo d h mi */
+static bool s_man_valid;
+static bool s_wake_set, s_sleep_set;
 
-static void ui_settings_refresh_highlight(void);
+static int cfg_geti(const char *k, int def) { return (s_cb && s_cb->cfg_get) ? s_cb->cfg_get(k, def) : def; }
+static void cfg_seti(const char *k, int v)   { if (s_cb && s_cb->cfg_set) s_cb->cfg_set(k, v); }
 
-static void settings_set_label_text(int i, const char *txt) {
-    if (i < 0 || i >= SET_N) return;
-    lv_obj_t *l = lv_obj_get_child(s_set_cards[i], 0);
-    if (l) lv_label_set_text(l, txt);
+static int month_days(int y, int mo) {
+    static const int md[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+    if (mo == 2 && ((y % 4 == 0 && y % 100 != 0) || y % 400 == 0)) return 29;
+    return (mo >= 1 && mo <= 12) ? md[mo - 1] : 30;
 }
+
+/* 该行可编辑单元数：亮度/音量=1；时间类=2(时/分)；当前日期时间=3(日/时/分) */
+static int row_units(int i) {
+    if (i == SET_NOW) return 3;
+    if (i == SET_WAKE || i == SET_SLEEP) return 2;
+    return 1;
+}
+
+static void ui_settings_render_all(void);
+static void ui_settings_refresh_highlight(void);
 
 void ui_settings_build(void) {
     s_set_sel = 0;
     s_set_wants_wifi = false;
     s_set_wants_home = false;
     s_set_wants_todo = false;
-    s_bright_editing = false;
-    s_bright = (s_cb && s_cb->cfg_get) ? s_cb->cfg_get("bright", 80) : 80;
+    s_set_edit = false;
+    s_edit_unit = 0;
+    s_bright = cfg_geti("bright", 80);
+    s_vol    = cfg_geti("volume", 80);
+    s_man[0] = cfg_geti("t_y", 0);
+    s_man[1] = cfg_geti("t_mo", 0);
+    s_man[2] = cfg_geti("t_d", 0);
+    s_man[3] = cfg_geti("t_h", 0);
+    s_man[4] = cfg_geti("t_mi", 0);
+    s_man_valid = (s_man[0] >= 2000);
+    s_wake_set = cfg_geti("wake_h", -1) >= 0;
+    s_sleep_set = cfg_geti("sleep_h", -1) >= 0;
 
     s_set_scr = lv_obj_create(NULL);
     lv_obj_remove_flag(s_set_scr, LV_OBJ_FLAG_SCROLLABLE);
@@ -913,80 +955,167 @@ void ui_settings_build(void) {
     lv_obj_t *title = ui_pixel_label(head, "设置", F_STUDY, C_INK);
     lv_obj_set_pos(title, 16, 8);
 
-    /* 亮度：调用硬件调节并持久化 */
-    char bright_buf[32];
-    snprintf(bright_buf, sizeof(bright_buf), "屏幕亮度 %d%%", s_bright);
-    /* 电量：只读显示 */
-    char batt_buf[32];
-    int soc = bsp_battery_soc();
-    if (soc < 0) snprintf(batt_buf, sizeof(batt_buf), "电池电量 --%%");
-    else         snprintf(batt_buf, sizeof(batt_buf), "电池电量 %d%%", soc);
-
-    static const char *items[SET_N] = {
-        "WiFi 连接/配网",
-        NULL,
-        NULL,
-        "音量 80%",
-        "起床时间 07:00",
-        "睡觉时间 23:00",
-        "返回主界面",
-    };
-
     for (int i = 0; i < SET_N; i++) {
-        lv_obj_t *card = mod_card(s_set_scr, 12, 60 + i * 32, 216, 28,
-                                  (i == s_set_sel) ? 0xEDF2FF : C_CARD, 10, true);
-        if (i == s_set_sel) lv_obj_set_style_border_width(card, 2, 0);
-        lv_obj_set_style_border_color(card, lv_color_hex(C_PRIMARY), 0);
-        const char *txt = items[i];
-        if (i == SET_BRIGHT) txt = bright_buf;
-        else if (i == SET_BATT) txt = batt_buf;
-        lv_obj_t *l = ui_pixel_label(card, txt, F_STUDY, C_INK);
+        lv_obj_t *card = mod_card(s_set_scr, 12, 58 + i * 30, 216, 26, C_CARD, 10, true);
+        lv_obj_t *l = ui_pixel_label(card, "", F_STUDY, C_INK);
         lv_obj_set_pos(l, 12, 2);
+        lv_label_set_long_mode(l, LV_LABEL_LONG_CLIP);
         s_set_cards[i] = card;
     }
+    ui_settings_render_all();
     lv_screen_load(s_set_scr);
 }
+
+static void render_one_row(int i) {
+    if (!s_set_cards[i]) return;
+    lv_obj_t *l = lv_obj_get_child(s_set_cards[i], 0);
+    if (!l) return;
+    char buf[48];
+    switch (i) {
+        case SET_WIFI:  strcpy(buf, "WiFi 连接/配网"); break;
+        case SET_BRIGHT: snprintf(buf, sizeof(buf), "屏幕亮度 %d%%", s_bright); break;
+        case SET_VOL:    snprintf(buf, sizeof(buf), "音量 %d%%", s_vol); break;
+        case SET_BATT: {
+            int soc = bsp_battery_soc();
+            if (soc < 0) strcpy(buf, "电池电量 --%");
+            else snprintf(buf, sizeof(buf), "电池电量 %d%%", soc);
+            break;
+        }
+        case SET_NOW: {
+            int y,mo,d,h,mi; bool have=false;
+            struct tm tm;
+            if (study_time_civil_tm(&tm)) { y=tm.tm_year+1900; mo=tm.tm_mon+1; d=tm.tm_mday; h=tm.tm_hour; mi=tm.tm_min; have=true; }
+            else if (s_man_valid) { y=s_man[0]; mo=s_man[1]; d=s_man[2]; h=s_man[3]; mi=s_man[4]; have=true; }
+            if (have) snprintf(buf, sizeof(buf), "当前时间 %04d-%02d-%02d %02d:%02d", y,mo,d,h,mi);
+            else strcpy(buf, "当前时间 未设置");
+            break;
+        }
+        case SET_WAKE: {
+            int h = cfg_geti("wake_h", 7), mi = cfg_geti("wake_m", 0);
+            snprintf(buf, sizeof(buf), "起床时间 %02d:%02d", h, mi); break;
+        }
+        case SET_SLEEP: {
+            int h = cfg_geti("sleep_h", 23), mi = cfg_geti("sleep_m", 0);
+            snprintf(buf, sizeof(buf), "睡觉时间 %02d:%02d", h, mi); break;
+        }
+        default: strcpy(buf, "返回主界面"); break;
+    }
+    if (s_set_edit && s_set_sel == i) {
+        /* 编辑态：行首加 ▸ 并高亮当前单元值 */
+        char pre[4]; pre[0] = (char)0xE2; pre[1] = (char)0x96; pre[2] = (char)0xB8; pre[3] = 0; /* "▸" UTF8 */
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "  <%s>", pre);
+    }
+    lv_label_set_text(l, buf);
+}
+
+static void ui_settings_render_all(void) {
+    for (int i = 0; i < SET_N; i++) {
+        if (!s_set_cards[i]) continue;
+        render_one_row(i);
+    }
+}
+
+static void persist_now(void) {
+    if (!s_man_valid) return;
+    cfg_seti("t_y", s_man[0]); cfg_seti("t_mo", s_man[1]); cfg_seti("t_d", s_man[2]);
+    cfg_seti("t_h", s_man[3]); cfg_seti("t_mi", s_man[4]);
+    study_time_set_manual(s_man[0], s_man[1], s_man[2], s_man[3], s_man[4]);
+}
+
 void ui_settings_destroy(void) { if (s_set_scr) { lv_obj_delete(s_set_scr); s_set_scr = NULL; } }
+
 void ui_settings_key(uint8_t btn_u, uint8_t ev_u) {
     if (ev_u != BSP_BTN_CLICK) return;
     bsp_btn_t btn = (bsp_btn_t)btn_u;
 
     if (btn == BSP_BTN_OK) {
-        if (s_bright_editing) { s_bright_editing = false; ui_settings_refresh_highlight(); return; }
-        if (s_set_sel == SET_WIFI) { s_set_wants_wifi = true; ui_settings_refresh_highlight(); return; }
-        if (s_set_sel == SET_BRIGHT) { s_bright_editing = true; ui_settings_refresh_highlight(); return; }
+        if (s_set_edit) {
+            if (s_set_sel == SET_NOW) persist_now();
+            int nu = row_units(s_set_sel);
+            if (s_edit_unit + 1 < nu) { s_edit_unit++; }
+            else { s_set_edit = false; s_edit_unit = 0; }
+            ui_settings_refresh_highlight();
+            ui_settings_render_all();
+            return;
+        }
+        if (s_set_sel == SET_WIFI) { s_set_wants_wifi = true; return; }
         if (s_set_sel == SET_HOME) { s_set_wants_home = true; return; }
-        /* 音量/起床/睡觉等暂未实现编辑 → OK 返回学习页 */
-        s_set_wants_todo = true;
+        if (s_set_sel == SET_BRIGHT || s_set_sel == SET_VOL || s_set_sel == SET_NOW ||
+            s_set_sel == SET_WAKE || s_set_sel == SET_SLEEP) {
+            /* 进入编辑：先依据当前来源初始化工作值 */
+            if (s_set_sel == SET_NOW && !s_man_valid && !study_time_synced()) {
+                s_man[0] = 2026; s_man[1] = 1; s_man[2] = 1; s_man[3] = 8; s_man[4] = 0;
+                s_man_valid = true;
+            }
+            if (s_set_sel == SET_NOW && s_man_valid) {
+                struct tm tm;
+                if (study_time_civil_tm(&tm)) {
+                    s_man[0]=tm.tm_year+1900; s_man[1]=tm.tm_mon+1; s_man[2]=tm.tm_mday;
+                    s_man[3]=tm.tm_hour; s_man[4]=tm.tm_min;
+                }
+            }
+            s_set_edit = true;
+            s_edit_unit = 0;
+            ui_settings_refresh_highlight();
+            ui_settings_render_all();
+            return;
+        }
         return;
     }
 
-    if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
-        if (s_bright_editing) {
-            s_bright += (btn == BSP_BTN_UP) ? 10 : -10;
-            if (s_bright < 20) s_bright = 20;
-            if (s_bright > 100) s_bright = 100;
+    int dir = (btn == BSP_BTN_UP) ? +1 : -1;
+    if (btn != BSP_BTN_UP && btn != BSP_BTN_DOWN) return;
+
+    if (s_set_edit) {
+        int row = s_set_sel;
+        if (row == SET_BRIGHT) {
+            s_bright += dir * 5; if (s_bright < 10) s_bright = 10; if (s_bright > 100) s_bright = 100;
             bsp_display_backlight((uint8_t)s_bright);
-            if (s_cb && s_cb->cfg_set) s_cb->cfg_set("bright", s_bright);
-            char buf[24];
-            snprintf(buf, sizeof(buf), "屏幕亮度 %d%%", s_bright);
-            settings_set_label_text(SET_BRIGHT, buf);
-            ui_settings_refresh_highlight();
-            return;
+            cfg_seti("bright", s_bright);
+        } else if (row == SET_VOL) {
+            s_vol += dir * 5; if (s_vol < 0) s_vol = 0; if (s_vol > 100) s_vol = 100;
+            cfg_seti("volume", s_vol);
+        } else if (row == SET_NOW) {
+            if (!s_man_valid) return;
+            if (s_edit_unit == 0) {   /* 日(步进1天，自动跨月/年) */
+                s_man[2] += dir;
+                int md = month_days(s_man[0], s_man[1]);
+                if (s_man[2] < 1) { s_man[1]--; if (s_man[1] < 1) { s_man[1] = 12; s_man[0]--; } s_man[2] = month_days(s_man[0], s_man[1]); }
+                else if (s_man[2] > md) { s_man[2] = 1; s_man[1]++; if (s_man[1] > 12) { s_man[1] = 1; s_man[0]++; } }
+                if (s_man[0] < 2000) s_man[0] = 2000;
+            } else if (s_edit_unit == 1) {
+                s_man[3] = (s_man[3] + dir + 24) % 24;
+            } else {
+                s_man[4] = (s_man[4] + dir * 5 + 60) % 60;
+            }
+        } else if (row == SET_WAKE || row == SET_SLEEP) {
+            const char *hk = (row == SET_WAKE) ? "wake_h" : "sleep_h";
+            const char *mk = (row == SET_WAKE) ? "wake_m" : "sleep_m";
+            int h = cfg_geti(hk, row == SET_WAKE ? 7 : 23);
+            int mi = cfg_geti(mk, 0);
+            if (s_edit_unit == 0) h = (h + dir + 24) % 24;
+            else mi = (mi + dir * 5 + 60) % 60;
+            cfg_seti(hk, h); cfg_seti(mk, mi);
         }
-        if (btn == BSP_BTN_UP   && s_set_sel > 0) s_set_sel--;
-        if (btn == BSP_BTN_DOWN && s_set_sel < SET_N - 1) s_set_sel++;
-        ui_settings_refresh_highlight();
+        ui_settings_render_all();
+        return;
     }
+
+    /* 浏览：移动高亮 */
+    if (dir > 0) { if (s_set_sel > 0) s_set_sel--; }
+    else         { if (s_set_sel < SET_N - 1) s_set_sel++; }
+    ui_settings_refresh_highlight();
 }
+
 void ui_settings_refresh_highlight(void) {
     for (int i = 0; i < SET_N; i++) {
         if (!s_set_cards[i]) continue;
-        bool sel = (i == s_set_sel && !s_bright_editing);
+        bool sel = (i == s_set_sel);
         lv_obj_set_style_bg_color(s_set_cards[i], lv_color_hex(sel ? 0xEDF2FF : C_CARD), 0);
         lv_obj_set_style_border_width(s_set_cards[i], sel ? 2 : 0, 0);
     }
 }
+
 bool ui_settings_wants_wifi(void) { return s_set_wants_wifi; }
 bool ui_settings_wants_home(void) { return s_set_wants_home; }
 bool ui_settings_wants_todo(void) { return s_set_wants_todo; }
@@ -1050,12 +1179,15 @@ void ui_wifi_key(uint8_t btn_u, uint8_t ev_u) {
  * 鼓励 & 场景弹窗
  * ============================================================== */
 static lv_obj_t *s_enc_scr = NULL;
+static lv_obj_t *s_enc_prev = NULL;   /* 弹窗打开前的页面，关闭时切回 */
 static lv_obj_t *s_scn_scr = NULL;
+static lv_obj_t *s_scn_prev = NULL;
 
 void ui_encourage_show(int category_id) {
     const study_category_t *cat = study_category_get(category_id);
     if (!cat) return;
     if (s_enc_scr) return;
+    s_enc_prev = lv_screen_active();   /* 记住来源页面 */
     s_enc_scr = lv_obj_create(NULL);
     lv_obj_set_size(s_enc_scr, W, H);
     lv_obj_set_style_bg_color(s_enc_scr, lv_color_hex(cat->color_hex), 0);
@@ -1073,7 +1205,10 @@ void ui_encourage_show(int category_id) {
     lv_obj_set_pos(okl, 80, 260);
     lv_screen_load(s_enc_scr);
 }
-void ui_encourage_close(void) { if (s_enc_scr) { lv_obj_delete(s_enc_scr); s_enc_scr = NULL; } }
+void ui_encourage_close(void) {
+    if (s_enc_scr) { lv_obj_delete(s_enc_scr); s_enc_scr = NULL; }
+    if (s_enc_prev) { lv_screen_load(s_enc_prev); s_enc_prev = NULL; }  /* 回到来源页 */
+}
 bool ui_encourage_is_showing(void) { return s_enc_scr != NULL; }
 
 static const char *s_scene_msgs[] = {
@@ -1089,6 +1224,7 @@ static const char *s_scene_msgs[] = {
 void ui_scene_show(study_scene_msg_t which) {
     if (which < 0 || which >= (int)(sizeof(s_scene_msgs)/sizeof(s_scene_msgs[0]))) return;
     if (s_scn_scr) return;
+    s_scn_prev = lv_screen_active();   /* 记住来源页面 */
     s_scn_scr = lv_obj_create(NULL);
     lv_obj_set_size(s_scn_scr, W, H);
     lv_obj_set_style_bg_color(s_scn_scr, lv_color_hex(C_PRIMARY_D), 0);
@@ -1102,7 +1238,10 @@ void ui_scene_show(study_scene_msg_t which) {
     lv_obj_set_pos(okl, 75, 260);
     lv_screen_load(s_scn_scr);
 }
-void ui_scene_close(void) { if (s_scn_scr) { lv_obj_delete(s_scn_scr); s_scn_scr = NULL; } }
+void ui_scene_close(void) {
+    if (s_scn_scr) { lv_obj_delete(s_scn_scr); s_scn_scr = NULL; }
+    if (s_scn_prev) { lv_screen_load(s_scn_prev); s_scn_prev = NULL; }  /* 回到来源页 */
+}
 bool ui_scene_is_showing(void) { return s_scn_scr != NULL; }
 
 #else  /* !ESP_PLATFORM — 宿主编译存根 */

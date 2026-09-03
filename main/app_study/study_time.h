@@ -9,6 +9,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <time.h>
 
 /* 初始化 SNTP（非阻塞，后台自动校时）。可多次调用，内部幂等。 */
 void study_time_init(void);
@@ -31,3 +32,11 @@ int study_time_days_until(int month, int day);
 /* 考研考试日（月/日），用于首页倒计时展示 */
 #define STUDY_EXAM_MONTH  12
 #define STUDY_EXAM_DAY    19
+
+/* ---- 手动时钟（离线兜底，可在设置里改日期与时间） ---- */
+/* 设定手动时间；未同步 SNTP 时，日期/倒计时/提醒都以此为准。 */
+void study_time_set_manual(int y, int mo, int d, int h, int mi);
+bool study_time_manual_configured(void);
+/* 取“民用时间”：已校时用真实 RTC；否则用已设置的手动时间。
+ * 成功填 *out(已 mktime 归一化，含 tm_wday) 返回 true；两者皆无返回 false。 */
+bool study_time_civil_tm(struct tm *out);
