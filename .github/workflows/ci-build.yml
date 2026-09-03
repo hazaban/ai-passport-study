@@ -58,9 +58,12 @@ jobs:
         . $HOME/esp/esp-idf/export.sh
         idf.py set-target esp32c3
         # 语音包：把 assets/voice_packs/*.mp3 转成 build/voicepack/*.wav，
-        # 之后编译期 spiffs_create_partition_image(voicepack ...) 会生成 voicepack.bin 并纳入产物。
-        # 注意必须在 set-target(会清空 build/) 之后执行。
+        # 之后 spiffs_create_partition_image(voicepack ...) 会生成 voicepack.bin 并纳入产物。
+        # main/CMakeLists 用 if(EXISTS build/voicepack) 在【配置期】判断(set-target 后目录不存在，
+        # 先配好不含语音的图)，故 set-target 之后生成 wav，再 reconfigure 让分区镜像目标进入
+        # 构建图，最终 build 才会产出 voicepack.bin。
         python3 tools/build_voice_spiffs.py
+        idf.py reconfigure
         idf.py build
       shell: bash
 
