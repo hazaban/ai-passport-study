@@ -21,6 +21,9 @@
 /* 采样率：与 ES8311 播放和 RTTTL 渲染统一。8 kHz 1ch 16bit（体积减半，语音清晰够用） */
 #define VOICE_SAMPLE_RATE   8000
 
+/* 柔和“叮咚”提示音（替代原较吵的科目旋律），完成/提醒/场景通用 */
+#define STUDY_VOICE_CHIME_RTTTL "DingDong:d=8,o=5,b=100:g5,c6,p,g5,c6"
+
 /* ---------- 输出回调 ---------- */
 /* 接收一组 16-bit PCM 采样并写出。ESP32: 调用 bsp_audio_write(buf, n*2) */
 typedef void (*study_voice_output_cb_t)(const int16_t *buf, int num_samples);

@@ -8,9 +8,17 @@
 
 #include "esp_log.h"
 #include "esp_sntp.h"
+#include "esp_event.h"
+#include "esp_netif.h"
 #include "time.h"
 
 static const char *TAG = "study_time";
+
+static void on_got_ip(void *arg, esp_event_base_t base, int32_t id, void *data) {
+    (void)arg; (void)base; (void)id; (void)data;
+    /* 联网成功后立刻重启校时，快速拿到北京时间 */
+    if (esp_sntp_enabled()) esp_sntp_restart();
+}
 
 void study_time_init(void) {
     /* true：从 1970 开始计时，未同步前 gettimeofday 落在 1970s，
@@ -19,11 +27,12 @@ void study_time_init(void) {
     tzset();
 
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, "pool.ntp.org");
-    sntp_setservername(1, "ntp.aliyun.com");
-    sntp_setservername(2, "");
+    sntp_setservername(0, "ntp.aliyun.com");   /* 国内可达性优先 */
+    sntp_setservername(1, "pool.ntp.org");
+    sntp_setservername(2, "cn.ntp.org.cn");
     sntp_init();
-    ESP_LOGI(TAG, "SNTP 已启动（后台校时中）");
+    esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, on_got_ip, NULL);
+    ESP_LOGI(TAG, "SNTP 已启动（联网即校时，北京时间 UTC+8）");
 }
 
 bool study_time_synced(void) {

@@ -278,6 +278,8 @@ static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *da
         ESP_LOGW(TAG, "STA 断开 reason=%d", d ? d->reason : -1);
         if (++s_retry_count > WIFI_MAX_RETRY) {
             set_state(WIFI_STATE_FAILED);
+            /* 连不上就自动开回配网热点，避免“既连不上网、又看不到热点” */
+            start_ap_config();
             return;
         }
         /* 3 秒后重连（用 esp_timer，避免阻塞事件循环任务） */

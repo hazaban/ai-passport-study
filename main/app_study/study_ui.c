@@ -30,13 +30,13 @@
 #define W       240
 #define H       320
 
-#define C_BG        0xEFF3FA   /* 页面背景（浅蓝灰） */
-#define C_CARD      0xFFFFFF   /* 卡片白 */
-#define C_INK       0x22314D   /* 主文字 */
-#define C_MUTED     0x8B9BB5   /* 次要文字 */
-#define C_PRIMARY   0x4C7DFF   /* 品牌蓝 */
-#define C_PRIMARY_D 0x3569E8
-#define C_LINE      0xE3EAF4   /* 分隔线/描边 */
+#define C_BG        0x111A24   /* 页面背景（柔和深蓝灰，护眼） */
+#define C_CARD      0x1D2834   /* 卡片（深） */
+#define C_INK       0xEDF3F8   /* 主文字（浅） */
+#define C_MUTED     0x9AA8B8   /* 次要文字 */
+#define C_PRIMARY   0x6FA8FF   /* 柔和蓝 */
+#define C_PRIMARY_D 0x4E86E0
+#define C_LINE      0x2B3948   /* 分隔线/描边 */
 #define C_ACCENT    0xFFB23E   /* 强调橙 */
 
 /* 会话字体（整个 Study UI 统一用一个中文+ASCII 字体） */
@@ -372,7 +372,7 @@ static void render_todo_cards(void) {
 
         /* 白色圆角任务卡 */
         lv_obj_t *card = mod_card(todo_panel, 2, y, 218, CARD_H,
-                                  armed ? 0xFFE2E2 : (selected ? 0xEDF2FF : C_CARD), 12, true);
+                                  armed ? 0xFFE2E2 : (selected ? 0x2E3A55 : C_CARD), 12, true);
         if (selected || armed) lv_obj_set_style_border_width(card, 2, 0);
         lv_obj_set_style_border_color(card, lv_color_hex(armed ? 0xE43B2F : C_PRIMARY), 0);
 
@@ -791,7 +791,7 @@ static void add_render_preset_list(void) {
         int idx = ids[row];
         int y = 2 + k * (CARD_H + 4);
         lv_obj_t *card = mod_card(s_add_panel, 0, y, 220, CARD_H,
-                                  (row == s_add_sel) ? 0xEDF2FF : C_CARD, 12, true);
+                                  (row == s_add_sel) ? 0x2E3A55 : C_CARD, 12, true);
         if (row == s_add_sel) {
             lv_obj_set_style_border_width(card, 2, 0);
             lv_obj_set_style_border_color(card, lv_color_hex(C_PRIMARY), 0);
@@ -1051,7 +1051,7 @@ void ui_settings_build(void) {
     s_set_wants_todo = false;
     s_set_edit = false;
     s_edit_unit = 0;
-    s_bright = cfg_geti("bright", 80);
+    s_bright = cfg_geti("bright", 45);   /* 柔和默认亮度，深色主题不刺眼 */
     s_vol    = cfg_geti("volume", 80);
     s_man[0] = cfg_geti("t_y", 0);
     s_man[1] = cfg_geti("t_mo", 0);
@@ -1187,7 +1187,7 @@ void ui_settings_key(uint8_t btn_u, uint8_t ev_u) {
     if (s_set_edit) {
         int row = s_set_sel;
         if (row == SET_BRIGHT) {
-            s_bright += dir * 5; if (s_bright < 10) s_bright = 10; if (s_bright > 100) s_bright = 100;
+            s_bright += dir * 5; if (s_bright < 2) s_bright = 2; if (s_bright > 100) s_bright = 100;
             bsp_display_backlight((uint8_t)s_bright);
             cfg_seti("bright", s_bright);
         } else if (row == SET_VOL) {
@@ -1229,7 +1229,7 @@ void ui_settings_refresh_highlight(void) {
     for (int i = 0; i < SET_N; i++) {
         if (!s_set_cards[i]) continue;
         bool sel = (i == s_set_sel);
-        lv_obj_set_style_bg_color(s_set_cards[i], lv_color_hex(sel ? 0xEDF2FF : C_CARD), 0);
+        lv_obj_set_style_bg_color(s_set_cards[i], lv_color_hex(sel ? 0x2E3A55 : C_CARD), 0);
         lv_obj_set_style_border_width(s_set_cards[i], sel ? 2 : 0, 0);
     }
 }

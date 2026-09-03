@@ -291,14 +291,14 @@ int study_voice_play_complete_with_subtype(int category_id, int subtype) {
     const study_category_t *cat = study_category_get(category_id);
     if (!cat) return -1;
     const char *vkey = study_voice_resolve_key(category_id, subtype);
-    return play_blocking_rtttl_then_voice(cat->rtttl, vkey);
+    /* 完成音改为柔和“叮咚”，再接鼓励人声 */
+    return play_blocking_rtttl_then_voice(STUDY_VOICE_CHIME_RTTTL, vkey);
 }
 
 int study_voice_play_scene(const char *voice_key) {
     if (!voice_key) return -1;
-    /* 场景类 fallback：走日常秩序类的 RTTTL 作为通用提示音 */
-    const study_category_t *daily_cat = study_category_get(0);
-    return play_blocking_rtttl_then_voice(daily_cat ? daily_cat->rtttl : NULL, voice_key);
+    /* 场景类：先用柔和“叮咚”，再接场景语音 */
+    return play_blocking_rtttl_then_voice(STUDY_VOICE_CHIME_RTTTL, voice_key);
 }
 
 int study_voice_play_rtttl(const char *rtttl) {

@@ -206,8 +206,27 @@ static void clear_daily_done(void) {
     free(ids);
 }
 
-/* 从 NVS 恢复手动时间（离线时日期/倒计时/提醒以此为准）。
- * 出厂/首次：直接写入“今天”日期(2026-09-03)作基础时钟，用户只需校准时分。 */
+/* 编译时刻(__DATE__/__TIME__，按 UTC)换算成北京时间，作为出厂默认手动时钟。
+ * 这样烧录后日期就是“今天”、时间接近当时，联网后 SNTP 再自动精确校准。 */
+static void build_time_beijing(int *y, int *mo, int *d, int *h, int *mi) {
+    static const char *mns = "JanFebMarAprMayJunJulAugSepOctNovDec";
+    char mn[4] = {0};
+    int dd = 0, yy = 0;
+    sscanf(__DATE__, "%3s %d %d", mn, &dd, &yy);
+    const char *p = strstr(mns, mn);
+    int idx = p ? (int)(p - mns) / 3 : 0;
+    int hh = 0, mm = 0, ss = 0;
+    sscanf(__TIME__, "%d:%d:%d", &hh, &mm, &ss);
+    hh += 8;                      /* UTC → 北京时间(UTC+8) */
+    if (hh >= 24) { hh -= 24; dd += 1; }
+    int leap = ((yy % 4 == 0 && yy % 100 != 0) || yy % 400 == 0) ? 1 : 0;
+    static const int dim[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+    int mlen = dim[idx] + (idx == 1 ? leap : 0);
+    if (dd > mlen) { dd = 1; idx++; if (idx >= 12) { idx = 0; yy++; } }
+    *y = yy; *mo = idx + 1; *d = dd; *h = hh; *mi = mm;
+}
+
+/* 从 NVS 恢复手动时间（离线时日期/倒计时/提醒以此为准） */
 static void restore_manual_time(void) {
     int y  = cfg_get("t_y", 0);
     int mo = cfg_get("t_mo", 0);
@@ -215,7 +234,7 @@ static void restore_manual_time(void) {
     int h  = cfg_get("t_h", 0);
     int mi = cfg_get("t_mi", 0);
     if (y < 2000) {
-        y = 2026; mo = 9; d = 3; h = 0; mi = 0;   /* 今天的基础时钟 */
+        build_time_beijing(&y, &mo, &d, &h, &mi);   /* 出厂默认：烧录当天/时间 */
         cfg_set("t_y", y); cfg_set("t_mo", mo); cfg_set("t_d", d);
         cfg_set("t_h", h); cfg_set("t_mi", mi);
     }
@@ -414,17 +433,11 @@ static void tick_worker(void *arg) {
         while (study_sched_find_next(now_h, now_m, &ev)
                && ev.overdue_minutes >= 0    /* 已到点或过期 */
                && ev.overdue_minutes < 10) { /* 10 分钟内的过期才响（避免开机补响几天前的）*/
-            /* 1) 弹出提醒（RTTTL + 屏幕大字） */
-            const study_category_t *cat = NULL;
-            study_task_t t;
-            if (study_task_get(ev.task_id, &t) == 0) {
-                cat = study_category_get(t.category);
-            }
-            if (cat) {
-                voice_cmd_t cmd = { .kind = VCMD_RTTTL };
-                strncpy(cmd.rtttl, cat->rtttl, sizeof(cmd.rtttl) - 1);
-                xQueueSend(s_voice_cmd_q, &cmd, 0);
-            }
+            /* 1) 弹出提醒：柔和“叮咚”提示音 */
+            voice_cmd_t cmd = { .kind = VCMD_RTTTL };
+            strncpy(cmd.rtttl, STUDY_VOICE_CHIME_RTTTL, sizeof(cmd.rtttl) - 1);
+            cmd.rtttl[sizeof(cmd.rtttl) - 1] = '\0';
+            xQueueSend(s_voice_cmd_q, &cmd, 0);
             study_sched_ack_fired(ev.task_id);
             break;  /* 一次 tick 只处理一条，避免连响 N 次扰民 */
         }
@@ -464,7 +477,7 @@ void app_study_enter(void) {
     study_ui_init(&s_ui_cb);
     /* 应用持久化的屏幕亮度 */
     {
-        int br = cfg_get("bright", 80);
+        int br = cfg_get("bright", 45);
         bsp_display_backlight((uint8_t)br);
     }
     s_page = PAGE_HOME;
