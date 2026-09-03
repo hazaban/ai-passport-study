@@ -10,6 +10,7 @@
 #include "esp_sntp.h"
 #include "esp_event.h"
 #include "esp_netif.h"
+#include "esp_timer.h"
 #include "time.h"
 
 static const char *TAG = "study_time";
@@ -76,14 +77,23 @@ int study_time_days_until(int month, int day) {
     return (int)((tt - now) / 86400L);
 }
 
-/* ---------- 手动时钟（离线兜底） ---------- */
-static int s_m_y = 2026, s_m_mo = 1, s_m_d = 1, s_m_h = 8, s_m_mi = 0;
-static bool s_m_set = false;
+/* ---------- 手动时钟（离线兜底；会“走表”，设好后秒/分持续前进，闹钟才可靠） ---------- */
+static time_t   s_man_epoch = 0;      /* 设定时刻换算成 epoch 秒 */
+static int64_t  s_set_us     = 0;     /* 设定时刻的 esp_timer 单调时间 */
+static bool     s_m_set      = false;
 
 void study_time_set_manual(int y, int mo, int d, int h, int mi) {
     if (y < 2000 || y > 2100) return;
     if (mo < 1 || mo > 12 || d < 1 || d > 31) return;
-    s_m_y = y; s_m_mo = mo; s_m_d = d; s_m_h = (h & 0xff) % 24; s_m_mi = mi % 60;
+    struct tm t = {0};
+    t.tm_year = y - 1900;
+    t.tm_mon  = mo - 1;
+    t.tm_mday = d;
+    t.tm_hour = h % 24;
+    t.tm_min  = mi % 60;
+    t.tm_isdst = -1;
+    s_man_epoch = mktime(&t);
+    s_set_us = esp_timer_get_time();
     s_m_set = true;
 }
 bool study_time_manual_configured(void) { return s_m_set; }
@@ -96,15 +106,9 @@ bool study_time_civil_tm(struct tm *out) {
         return true;
     }
     if (!s_m_set) return false;          /* 未校时也无手动时间 */
-    struct tm t = {0};
-    t.tm_year = s_m_y - 1900;
-    t.tm_mon  = s_m_mo - 1;
-    t.tm_mday = s_m_d;
-    t.tm_hour = s_m_h;
-    t.tm_min  = s_m_mi;
-    t.tm_isdst = -1;
-    mktime(&t);                          /* 归一化并算出 tm_wday */
-    *out = t;
+    /* 手动时间：设定值 + 真实流逝时间 → 持续走表 */
+    time_t cur = s_man_epoch + (time_t)((esp_timer_get_time() - s_set_us) / 1000000LL);
+    localtime_r(&cur, out);
     return true;
 }
 

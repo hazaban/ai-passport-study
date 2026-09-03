@@ -82,6 +82,15 @@ static bool creds_get(char *ssid, size_t ssid_sz, char *pass, size_t pass_sz) {
     return true;
 }
 
+static void creds_erase(void) {
+    nvs_handle_t h;
+    if (nvs_open(WIFI_NVS_NS, NVS_READWRITE, &h) != ESP_OK) return;
+    nvs_erase_key(h, WIFI_NVS_SSID);
+    nvs_erase_key(h, WIFI_NVS_PASS);
+    nvs_commit(h);
+    nvs_close(h);
+}
+
 static void creds_save(const char *ssid, const char *pass) {
     nvs_handle_t h;
     if (nvs_open(WIFI_NVS_NS, NVS_READWRITE, &h) != ESP_OK) {
@@ -163,21 +172,61 @@ static void stop_http_server(void) {
     }
 }
 
-static void connect_sta(const char *ssid, const char *pass) {
-    stop_http_server();
+static esp_err_t handle_ap_root(httpd_req_t *req);
+static esp_err_t handle_ap_save(httpd_req_t *req);
 
+/* 统一启动：AP+STA 同时开 —— 热点始终可搜到(配网名 STU_STUDY_xxxx，密码 liyufan)。
+ * ssid/pass 非空则同时去连家里 WiFi；为空则只开配网热点。 */
+static void wifi_start_apsta(const char *ssid, const char *pass) {
+    bool have = (ssid && ssid[0]);
     s_retry_count = 0;
-    set_state(WIFI_STATE_CONNECTING);
 
-    esp_wifi_stop();                    /* 切换到 STA 前先停旧模式（未启动也无妨） */
-    esp_wifi_set_mode(WIFI_MODE_STA);
-    wifi_config_t wc = { 0 };
-    strncpy((char *)wc.sta.ssid, ssid, sizeof(wc.sta.ssid) - 1);
-    strncpy((char *)wc.sta.password, pass, sizeof(wc.sta.password) - 1);
-    wc.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
-    wc.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
-    esp_wifi_set_config(WIFI_IF_STA, &wc);
-    esp_wifi_start();                   /* 触发 WIFI_EVENT_STA_START → esp_wifi_connect() */
+    esp_wifi_stop();
+    esp_wifi_set_mode(WIFI_MODE_APSTA);
+
+    wifi_config_t ac = { 0 };
+    strncpy((char *)ac.ap.ssid, s_ap_ssid, sizeof(ac.ap.ssid) - 1);
+    ac.ap.ssid_len = (uint8_t)strlen(s_ap_ssid);
+    ac.ap.channel = 1;
+    ac.ap.max_connection = 4;
+    ac.ap.authmode = WIFI_AUTH_WPA2_PSK;
+    strncpy((char *)ac.ap.password, STUDY_WIFI_AP_PASS, sizeof(ac.ap.password) - 1);
+    esp_wifi_set_config(WIFI_IF_AP, &ac);
+
+    if (have) {
+        wifi_config_t wc = { 0 };
+        strncpy((char *)wc.sta.ssid, ssid, sizeof(wc.sta.ssid) - 1);
+        strncpy((char *)wc.sta.password, pass, sizeof(wc.sta.password) - 1);
+        wc.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+        wc.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+        esp_wifi_set_config(WIFI_IF_STA, &wc);
+        set_state(WIFI_STATE_CONNECTING);
+    } else {
+        set_state(WIFI_STATE_AP_CONFIG);
+    }
+    esp_wifi_start();        /* 事件 STA_START → esp_wifi_connect() 自动去连 */
+
+    /* 配网页(HTTP)始终开启，方便随时重配 */
+    if (!s_server) {
+        httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
+        cfg.server_port = STUDY_WIFI_AP_PORT;
+        cfg.uri_match_fn = httpd_uri_match_wildcard;
+        cfg.stack_size = 4096;
+        if (httpd_start(&s_server, &cfg) == ESP_OK) {
+            static const httpd_uri_t r_root = { .uri = "/", .method = HTTP_GET, .handler = handle_ap_root };
+            static const httpd_uri_t r_save = { .uri = "/save", .method = HTTP_POST, .handler = handle_ap_save };
+            httpd_register_uri_handler(s_server, &r_root);
+            httpd_register_uri_handler(s_server, &r_save);
+            ESP_LOGI(TAG, "配网页已就绪: http://%s/", STUDY_WIFI_AP_GATEWAY);
+        } else {
+            ESP_LOGE(TAG, "httpd 启动失败");
+        }
+    }
+}
+
+static void connect_sta(const char *ssid, const char *pass) {
+    /* 连家里 WiFi 的同时保持热点开启 */
+    wifi_start_apsta(ssid, pass);
 }
 
 static esp_err_t handle_ap_root(httpd_req_t *req) {
@@ -204,7 +253,7 @@ static esp_err_t handle_ap_save(httpd_req_t *req) {
     httpd_resp_set_type(req, "text/html; charset=utf-8");
     httpd_resp_sendstr(req,
         "<h3>收到！设备正在连接 WiFi，请返回设备查看结果。</h3>"
-        "<p>连接成功后设备会自动关闭本热点。</p>");
+        "<p>配网热点保持开启，随时可再次配置。</p>");
 
     /* 不能在 httpd 处理函数里 httpd_stop（会死锁），交给独立任务延迟后执行 */
     start_apply_creds();
@@ -227,37 +276,15 @@ static void start_apply_creds(void) {
 
 /* 开启配网：SoftAP + HTTP 服务器 */
 static void start_ap_config(void) {
-    if (s_state == WIFI_STATE_AP_CONFIG && s_server) return;
+    /* 只保证配网热点开启(不附带 STA 反复重试)，避免连接失败抖动 */
+    wifi_start_apsta(NULL, NULL);
+}
 
-    stop_http_server();
-
-    esp_wifi_stop();                    /* 切换到 AP 前先停旧模式（未启动也无妨） */
-    esp_wifi_set_mode(WIFI_MODE_AP);
-    wifi_config_t ac = { 0 };
-    strncpy((char *)ac.ap.ssid, s_ap_ssid, sizeof(ac.ap.ssid) - 1);
-    ac.ap.ssid_len = (uint8_t)strlen(s_ap_ssid);
-    ac.ap.channel = 1;
-    ac.ap.max_connection = 4;
-    ac.ap.authmode = WIFI_AUTH_WPA2_PSK;                  /* 带密码，防止他人乱连 */
-    strncpy((char *)ac.ap.password, STUDY_WIFI_AP_PASS, sizeof(ac.ap.password) - 1);
-    esp_wifi_set_config(WIFI_IF_AP, &ac);
-    esp_wifi_start();
-
-    set_state(WIFI_STATE_AP_CONFIG);
-
-    httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
-    cfg.server_port = STUDY_WIFI_AP_PORT;
-    cfg.uri_match_fn = httpd_uri_match_wildcard;
-    cfg.stack_size = 4096;
-    if (httpd_start(&s_server, &cfg) == ESP_OK) {
-        static const httpd_uri_t r_root = { .uri = "/", .method = HTTP_GET, .handler = handle_ap_root };
-        static const httpd_uri_t r_save = { .uri = "/save", .method = HTTP_POST, .handler = handle_ap_save };
-        httpd_register_uri_handler(s_server, &r_root);
-        httpd_register_uri_handler(s_server, &r_save);
-        ESP_LOGI(TAG, "配网页已就绪: http://%s/", STUDY_WIFI_AP_GATEWAY);
-    } else {
-        ESP_LOGE(TAG, "httpd 启动失败");
-    }
+/* 清除已保存的家里 WiFi，并重开配网热点（用于“断联旧WiFi重新配”） */
+void study_wifi_forget(void) {
+    creds_erase();
+    ESP_LOGI(TAG, "已清除保存的 WiFi，重开配网热点");
+    start_ap_config();
 }
 
 /* ---------- WiFi 事件 ---------- */
@@ -378,6 +405,7 @@ void study_wifi_init(const char *ap_ssid_prefix) {
 bool study_wifi_has_stored_creds(void) { return false; }
 void study_wifi_init(const char *ap_ssid_prefix) { (void)ap_ssid_prefix; }
 void study_wifi_start_ap_config(void) {}
+void study_wifi_forget(void) {}
 void study_wifi_stop(void) {}
 study_wifi_state_t study_wifi_get_state(void) { return WIFI_STATE_IDLE; }
 const char *study_wifi_get_ssid(void) { return ""; }

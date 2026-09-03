@@ -35,8 +35,8 @@
 #define C_CARD      0x1D2834   /* 卡片（深） */
 #define C_INK       0xEDF3F8   /* 主文字（浅） */
 #define C_MUTED     0x9AA8B8   /* 次要文字 */
-#define C_PRIMARY   0x6FA8FF   /* 柔和蓝 */
-#define C_PRIMARY_D 0x4E86E0
+#define C_PRIMARY   0x7A8FC2   /* 柔和蓝灰(低饱和不晃眼) */
+#define C_PRIMARY_D 0x5F74A6
 #define C_LINE      0x2B3948   /* 分隔线/描边 */
 #define C_ACCENT    0xFFB23E   /* 强调橙 */
 
@@ -141,8 +141,8 @@ static lv_obj_t *home_big_button(int y, bool primary) {
     lv_obj_set_size(b, 216, 48);
     lv_obj_set_style_radius(b, 24, 0);
     lv_obj_set_style_pad_all(b, 0, 0);
-    /* 默认中性卡片外观；选中态由 home_refresh_buttons() 统一绘制（避免两个都显蓝） */
-    lv_obj_set_style_bg_color(b, lv_color_hex(C_CARD), 0);
+    /* 默认中性白卡外观；选中态由 home_refresh_buttons() 统一绘制（避免两个都显蓝） */
+    lv_obj_set_style_bg_color(b, lv_color_hex(0xFFFFFF), 0);
     lv_obj_set_style_border_width(b, 2, 0);
     lv_obj_set_style_border_color(b, lv_color_hex(C_PRIMARY), 0);
     (void)primary;
@@ -157,7 +157,7 @@ static void home_refresh_buttons(void) {
             lv_obj_set_style_bg_color(s_home_btn[i], lv_color_hex(C_PRIMARY), 0);
             lv_obj_set_style_border_width(s_home_btn[i], 0, 0);
         } else {
-            lv_obj_set_style_bg_color(s_home_btn[i], lv_color_hex(C_CARD), 0);
+            lv_obj_set_style_bg_color(s_home_btn[i], lv_color_hex(0xFFFFFF), 0);
             lv_obj_set_style_border_width(s_home_btn[i], 2, 0);
             lv_obj_set_style_border_color(s_home_btn[i], lv_color_hex(C_PRIMARY), 0);
         }
@@ -174,14 +174,14 @@ void ui_home_build(void) {
 
     s_home_scr = lv_obj_create(NULL);
     lv_obj_remove_flag(s_home_scr, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_style_bg_color(s_home_scr, lv_color_hex(C_BG), 0);
+    lv_obj_set_style_bg_color(s_home_scr, lv_color_hex(0xEFF3FA), 0);   /* 首页保持原浅色 */
     lv_obj_set_style_border_width(s_home_scr, 0, 0);
     lv_obj_set_style_pad_all(s_home_scr, 0, 0);
     s_cur_scr = s_home_scr;
 
     /* 顶部应用名 + 日期 */
-    lv_obj_t *head = home_card(8, 40, C_CARD);
-    lv_obj_t *t = ui_pixel_label(head, "考研日程助手", F_STUDY, C_INK);
+    lv_obj_t *head = home_card(8, 40, 0xFFFFFF);
+    lv_obj_t *t = ui_pixel_label(head, "考研日程助手", F_STUDY, 0x22314D);
     lv_obj_set_pos(t, 16, 10);
 
     struct tm tv;
@@ -196,7 +196,7 @@ void ui_home_build(void) {
     } else {
         snprintf(dbuf, sizeof(dbuf), "%s 请设时间", wi ? LV_SYMBOL_WIFI : "");
     }
-    lv_obj_t *d = ui_pixel_label(head, dbuf, F_STUDY, wi ? 0x2FBF71 : C_MUTED);  /* 联网=绿色WiFi图标 */
+    lv_obj_t *d = ui_pixel_label(head, dbuf, F_STUDY, wi ? 0x2FBF71 : 0x8B9BB5);  /* 联网=绿色WiFi图标 */
     lv_obj_set_align(d, LV_ALIGN_TOP_RIGHT);
     lv_obj_set_pos(d, -12, 10);
 
@@ -229,18 +229,51 @@ void ui_home_build(void) {
         lv_obj_set_align(g, LV_ALIGN_BOTTOM_MID); lv_obj_set_pos(g, 0, -10);
     }
 
-    /* 电池电量（倒计时卡右上角；低电变红提醒充电） */
+    /* 电池：分段格线电池图标（倒计时卡右上角；低电红色提醒充电） */
     {
         int soc = bsp_battery_soc();
         if (soc >= 0) {
-            char bb[28];
-            uint32_t bcol;
-            if (soc <= 20) { snprintf(bb, sizeof(bb), "低电 %d%% 请充电", soc); bcol = 0xFF5A5A; }
-            else if (soc <= 40) { snprintf(bb, sizeof(bb), "%s %d%%", LV_SYMBOL_BATTERY_1, soc); bcol = 0xFFB23E; }
-            else { snprintf(bb, sizeof(bb), "%s %d%%", LV_SYMBOL_BATTERY_FULL, soc); bcol = 0x2FBF71; }
-            lv_obj_t *bat = ui_pixel_label(cnt, bb, F_STUDY, bcol);
-            lv_obj_set_align(bat, LV_ALIGN_TOP_RIGHT);
-            lv_obj_set_pos(bat, -12, 12);
+            uint32_t col = (soc <= 20) ? 0xFF5A5A : ((soc <= 40) ? 0xFFB23E : 0x2FBF71);
+            lv_obj_t *batt = lv_obj_create(cnt);
+            lv_obj_remove_flag(batt, LV_OBJ_FLAG_SCROLLABLE);
+            lv_obj_set_size(batt, 26, 14);
+            lv_obj_set_style_radius(batt, 3, 0);
+            lv_obj_set_style_bg_color(batt, lv_color_hex(0x1B2836), 0);
+            lv_obj_set_style_border_width(batt, 1, 0);
+            lv_obj_set_style_border_color(batt, lv_color_hex(0x7A8BA0), 0);
+            lv_obj_set_style_pad_all(batt, 0, 0);
+            lv_obj_set_align(batt, LV_ALIGN_TOP_RIGHT);
+            lv_obj_set_pos(batt, -12, 13);
+            /* 电池头 */
+            lv_obj_t *nb = lv_obj_create(batt);
+            lv_obj_remove_flag(nb, LV_OBJ_FLAG_SCROLLABLE);
+            lv_obj_set_size(nb, 2, 6);
+            lv_obj_set_style_radius(nb, 0, 0);
+            lv_obj_set_style_bg_color(nb, lv_color_hex(0x7A8BA0), 0);
+            lv_obj_set_style_border_width(nb, 0, 0);
+            lv_obj_align(nb, LV_ALIGN_RIGHT_MID);
+            lv_obj_set_pos(nb, 1, 0);
+            /* 电量横向格线：5 行，亮的行越多电量越高 */
+            const int R = 5;
+            int fill = (soc * R + 99) / 100;
+            if (fill < 1) fill = 1;
+            if (fill > R) fill = R;
+            const int cw = 18, ch = 2, gp = 1;
+            int y0 = (14 - (ch * R + gp * (R - 1))) / 2;
+            for (int i = 0; i < R; i++) {
+                lv_obj_t *seg = lv_obj_create(batt);
+                lv_obj_remove_flag(seg, LV_OBJ_FLAG_SCROLLABLE);
+                lv_obj_set_size(seg, cw, ch);
+                lv_obj_set_pos(seg, 3, y0 + i * (ch + gp));
+                lv_obj_set_style_radius(seg, 1, 0);
+                lv_obj_set_style_border_width(seg, 0, 0);
+                lv_obj_set_style_bg_color(seg, lv_color_hex((i < fill) ? col : 0x2A3A4C), 0);
+            }
+            if (soc <= 20) {
+                lv_obj_t *warn = ui_pixel_label(cnt, "请充电", F_STUDY, 0xFF5A5A);
+                lv_obj_set_align(warn, LV_ALIGN_TOP_RIGHT);
+                lv_obj_set_pos(warn, -42, 15);
+            }
         }
     }
 
@@ -1309,8 +1342,8 @@ void ui_wifi_build(void) {
     lv_obj_set_pos(s_wifi_info, 12, 12);
     lv_label_set_long_mode(s_wifi_info, LV_LABEL_LONG_WRAP);
 
-    lv_obj_t *hint = ui_pixel_label(s_wifi_scr, "长按返回 · 自动刷新状态", F_STUDY, C_MUTED);
-    lv_obj_set_pos(hint, 40, 296);
+    lv_obj_t *hint = ui_pixel_label(s_wifi_scr, "OK=断开旧WiFi重新配网 · 长按返回", F_STUDY, C_MUTED);
+    lv_obj_set_pos(hint, 24, 296);
 
     ui_wifi_refresh();
     if (!s_wifi_timer) s_wifi_timer = lv_timer_create(wifi_timer_cb, 800, NULL);  /* 800ms 自动刷新 */
@@ -1327,7 +1360,7 @@ void ui_wifi_key(uint8_t btn_u, uint8_t ev_u) {
     if (ev_u != BSP_BTN_CLICK) return;
     bsp_btn_t btn = (bsp_btn_t)btn_u;
     if (btn == BSP_BTN_OK) {
-        study_wifi_start_ap_config();
+        study_wifi_forget();   /* 断开旧 WiFi，清空已保存账号，重开配网热点 */
         ui_wifi_refresh();
     }
 }

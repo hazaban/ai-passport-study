@@ -31,6 +31,7 @@ void study_wifi_init(const char *ap_ssid_prefix);
 
 /* 手动开启/重新开启网页配网(SoftAP+HTTP)。可从设置页调用。 */
 void study_wifi_start_ap_config(void);
+void study_wifi_forget(void);   /* 清除已保存WiFi并重开配网热点 */
 
 /* 主动断开 WiFi / 停止配网。 */
 void study_wifi_stop(void);
