@@ -137,8 +137,8 @@ static lv_obj_t *home_big_button(int y, bool primary) {
     lv_obj_t *b = lv_obj_create(s_home_scr);
     lv_obj_remove_flag(b, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_pos(b, 12, y);
-    lv_obj_set_size(b, 216, 56);
-    lv_obj_set_style_radius(b, 28, 0);
+    lv_obj_set_size(b, 216, 44);
+    lv_obj_set_style_radius(b, 22, 0);
     lv_obj_set_style_bg_color(b, lv_color_hex(primary ? C_PRIMARY : C_CARD), 0);
     lv_obj_set_style_border_width(b, primary ? 0 : 2, 0);
     lv_obj_set_style_border_color(b, lv_color_hex(C_PRIMARY), 0);
@@ -219,11 +219,11 @@ void ui_home_build(void) {
     lv_obj_set_pos(sub, 0, -2);
 
     /* 底部两个入口按钮 */
-    s_home_btn[0] = home_big_button(220, true);
+    s_home_btn[0] = home_big_button(216, true);
     lv_obj_t *b0 = ui_pixel_label(s_home_btn[0], "进入学习", F_STUDY, 0xFFFFFF);
     lv_obj_center(b0);
 
-    s_home_btn[1] = home_big_button(284, false);
+    s_home_btn[1] = home_big_button(266, false);
     lv_obj_t *b1 = ui_pixel_label(s_home_btn[1], "设置", F_STUDY, C_PRIMARY);
     lv_obj_center(b1);
 

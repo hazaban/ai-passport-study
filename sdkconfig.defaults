@@ -41,6 +41,15 @@ CONFIG_LV_MEM_SIZE_KILOBYTES=40
 
 # --- 系统 ---
 CONFIG_FREERTOS_HZ=1000
+# 考研助手不依赖任务看门狗（main 任务结束/长阻塞会误触发复位）；按需关闭，避免刷屏/复位。
+CONFIG_ESP_TASK_WDT_EN=n
+
+# --- LVGL 软渲染字体位图格式支持 ---
+# study_font 为 bpp2(A2) 抗锯齿；缺 A1/A2/A4 支持时汉字会被画成一团黑块。
+CONFIG_LV_DRAW_SW_SUPPORT_A1=y
+CONFIG_LV_DRAW_SW_SUPPORT_A2=y
+CONFIG_LV_DRAW_SW_SUPPORT_A4=y
+CONFIG_LV_DRAW_SW_SUPPORT_A8=y
 
 # --- Bluetooth LE / NimBLE ---
 # ESP32-C3 仅支持 BLE；示例只启用单连接 peripheral 所需的最小 host 配置。
