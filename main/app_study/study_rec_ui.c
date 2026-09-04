@@ -393,54 +393,54 @@ static void poll_events(void) {
         switch (e) {
             case REC_EVT_REC_STARTED:    break;
             case REC_EVT_MAX_TIME:
-                msg = "已录满 12 分钟"; color = REC_OK;
+                msg = "Limit: 12min"; color = REC_OK;
                 if (s_sub == SUB_REC) sub_show(SUB_LIST);
                 banner_set(msg, color);
                 break;
             case REC_EVT_STORAGE_FULL:
-                msg = "空间不足, 请先删旧录音"; color = REC_ACC;
+                msg = "Storage full"; color = REC_ACC;
                 if (s_sub == SUB_REC) sub_show(SUB_LIST);
                 banner_set(msg, color);
                 break;
             case REC_EVT_REC_CANCELLED:
-                msg = "已取消录音"; color = REC_MUTED;
+                msg = "Cancelled"; color = REC_MUTED;
                 if (s_sub == SUB_REC) sub_show(SUB_LIST);
                 banner_set(msg, color);
                 break;
             case REC_EVT_REC_ERR:
-                msg = "录音出错, 请重试"; color = REC_ACC;
+                msg = "Rec error"; color = REC_ACC;
                 if (s_sub == SUB_REC) sub_show(SUB_LIST);
                 banner_set(msg, color);
                 break;
             case REC_EVT_AUDIO_ERR:
-                msg = "麦克风初始化失败"; color = REC_ACC;
+                msg = "Mic fail"; color = REC_ACC;
                 if (s_sub == SUB_REC) sub_show(SUB_LIST);
                 banner_set(msg, color);
                 break;
             case REC_EVT_REC_SAVED:
-                msg = "录音已保存"; color = REC_OK;
+                msg = "Saved OK"; color = REC_OK;
                 if (s_sub == SUB_REC) sub_show(SUB_LIST);
                 banner_set(msg, color);
                 break;
             case REC_EVT_PLAY_DONE:
-                msg = "播放结束"; color = REC_OK;
+                msg = "Play done"; color = REC_OK;
                 if (s_sub == SUB_PLAY) sub_show(SUB_LIST);
                 banner_set(msg, color);
                 break;
             case REC_EVT_PLAY_ERR:
-                msg = "播放出错"; color = REC_ACC;
+                msg = "Play err"; color = REC_ACC;
                 if (s_sub == SUB_PLAY) sub_show(SUB_LIST);
                 banner_set(msg, color);
                 break;
             case REC_EVT_DEL_DONE:
-                msg = "已删除"; color = REC_OK;
+                msg = "Deleted"; color = REC_OK;
                 if (s_sub == SUB_CONFIRM) sub_show(SUB_LIST);
                 else need_list_refresh = true;
                 banner_set(msg, color);
                 if (need_list_refresh) list_refresh();
                 break;
             case REC_EVT_DEL_ERR:
-                msg = "删除失败"; color = REC_ACC;
+                msg = "Del fail"; color = REC_ACC;
                 if (s_sub == SUB_CONFIRM) sub_show(SUB_LIST);
                 banner_set(msg, color);
                 break;
