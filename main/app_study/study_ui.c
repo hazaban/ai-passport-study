@@ -1315,8 +1315,8 @@ static void render_one_row(int i) {
             break;
         }
         case SET_THEME: {
-            int th = cfg_geti("theme", 0);   /* 0=夜间 1=白天 */
-            snprintf(buf, sizeof(buf), "界面模式 %s", th ? "白天" : "夜间");
+            int th = cfg_geti("theme", 0);   /* 0=深色(夜) 1=浅色(白天)，字库无"夜"用深浅表达 */
+            snprintf(buf, sizeof(buf), "界面模式 %s", th ? "浅色" : "深色");
             break;
         }
         case SET_HAIR:
