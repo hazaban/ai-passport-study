@@ -18,8 +18,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-/* 采样率：与 ES8311 播放和 RTTTL 渲染统一。8 kHz 1ch 16bit（体积减半，语音清晰够用） */
-#define VOICE_SAMPLE_RATE   8000
+/* 采样率：与 ES8311 播放、RTTTL 渲染统一。16 kHz 1ch 16bit（与钥匙扣 Opus 链路一致） */
+#define VOICE_SAMPLE_RATE   16000
 
 /* 柔和“叮咚”提示音（替代原较吵的科目旋律），完成/提醒/场景通用 */
 #define STUDY_VOICE_CHIME_RTTTL "DingDong:d=8,o=5,b=100:g5,c6,p,g5,c6"

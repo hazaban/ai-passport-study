@@ -180,84 +180,27 @@ static const study_voice_fs_t *s_fs = NULL;
 
 void study_voice_set_fs(const study_voice_fs_t *fs) { s_fs = fs; }
 
-/* 简易 WAV (PCM 16kHz 16bit mono) 流式解码并播放 */
-static int fs_read_full(int h, void *dst, size_t n) {
-    uint8_t *p = (uint8_t *)dst;
-    size_t got = 0;
-    while (got < n) {
-        int r = s_fs->read(h, p + got, (int)(n - got));
-        if (r <= 0) break;
-        got += (size_t)r;
-    }
-    return (int)got;
-}
-static void fs_discard(int h, uint32_t n) {
-    uint8_t tmp[256];
-    while (n > 0) {
-        uint32_t want = n < sizeof(tmp) ? n : (uint32_t)sizeof(tmp);
-        int r = s_fs->read(h, tmp, (int)want);
-        if (r <= 0) break;
-        n -= (uint32_t)r;
-    }
-}
+static volatile bool s_playing = false;   /* 声明前移：play_wav_blocking 会读 s_stop */
+static volatile bool s_stop    = false;
 
+/* 流式播放：注入的 fs 已把 .frc/Opus 解成 int16 PCM 字节流，直接逐块输出 */
 static bool play_wav_blocking(const char *key) {
     if (!s_fs || !s_fs->open) return false;
     int h = s_fs->open(key);
     if (!h) return false;
 
-    /* ffmpeg 生成的 WAV 在 fmt 与 data 之间可能插有 LIST/INFO 块，data 不一定从
-     * 44B 开始。沿 RIFF chunk 表逐个解析：先校验 fmt(必须是 PCM mono，
-     * 采样率=VOICE_SAMPLE_RATE/16bit)，再定位 data 载荷起点，避免把头字节当音频。 */
-    uint8_t riff[12];
-    if (fs_read_full(h, riff, 12) < 12 ||
-        memcmp(riff, "RIFF", 4) != 0 || memcmp(riff + 8, "WAVE", 4) != 0) {
-        s_fs->close(h); return false;
-    }
-
-    bool fmt_ok = false;
+    if (s_format_hint) s_format_hint();
+    enum { CHUNK = 512 };
+    int16_t buf[CHUNK];
     for (;;) {
-        uint8_t ch[8];
-        if (fs_read_full(h, ch, 8) < 8) break;   /* EOF，没找到 data */
-        uint32_t csz = (uint32_t)ch[4] | ((uint32_t)ch[5] << 8)
-                     | ((uint32_t)ch[6] << 16) | ((uint32_t)ch[7] << 24);
-        if (memcmp(ch, "fmt ", 4) == 0) {
-            uint8_t f[16];
-            int got = fs_read_full(h, f, csz < 16 ? csz : 16);
-            if (got >= 16) {
-                int fmt_ = f[0] | (f[1] << 8);
-                int nch  = f[2] | (f[3] << 8);
-                int rate = f[4] | (f[5] << 8) | (f[6] << 16) | (f[7] << 24);
-                int bps  = f[14] | (f[15] << 8);
-                fmt_ok = (fmt_ == 1 && nch == 1 && rate == VOICE_SAMPLE_RATE && bps == 16);
-            }
-            if (csz > 16) fs_discard(h, csz - (uint32_t)(got < 16 ? got : 16));
-            if (csz & 1) fs_discard(h, 1);
-            if (!fmt_ok) { s_fs->close(h); return false; }
-        } else if (memcmp(ch, "data", 4) == 0) {
-            if (!fmt_ok) { s_fs->close(h); return false; }
-            if (s_format_hint) s_format_hint();
-            enum { CHUNK = 512 };
-            int16_t buf[CHUNK];
-            uint32_t left = csz;
-            for (;;) {
-                size_t want = left ? (left < sizeof(buf) ? left : sizeof(buf)) : sizeof(buf);
-                int n = s_fs->read(h, buf, (int)want);
-                if (n <= 0) break;
-                int samples = n / 2;
-                if (samples > 0) feed(buf, samples);
-                if (left) { left -= (uint32_t)n; if (left == 0) break; }
-                if (n < (int)want) break;
-            }
-            s_fs->close(h);
-            return true;
-        } else {
-            fs_discard(h, csz);          /* 跳过 LIST/INFO 等其它块 */
-            if (csz & 1) fs_discard(h, 1);
-        }
+        if (s_stop) break;
+        int n = s_fs->read(h, buf, (int)sizeof(buf));
+        if (n <= 0) break;
+        int samples = n / 2;
+        if (samples > 0) feed(buf, samples);
     }
     s_fs->close(h);
-    return false;
+    return true;
 }
 
 /* ---------- 高层 API ---------- */
@@ -265,9 +208,6 @@ static bool play_wav_blocking(const char *key) {
  * "是否异步播放"交给上层：
  *   同步实现：立刻播放（阻塞）
  *   ESP32：app_study 启动独立 Task 时包装成非阻塞（见 app_study.c） */
-static volatile bool s_playing = false;
-static volatile bool s_stop    = false;
-
 static int play_blocking_rtttl_then_voice(const char *rtttl, const char *voice_key) {
     if (s_playing) return -1;
     s_playing = true;

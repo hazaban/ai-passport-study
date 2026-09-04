@@ -34,6 +34,7 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "esp_spiffs.h"        /* 挂载 voicepack 分区读语音 */
+#include "opus.h"              /* Opus 解码(语音包 .frc) */
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -68,20 +69,59 @@ static void audio_output_cb(const int16_t *buf, int num_samples) {
 }
 
 /* ---------- SPIFFS 语音文件读取（注入给 study_voice） ---------- */
-/* 约定：WAV 存于 /spiffs/<voice_key>.wav，16kHz/16bit/mono。 */
+/* 语音包现为 16kHz/单声道 Opus 裸流（.frc：每包 = u16LE 长度 + Opus 帧），
+ * 参考钥匙扣项目：文件读取层实时 opus_decode → 只对 study_voice 吐 int16 PCM 字节。
+ * 语音播放走独立 worker（串行），故这里只维护一个解码器实例。 */
+static FILE         *s_voice_fp = NULL;
+static OpusDecoder  *s_voice_dec = NULL;
+static int16_t       s_voice_pend[960];
+static int           s_voice_pend_n = 0;
+static uint8_t       s_voice_pkt[1600];
+
 static int voice_fs_open(const char *voice_key) {
     char path[96];
-    int n = snprintf(path, sizeof(path), "/spiffs/%s.wav", voice_key);
+    int n = snprintf(path, sizeof(path), "/spiffs/%s.frc", voice_key);
     if (n < 0 || n >= (int)sizeof(path)) return 0;
     FILE *f = fopen(path, "rb");
-    return (int)(intptr_t)f;   /* NULL → 0 = 打开失败 */
+    if (!f) return 0;
+    int err = 0;
+    OpusDecoder *d = opus_decoder_create(VOICE_SAMPLE_RATE, 1, &err);
+    if (err != OPUS_OK || !d) { fclose(f); return 0; }
+    s_voice_fp = f; s_voice_dec = d; s_voice_pend_n = 0;
+    return 1;
 }
 static int voice_fs_read(int handle, void *buf, int max) {
-    if (!handle) return 0;
-    return (int)fread(buf, 1, (size_t)max, (FILE *)(intptr_t)handle);
+    (void)handle;
+    if (!s_voice_dec || !s_voice_fp) return 0;
+    int16_t *out = (int16_t *)buf;
+    int need = max / 2;
+    int got = 0;
+    while (got < need) {
+        if (s_voice_pend_n > 0) {
+            int take = s_voice_pend_n > (need - got) ? (need - got) : s_voice_pend_n;
+            memcpy(out + got, s_voice_pend, (size_t)take * 2);
+            if (take < s_voice_pend_n) memmove(s_voice_pend, s_voice_pend + take,
+                                               (size_t)(s_voice_pend_n - take) * 2);
+            s_voice_pend_n -= take;
+            got += take;
+            continue;
+        }
+        uint8_t h[2];
+        if (fread(h, 1, 2, s_voice_fp) != 2) break;          /* EOF */
+        int plen = h[0] | (h[1] << 8);
+        if (plen <= 0 || plen > (int)sizeof(s_voice_pkt)) break;
+        if (fread(s_voice_pkt, 1, (size_t)plen, s_voice_fp) != (size_t)plen) break;
+        int ns = opus_decode(s_voice_dec, s_voice_pkt, plen, s_voice_pend, 960, 0);
+        if (ns < 0) break;
+        s_voice_pend_n = ns;
+    }
+    return got * 2;
 }
 static void voice_fs_close(int handle) {
-    if (handle) fclose((FILE *)(intptr_t)handle);
+    (void)handle;
+    if (s_voice_dec) { opus_decoder_destroy(s_voice_dec); s_voice_dec = NULL; }
+    if (s_voice_fp)  { fclose(s_voice_fp); s_voice_fp = NULL; }
+    s_voice_pend_n = 0;
 }
 static const study_voice_fs_t s_voice_fs = {
     .open  = voice_fs_open,
@@ -112,12 +152,11 @@ static void voice_fs_init(void) {
 }
 
 /* study_voice.c 里的 study_voice_file_exists() 只是 weak 默认(恒返回 false)；
- * 这里给出 ESP32 强实现：探测 /spiffs/<key>.wav 是否真实存在。
- * 缺了它 play_wav_blocking() 永远不被调用 → 只有 RTTTL 旋律、人声静音。 */
+ * 这里给出 ESP32 强实现：探测 /spiffs/<key>.frc 是否真实存在。 */
 bool study_voice_file_exists(const char *voice_key) {
     if (!voice_key) return false;
     char path[96];
-    int n = snprintf(path, sizeof(path), "/spiffs/%s.wav", voice_key);
+    int n = snprintf(path, sizeof(path), "/spiffs/%s.frc", voice_key);
     if (n < 0 || n >= (int)sizeof(path)) return false;
     FILE *f = fopen(path, "rb");
     if (!f) return false;
@@ -502,7 +541,7 @@ void app_study_enter(void) {
     voice_fs_init();
     study_voice_set_output(audio_output_cb, audio_format_hint);
     s_voice_cmd_q = xQueueCreate(8, sizeof(voice_cmd_t));
-    xTaskCreate(voice_worker, "study_voice", 8192, NULL, 4, &s_voice_task);
+    xTaskCreate(voice_worker, "study_voice", 16384, NULL, 4, &s_voice_task);
 
     /* 3) UI 初始化 & 载入首屏（封面主页面） */
     study_ui_init(&s_ui_cb);
