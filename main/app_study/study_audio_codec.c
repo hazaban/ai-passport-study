@@ -188,6 +188,7 @@ study_frc_reader_t *study_frc_open(const char *path) {
         /* 旧格式（无 header）或 header 损坏：rewind 后遍历全文件 */
         fseek(fp, 0, SEEK_SET);
         r->num_frames = count_frames(fp);
+    }
     ESP_LOGI(TAG, "ADPCM open OK: %s frames=%lu heap=%d",
              path, (unsigned long)r->num_frames, esp_get_free_heap_size());
     return r;
