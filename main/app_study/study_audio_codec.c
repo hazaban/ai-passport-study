@@ -17,6 +17,10 @@
 
 static const char *TAG = "codec";
 
+/* FRC 文件头：magic + 4字节总帧数（小端），旧文件无此头则用 count_frames fallback */
+#define FRC_MAGIC    0x46524331   /* "FRC1" */
+#define FRC_HEADER_SZ 8
+
 /* ---------- IMA-ADPCM 标准表（Flash 常量，不占堆） ---------- */
 static const int16_t s_step_size[89] = {
      7,    8,    9,   10,   11,   12,   13,   14,   16,   17,
@@ -175,7 +179,15 @@ study_frc_reader_t *study_frc_open(const char *path) {
     r->fp = fp;
     r->state.pred = 0;
     r->state.idx  = 0;
-    r->num_frames = count_frames(fp);
+    /* 先尝试读新格式 magic header */
+    uint32_t magic = 0, frames = 0;
+    if (fread(&magic, 4, 1, fp) == 1 && magic == FRC_MAGIC &&
+        fread(&frames, 4, 1, fp) == 1) {
+        r->num_frames = frames;   /* 直接用头里的值，O(1) */
+    } else {
+        /* 旧格式（无 header）或 header 损坏：rewind 后遍历全文件 */
+        fseek(fp, 0, SEEK_SET);
+        r->num_frames = count_frames(fp);
     ESP_LOGI(TAG, "ADPCM open OK: %s frames=%lu heap=%d",
              path, (unsigned long)r->num_frames, esp_get_free_heap_size());
     return r;
@@ -226,6 +238,11 @@ study_frc_writer_t *study_frc_create(const char *path) {
         ESP_LOGE(TAG, "create fopen 失败: %s (heap=%d)", path, esp_get_free_heap_size());
         return NULL;
     }
+    /* 先写 8 字节 header：magic + 帧数占位（finalize 时回填） */
+    uint32_t magic_placeholder = FRC_MAGIC;
+    uint32_t frames_placeholder = 0;
+    fwrite(&magic_placeholder, 4, 1, fp);
+    fwrite(&frames_placeholder, 4, 1, fp);
     study_frc_writer_t *w = (study_frc_writer_t *)calloc(1, sizeof(*w));
     if (!w) { fclose(fp); ESP_LOGE(TAG, "create calloc 失败"); return NULL; }
     w->fp = fp;
@@ -256,7 +273,16 @@ uint32_t study_frc_written_frames(const study_frc_writer_t *w) {
 
 int study_frc_finalize(study_frc_writer_t *w) {
     if (!w) return -1;
-    if (w->fp) { fclose(w->fp); w->fp = NULL; }
+    if (w->fp) {
+        /* 回到文件头，回填真实帧数 */
+        uint32_t magic = FRC_MAGIC;
+        uint32_t frames = w->num_frames;
+        rewind(w->fp);
+        fwrite(&magic, 4, 1, w->fp);
+        fwrite(&frames, 4, 1, w->fp);
+        fclose(w->fp);
+        w->fp = NULL;
+    }
     free(w);
     return 0;
 }
