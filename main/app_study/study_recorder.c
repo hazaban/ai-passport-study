@@ -29,7 +29,7 @@ static const char *TAG = "recorder";
 #define REC_DIR     "/rec"
 #define ACTIVE_TMP  "/rec/ACTIVE.TMP"
 
-#define CAP_STACK_BYTES  20480   /* 20KB 动态栈：停WiFi后堆充足时创建 */
+#define CAP_STACK_BYTES  12288   /* 12KB 动态栈：省堆给 opus 编码器；编码首帧栈应<12KB */
 #define PLAY_STACK       16384
 #define REC_PRIO    5
 #define CHK_EVERY   50

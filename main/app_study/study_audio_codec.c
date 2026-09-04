@@ -5,7 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "esp_log.h"
+#include "esp_system.h"
 #include "opus.h"
+
+static const char *TAG = "codec";
 
 struct study_frc_reader {
     FILE         *fp;
@@ -87,17 +91,25 @@ int study_frc_read_pcm(study_frc_reader_t *r, int16_t *out, int max_samples) {
 
 study_frc_writer_t *study_frc_create(const char *path) {
     FILE *fp = fopen(path, "wb");
-    if (!fp) return NULL;
+    if (!fp) {
+        ESP_LOGE(TAG, "create fopen 失败: %s (heap=%d)", path, esp_get_free_heap_size());
+        return NULL;
+    }
     int err = 0;
     OpusEncoder *enc = opus_encoder_create(STUDY_CODEC_RATE, 1, OPUS_APPLICATION_VOIP, &err);
-    if (err != OPUS_OK || !enc) { fclose(fp); return NULL; }
+    if (err != OPUS_OK || !enc) {
+        ESP_LOGE(TAG, "create opus_encoder 失败 err=%d (heap=%d)", err, esp_get_free_heap_size());
+        fclose(fp);
+        return NULL;
+    }
     opus_encoder_ctl(enc, OPUS_SET_BITRATE(20000));
     opus_encoder_ctl(enc, OPUS_SET_VBR(1));
-    opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(4));
+    opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(3));   /* 略降复杂度省栈/省时 */
     opus_encoder_ctl(enc, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
     study_frc_writer_t *w = (study_frc_writer_t *)calloc(1, sizeof(*w));
-    if (!w) { opus_encoder_destroy(enc); fclose(fp); return NULL; }
+    if (!w) { opus_encoder_destroy(enc); fclose(fp); ESP_LOGE(TAG,"create calloc 失败"); return NULL; }
     w->fp = fp; w->enc = enc;
+    ESP_LOGI(TAG, "create OK: %s (heap=%d)", path, esp_get_free_heap_size());
     return w;
 }
 
