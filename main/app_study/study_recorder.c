@@ -1,10 +1,10 @@
 /*
  * study_recorder.c — 录音引擎（device-only，见 study_recorder.h）
  *
- * 录音与语音包同一套编解码：16kHz/单声道 Opus 裸流（u16LE 包长 + Opus 帧，20ms）。
- * capture 任务读麦克风(320 采样/帧) → opus 编码 → 写 /rec/ACTIVE.TMP；
- * 短按 OK/到 20min/空间不足 → 定稿为 /rec/R%07u.FRC。
- * 回放/导出同用 study_audio_codec 解码。
+ * 录音通路：8kHz/单声道 IMA-ADPCM 裸流（u16LE 包长 + [pred/idx 状态头] + 80B 压缩，20ms 帧）。
+ * capture 任务读麦克风(160 采样/帧) → ADPCM 编码 → 写 /rec/ACTIVE.TMP；
+ * 短按 OK/到 REC_MAX_SEC/空间不足 → 定稿为 /rec/R%07u.FRC。
+ * 回放/导出同用 study_audio_codec 解码（本 codec 与语音包的 Opus 链路彻底隔离）。
  */
 #include "study_recorder.h"
 #include "study_audio_codec.h"
@@ -29,7 +29,7 @@ static const char *TAG = "recorder";
 #define REC_DIR     "/rec"
 #define ACTIVE_TMP  "/rec/ACTIVE.TMP"
 
-#define CAP_STACK_BYTES  12288   /* 12KB 动态栈：省堆给 opus 编码器；编码首帧栈应<12KB */
+#define CAP_STACK_BYTES  12288   /* 12KB 动态栈：ADPCM 编码峰值栈仅 4~6KB，留足余量 */
 #define PLAY_STACK       16384
 #define REC_PRIO    5
 #define CHK_EVERY   50
@@ -149,11 +149,11 @@ static void cap_task(void *arg) {
     s_rec_cmd_stop = false;
     s_rec_cancel = false;
     s_paused = false;
-    study_wifi_pause();   /* 暂停 WiFi，释放堆给 Opus 编码 */
+    study_wifi_pause();   /* 暂停 WiFi：ADPCM 已不依赖腾堆，但保留做冗余保险 */
     vTaskDelay(pdMS_TO_TICKS(300));   /* 等 WiFi/LWIP 真正释放内存 */
     ESP_LOGI(TAG, "CAP: WiFi 已暂停(等300ms后), heap=%d", esp_get_free_heap_size());
 
-    if (esp_get_free_heap_size() < 30000) {
+    if (esp_get_free_heap_size() < 8000) {
         ESP_LOGE(TAG, "heap low(%d), 不录", esp_get_free_heap_size());
         push_evt(REC_EVT_AUDIO_ERR);
         study_wifi_resume(); s_recording = false; s_cap_task = NULL; vTaskDelete(NULL); return;
@@ -164,7 +164,7 @@ static void cap_task(void *arg) {
     }
     bsp_audio_set_volume((uint8_t)s_vol);
 
-    ESP_LOGI(TAG, "CAP 阶段: codec 16k 设置 OK, heap=%d", esp_get_free_heap_size());
+    ESP_LOGI(TAG, "CAP 阶段: codec 8k 设置 OK, heap=%d", esp_get_free_heap_size());
     study_frc_writer_t *w = study_frc_create(ACTIVE_TMP);
     if (!w) {
         ESP_LOGE(TAG, "CAP 阶段: 建文件失败(存储满?)");

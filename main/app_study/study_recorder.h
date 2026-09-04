@@ -15,7 +15,7 @@
 #include <stddef.h>
 
 #define REC_MAX_FILES   32
-#define REC_MAX_SEC     20 * 60      /* 单条上限 20 分钟（与参考玩法一致） */
+#define REC_MAX_SEC     12 * 60      /* 单条上限 12 分钟（ADPCM@8kHz，分区 ~3MB 实际可写 11.8 分钟；留余量） */
 
 typedef struct {
     uint32_t seq;            /* Rxxxxxxx 序号 */
