@@ -35,6 +35,7 @@
 #include "esp_timer.h"
 #include "esp_spiffs.h"        /* 挂载 voicepack 分区读语音 */
 #include "opus.h"              /* Opus 解码(语音包 .frc) */
+#include "study_recorder.h"    /* 录音机：生命周期 + busy 门闩 */
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -423,6 +424,10 @@ static void voice_worker(void *arg) {
     voice_cmd_t cmd;
     for (;;) {
         if (xQueueReceive(s_voice_cmd_q, &cmd, pdMS_TO_TICKS(200)) != pdPASS) continue;
+        if (study_recorder_active()) {   /* 录音机占用 codec 时丢弃语音命令 */
+            ESP_LOGW(TAG, "录音机忙，丢弃语音命令 kind=%d", (int)cmd.kind);
+            continue;
+        }
         ESP_LOGI(TAG, "语音播放: kind=%d key=%s", (int)cmd.kind,
                  (cmd.kind == VCMD_COMPLETE) ? "complete" : cmd.key);
         study_voice_stop();
@@ -539,6 +544,10 @@ void app_study_enter(void) {
 
     /* 2) voice 输出注入 + 语音文件系统挂载 */
     voice_fs_init();
+    /* 2b) 录音机：挂载 /rec(recordings) 分区 */
+    if (study_recorder_init() != 0) {
+        ESP_LOGW(TAG, "录音机初始化失败（recordings 分区异常）");
+    }
     study_voice_set_output(audio_output_cb, audio_format_hint);
     s_voice_cmd_q = xQueueCreate(8, sizeof(voice_cmd_t));
     xTaskCreate(voice_worker, "study_voice", 16384, NULL, 4, &s_voice_task);
@@ -569,6 +578,8 @@ void app_study_exit(void) {
     if (s_voice_task) { vTaskDelete(s_voice_task); s_voice_task = NULL; }
     if (s_voice_cmd_q) { vQueueDelete(s_voice_cmd_q); s_voice_cmd_q = NULL; }
     study_voice_stop();
+    study_recorder_stop_playback();
+    study_recorder_cancel();
     if (bsp_lvgl_lock(1000)) {
         switch (s_page) {
             case PAGE_HOME:       ui_home_destroy(); break;
@@ -577,6 +588,7 @@ void app_study_exit(void) {
             case PAGE_TASK_DETAIL:ui_detail_destroy(); break;
             case PAGE_SETTINGS:   ui_settings_destroy(); break;
             case PAGE_WIFI:       ui_wifi_destroy(); break;
+            case PAGE_RECORDER:   ui_rec_destroy(); break;
             default: break;
         }
         bsp_lvgl_unlock();
@@ -598,6 +610,7 @@ static void nav_back(void) {
         case PAGE_TASK_DETAIL: ui_detail_destroy(); break;
         case PAGE_SETTINGS:    ui_settings_destroy(); break;
         case PAGE_WIFI:        ui_wifi_destroy(); break;
+        case PAGE_RECORDER:    ui_rec_destroy(); break;
         case PAGE_TODO:        ui_todo_destroy(); break;
         default: break;
     }
@@ -636,8 +649,25 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
     if (ev == BSP_BTN_LONG) {
         s_last_long_ok_ms = (uint32_t)(esp_timer_get_time() / 1000);
     }
-    /* 长按 OK = 返回上一页（封面页长按 = 退出回目录）。删除请用“双击 OK”。 */
+    /* 长按 OK = 返回上一页（封面页长按 = 退出回目录）。删除请用“双击 OK”。
+     * 录音机页例外：长按 OK 在子屏内是「播放/停止/回设置」等专属语义。 */
     if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {
+        if (s_page == PAGE_RECORDER) {
+            ui_rec_key((uint8_t)btn, (uint8_t)ev);
+            if (ui_rec_wants_home()) {
+                ui_rec_destroy();
+                s_page = PAGE_HOME;
+                s_prev_page = PAGE_HOME;
+                ui_home_build();
+            } else if (ui_rec_wants_back()) {
+                s_prev_page = PAGE_SETTINGS;
+                ui_rec_destroy();
+                ui_settings_build();
+                s_page = PAGE_SETTINGS;
+            }
+            bsp_lvgl_unlock();
+            return;
+        }
         if (s_page == PAGE_HOME) s_wants_exit = true;
         else                     nav_back();
         bsp_lvgl_unlock();
@@ -718,7 +748,12 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
             break;
         case PAGE_SETTINGS:
             ui_settings_key((uint8_t)btn, (uint8_t)ev);
-            if (ui_settings_wants_wifi()) {
+            if (ui_settings_wants_recorder()) {
+                s_prev_page = s_page;
+                ui_settings_destroy();
+                s_page = PAGE_RECORDER;
+                ui_rec_enter();
+            } else if (ui_settings_wants_wifi()) {
                 s_prev_page = s_page;
                 ui_settings_destroy();
                 ui_wifi_build();
@@ -737,6 +772,20 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
             break;
         case PAGE_WIFI:
             ui_wifi_key((uint8_t)btn, (uint8_t)ev);
+            break;
+        case PAGE_RECORDER:
+            ui_rec_key((uint8_t)btn, (uint8_t)ev);
+            if (ui_rec_wants_home()) {
+                ui_rec_destroy();
+                s_page = PAGE_HOME;
+                s_prev_page = PAGE_HOME;
+                ui_home_build();
+            } else if (ui_rec_wants_back()) {
+                s_prev_page = PAGE_SETTINGS;
+                ui_rec_destroy();
+                ui_settings_build();
+                s_page = PAGE_SETTINGS;
+            }
             break;
         default: break;
     }

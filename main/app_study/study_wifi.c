@@ -24,6 +24,8 @@
 #include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "study_recorder.h"     /* 录音列表 / 删除 */
+#include "study_audio_codec.h"  /* .FRC → PCM 解码导出 WAV */
 
 static const char *TAG = "study_wifi";
 
@@ -165,6 +167,9 @@ static void stop_http_server(void) {
 
 static esp_err_t handle_ap_root(httpd_req_t *req);
 static esp_err_t handle_ap_save(httpd_req_t *req);
+static esp_err_t handle_rec_list(httpd_req_t *req);
+static esp_err_t handle_rec_dl(httpd_req_t *req);
+static esp_err_t handle_rec_del(httpd_req_t *req);
 
 /* AP+STA 同时开：配网热点始终可搜到(STU_STUDY_xxxx + 密码)；有凭证则同时去连家里 WiFi */
 static void wifi_start_apsta(bool have, const char *ssid, const char *pass) {
@@ -196,17 +201,24 @@ static void wifi_start_apsta(bool have, const char *ssid, const char *pass) {
     }
     esp_wifi_start();    /* WIFI_EVENT_STA_START → esp_wifi_connect() 自动去连 */
 
-    /* 配网页始终开，方便随时改网络 */
+    /* 配网页始终开，方便随时改网络；并附录音机列表/下载路由。
+     * 栈加码到 8192：/rec/dl 里要做 Opus 解码，需要更大任务栈。 */
     if (!s_server) {
         httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
         cfg.server_port = STUDY_WIFI_AP_PORT;
         cfg.uri_match_fn = httpd_uri_match_wildcard;
-        cfg.stack_size = 4096;
+        cfg.stack_size = 8192;
         if (httpd_start(&s_server, &cfg) == ESP_OK) {
             static const httpd_uri_t r_root = { .uri = "/", .method = HTTP_GET, .handler = handle_ap_root };
             static const httpd_uri_t r_save = { .uri = "/save", .method = HTTP_POST, .handler = handle_ap_save };
+            static const httpd_uri_t r_rl   = { .uri = "/rec/list", .method = HTTP_GET, .handler = handle_rec_list };
+            static const httpd_uri_t r_rd   = { .uri = "/rec/dl",   .method = HTTP_GET, .handler = handle_rec_dl };
+            static const httpd_uri_t r_rm   = { .uri = "/rec/del",  .method = HTTP_GET, .handler = handle_rec_del };
             httpd_register_uri_handler(s_server, &r_root);
             httpd_register_uri_handler(s_server, &r_save);
+            httpd_register_uri_handler(s_server, &r_rl);
+            httpd_register_uri_handler(s_server, &r_rd);
+            httpd_register_uri_handler(s_server, &r_rm);
             ESP_LOGI(TAG, "配网页已就绪: http://%s/", STUDY_WIFI_AP_GATEWAY);
         } else {
             ESP_LOGE(TAG, "httpd 启动失败");
@@ -246,6 +258,119 @@ static esp_err_t handle_ap_save(httpd_req_t *req) {
 
     /* 不能在 httpd 处理函数里 httpd_stop（会死锁），交给独立任务延迟后执行 */
     start_apply_creds();
+    return ESP_OK;
+}
+
+/* ---------- 录音列表 / 下载（并入配网页，录音导出无需独立开热点流程） ---------- */
+static void put_u32le(uint8_t *p, uint32_t v) {
+    p[0] = (uint8_t)v; p[1] = (uint8_t)(v >> 8);
+    p[2] = (uint8_t)(v >> 16); p[3] = (uint8_t)(v >> 24);
+}
+
+static esp_err_t handle_rec_list(httpd_req_t *req) {
+    study_rec_entry_t items[REC_MAX_FILES];
+    int n = study_recorder_scan(items, REC_MAX_FILES);
+    httpd_resp_set_type(req, "text/html; charset=utf-8");
+    httpd_resp_sendstr_chunk(req,
+        "<!DOCTYPE html><html lang=zh><head><meta charset=utf-8>"
+        "<title>录音笔</title></head><body style=\"font-family:sans-serif;max-width:520px;margin:20px auto;padding:0 16px\">"
+        "<h2>录音笔 · 本地文件</h2>");
+    if (n <= 0) {
+        httpd_resp_sendstr_chunk(req, "<p>还没有录音。</p><p><a href=\"/\">← WiFi 配网</a></p></body></html>");
+        httpd_resp_send_chunk(req, NULL, 0);
+        return ESP_OK;
+    }
+    httpd_resp_sendstr_chunk(req, "<table style=\"width:100%;border-collapse:collapse\">");
+    for (int i = 0; i < n; i++) {
+        char buf[200];
+        snprintf(buf, sizeof(buf),
+                 "<tr style=\"border-bottom:1px solid #ddd\"><td>R%07lu</td>"
+                 "<td>%02lu:%02lu</td>"
+                 "<td><a href=\"/rec/dl?seq=%lu\">下载 WAV</a></td>"
+                 "<td><a href=\"/rec/del?seq=%lu\" style=\"color:#c00\">删除</a></td></tr>",
+                 (unsigned long)items[i].seq,
+                 (unsigned long)(items[i].ms_len / 60000),
+                 (unsigned long)((items[i].ms_len / 1000) % 60),
+                 (unsigned long)items[i].seq, (unsigned long)items[i].seq);
+        httpd_resp_sendstr_chunk(req, buf);
+    }
+    httpd_resp_sendstr_chunk(req,
+        "</table><p><a href=\"/\">← WiFi 配网</a></p></body></html>");
+    httpd_resp_send_chunk(req, NULL, 0);
+    return ESP_OK;
+}
+
+static esp_err_t handle_rec_dl(httpd_req_t *req) {
+    /* 解析 ?seq=N */
+    char seqs[24] = { 0 };
+    if (httpd_req_get_url_query_str(req, seqs, sizeof(seqs)) != ESP_OK) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "missing seq");
+        return ESP_FAIL;
+    }
+    char vseq[24] = { 0 };
+    if (httpd_query_key_value(seqs, "seq", vseq, sizeof(vseq)) != ESP_OK) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "bad seq");
+        return ESP_FAIL;
+    }
+    long seq = strtol(vseq, NULL, 10);
+    if (seq <= 0) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "bad seq");
+        return ESP_FAIL;
+    }
+    char path[64];
+    study_recorder_path((uint32_t)seq, path, sizeof(path));
+    study_frc_reader_t *rd = study_frc_open(path);
+    if (!rd) {
+        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "recording not found");
+        return ESP_FAIL;
+    }
+    uint32_t rate = study_frc_rate(rd);
+    uint32_t frames = study_frc_num_frames(rd);
+    uint32_t data_bytes = frames * STUDY_FRAME_SAMPLES * 2;
+
+    uint8_t wh[44];
+    memcpy(wh, "RIFF", 4); put_u32le(wh + 4, 36 + data_bytes);
+    memcpy(wh + 8, "WAVE", 4);
+    memcpy(wh + 12, "fmt ", 4); put_u32le(wh + 16, 16);
+    wh[20] = 1; wh[21] = 0;                       /* audioFormat=PCM */
+    wh[22] = 1; wh[23] = 0;                       /* channels=1 */
+    put_u32le(wh + 24, rate);                     /* sampleRate */
+    put_u32le(wh + 28, rate * 2);                 /* byteRate = rate*ch*bits/8 */
+    wh[32] = 2; wh[33] = 0;                       /* blockAlign */
+    wh[34] = 16; wh[35] = 0;                      /* bitsPerSample */
+    memcpy(wh + 36, "data", 4); put_u32le(wh + 40, data_bytes);
+
+    httpd_resp_set_type(req, "audio/wav");
+    char cd[80];
+    snprintf(cd, sizeof(cd), "attachment; filename=R%07lu.wav", (unsigned long)seq);
+    httpd_resp_set_hdr(req, "Content-Disposition", cd);
+
+    /* 分块发送：先 WAV 头，再解码 PCM */
+    httpd_resp_send_chunk(req, (const char *)wh, sizeof(wh));
+    int16_t pcm[1024];
+    for (;;) {
+        int ns = study_frc_read_pcm(rd, pcm, 1024);
+        if (ns <= 0) break;
+        httpd_resp_send_chunk(req, (const char *)pcm, (size_t)ns * 2);
+    }
+    study_frc_close(rd);
+    httpd_resp_send_chunk(req, NULL, 0);
+    return ESP_OK;
+}
+
+static esp_err_t handle_rec_del(httpd_req_t *req) {
+    char seqs[24] = { 0 };
+    if (httpd_req_get_url_query_str(req, seqs, sizeof(seqs)) == ESP_OK) {
+        char vseq[24] = { 0 };
+        if (httpd_query_key_value(seqs, "seq", vseq, sizeof(vseq)) == ESP_OK) {
+            long seq = strtol(vseq, NULL, 10);
+            if (seq > 0) study_recorder_delete_seq((uint32_t)seq);
+        }
+    }
+    httpd_resp_set_type(req, "text/html; charset=utf-8");
+    httpd_resp_sendstr_chunk(req,
+        "<h3>已处理。</h3><p><a href=\"/rec/list\">← 返回录音列表</a> · <a href=\"/\">WiFi 配网</a></p></body></html>");
+    httpd_resp_send_chunk(req, NULL, 0);
     return ESP_OK;
 }
 

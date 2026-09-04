@@ -37,8 +37,9 @@ typedef enum {
     PAGE_TODO,            /* 今日 Todo（左右双页: 日常秩序 / 各科学习） */
     PAGE_ADD_TASK,        /* 添加任务：模板选择 → 类别 → subtype → 时间 */
     PAGE_TASK_DETAIL,     /* 任务详情：勾选 / 编辑时间 / 删除 */
-    PAGE_SETTINGS,        /* 设置：WiFi / 亮度 / 电量 / 音量 / 时间 */
+    PAGE_SETTINGS,        /* 设置：WiFi / 录音笔 / 亮度 / 电量 / 音量 / 时间 */
     PAGE_WIFI,            /* WiFi：配网 / 状态显示 */
+    PAGE_RECORDER,        /* 录音机：录 / 播 / 删 / 导出（黑底白字） */
     PAGE_ENCOURAGE,       /* 完成任务后的鼓励弹窗（含颜色动画） */
     PAGE_SCENE,           /* 日常秩序场景的温馨提示（开始学习/睡觉等） */
 } study_page_t;
@@ -116,11 +117,20 @@ bool ui_settings_wants_wifi(void);
 bool ui_settings_wants_home(void);
 /* 设置页 OK 命中其余条目(音量/起床/睡觉)后置位；app_study 据此返回 PAGE_TODO */
 bool ui_settings_wants_todo(void);
+/* 设置页 OK 命中「录音笔」后置位；app_study 据此切到 PAGE_RECORDER */
+bool ui_settings_wants_recorder(void);
 
 /* -------- WiFi 页 (PAGE_WIFI) -------- */
 void ui_wifi_build(void);
 void ui_wifi_destroy(void);
 void ui_wifi_key(uint8_t btn, uint8_t ev);
+
+/* -------- 录音机页 (PAGE_RECORDER) -------- */
+void ui_rec_enter(void);
+void ui_rec_destroy(void);
+void ui_rec_key(uint8_t btn, uint8_t ev);
+bool ui_rec_wants_back(void);
+bool ui_rec_wants_home(void);
 
 /* -------- 鼓励弹窗（完成科目任务时） --------
  * 显示：科目主题色背景 + 鼓励文案大字 + 播放专属 RTTTL

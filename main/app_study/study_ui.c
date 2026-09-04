@@ -1185,7 +1185,7 @@ bool ui_detail_wants_back(void) {
 /* ==============================================================
  * PAGE_SETTINGS — 设置（WiFi / 亮度 / 电量 / 音量 / 时间 / 早起记录 / 睡眠记录 / 起床闹钟 / 主题 / 洗头间隔 / 返回）
  * ============================================================== */
-enum { SET_WIFI = 0, SET_BRIGHT, SET_VOL, SET_NOW, SET_WAKE, SET_SLEEP,
+enum { SET_WIFI = 0, SET_RECORDER, SET_BRIGHT, SET_VOL, SET_NOW, SET_WAKE, SET_SLEEP,
        SET_WAKE_ALARM, SET_THEME, SET_HAIR, SET_BATT, SET_HOME, SET_N };
 static lv_obj_t *s_set_scr;
 static lv_obj_t *s_set_list;   /* 设置列表滚动容器：行距/字体不压缩，行多时上下滚动 */
@@ -1194,6 +1194,7 @@ static int s_set_sel;
 static bool s_set_wants_wifi;
 static bool s_set_wants_home;
 static bool s_set_wants_todo;
+static bool s_set_wants_recorder;
 static bool s_set_edit;      /* 正在编辑某数值行 */
 static int  s_edit_unit;     /* 多单元行当前编辑的单元 */
 static int  s_bright;        /* 亮度 0..100 */
@@ -1213,7 +1214,7 @@ static int month_days(int y, int mo) {
 static int row_units(int i) {
     if (i == SET_NOW) return 3;
     if (i == SET_WAKE_ALARM) return 2;
-    if (i == SET_WAKE || i == SET_SLEEP || i == SET_THEME) return 0;
+    if (i == SET_WAKE || i == SET_SLEEP || i == SET_THEME || i == SET_RECORDER) return 0;
     return 1;
 }
 
@@ -1223,6 +1224,7 @@ static void ui_settings_refresh_highlight(void);
 void ui_settings_build(void) {
     s_set_sel = 0;
     s_set_wants_wifi = false;
+    s_set_wants_recorder = false;
     s_set_wants_home = false;
     s_set_wants_todo = false;
     s_set_edit = false;
@@ -1276,7 +1278,8 @@ static void render_one_row(int i) {
     if (!l) return;
     char buf[48];
     switch (i) {
-        case SET_WIFI:  strcpy(buf, "WiFi 连接/配网"); break;
+        case SET_WIFI:    strcpy(buf, "WiFi 连接/配网"); break;
+        case SET_RECORDER: strcpy(buf, "录音笔"); break;
         case SET_BRIGHT: snprintf(buf, sizeof(buf), "屏幕亮度 %d%%", s_bright); break;
         case SET_VOL:    snprintf(buf, sizeof(buf), "音量 %d%%", s_vol); break;
         case SET_BATT: {
@@ -1361,6 +1364,7 @@ void ui_settings_key(uint8_t btn_u, uint8_t ev_u) {
             ui_settings_render_all();
             return;
         }
+        if (s_set_sel == SET_RECORDER) { s_set_wants_recorder = true; return; }
         if (s_set_sel == SET_WIFI) { s_set_wants_wifi = true; return; }
         if (s_set_sel == SET_HOME) { s_set_wants_home = true; return; }
         if (s_set_sel == SET_WAKE || s_set_sel == SET_SLEEP) {
@@ -1469,6 +1473,7 @@ void ui_settings_refresh_highlight(void) {
 bool ui_settings_wants_wifi(void) { return s_set_wants_wifi; }
 bool ui_settings_wants_home(void) { return s_set_wants_home; }
 bool ui_settings_wants_todo(void) { return s_set_wants_todo; }
+bool ui_settings_wants_recorder(void) { return s_set_wants_recorder; }
 
 /* ==============================================================
  * PAGE_WIFI — WiFi 状态 / 配网引导
@@ -1642,9 +1647,15 @@ void ui_settings_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }
 bool ui_settings_wants_wifi(void) { return false; }
 bool ui_settings_wants_home(void) { return false; }
 bool ui_settings_wants_todo(void) { return false; }
+bool ui_settings_wants_recorder(void) { return false; }
 void ui_wifi_build(void) {}
 void ui_wifi_destroy(void) {}
 void ui_wifi_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }
+void ui_rec_enter(void) {}
+void ui_rec_destroy(void) {}
+void ui_rec_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }
+bool ui_rec_wants_back(void) { return false; }
+bool ui_rec_wants_home(void) { return false; }
 void ui_encourage_show(int category_id) { (void)category_id; }
 void ui_encourage_close(void) {}
 bool ui_encourage_is_showing(void) { return false; }

@@ -10,12 +10,14 @@ idf_component_register(
     SRCS
         "libopus/src/opus.c"
         "libopus/src/opus_decoder.c"
+        "libopus/src/opus_encoder.c"        # ← 录音端：实时编码
         "libopus/src/opus_multistream_decoder.c"
         "libopus/src/repacketizer.c"
-        # --- CELT (decoder path) ---
+        # --- CELT (decoder + encoder) ---
         "libopus/celt/bands.c"
         "libopus/celt/celt.c"
         "libopus/celt/celt_decoder.c"
+        "libopus/celt/celt_encoder.c"        # ← 录音端：CELT 编码
         "libopus/celt/celt_lpc.c"
         "libopus/celt/cwrs.c"
         "libopus/celt/entcode.c"
@@ -144,6 +146,7 @@ idf_component_register(
 target_compile_definitions(${COMPONENT_LIB} PRIVATE
     OPUS_BUILD
     FIXED_POINT
+    DISABLE_FLOAT_API   # 去掉 opus_encode_native 的浮点分析块，避免引用 analysis.c/mlp.c
     VAR_ARRAYS
     OPUS_EXPORT=
 )
