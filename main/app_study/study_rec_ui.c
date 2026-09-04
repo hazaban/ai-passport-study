@@ -203,7 +203,7 @@ static void rec_build(void) {
     s_rec_state_lbl = txt(s_scr, "录制中", REC_ACC, 34, 56);
     s_rec_time_lbl = txt(s_scr, "00:00 / 20:00", REC_INK, 8, 96);
     lv_obj_set_style_text_align(s_rec_time_lbl, LV_TEXT_ALIGN_CENTER, 0);
-    hint_line(s_scr, "短按OK:暂停/继续  双击OK:保存", "", "");
+    hint_line(s_scr, "短按OK:暂停/继续  双按OK:保存", "", "");
 }
 static void rec_update(void) {
     if (s_sub != SUB_REC || !s_rec_time_lbl) return;
