@@ -38,6 +38,12 @@ idf_component_register(
 # Fixed-point narrowband build. OUTSIDE_SPEEX supplies our own os_support
 # glue; USE_SMALLFT uses the included DCT instead of libm fft. RANDOM_PREFIX
 # renames fft/rand symbols so they don't clash with ESP-IDF's libc rand.
+#
+# USE_ALLOCA: nb_encoder_init 默认用 speex_alloc_scratch(NB_ENC_STACK) 一次性
+# 分配 32KB 连续堆（nb_celp.c L113），且不检查 NULL；录音启动那刻堆紧张/碎片化时
+# 该分配会失败 → st->stack=NULL → 首帧 nb_encode 用 PUSH(NULL,..) 写坏内存 → 闪退。
+# 改为 USE_ALLOCA 后临时内存改走 C 栈（alloca，16KB 任务栈足够，峰值约 3KB），
+# 彻底消掉这 32KB 堆需求，从根本规避闪退。
 target_compile_definitions(${COMPONENT_LIB} PRIVATE
     FIXED_POINT
     OUTSIDE_SPEEX
@@ -45,6 +51,8 @@ target_compile_definitions(${COMPONENT_LIB} PRIVATE
     DISABLE_FLOAT_API
     EXPORT=
     RANDOM_PREFIX=xiph_spx
+    USE_ALLOCA
+    HAVE_ALLOCA_H
 )
 target_compile_options(${COMPONENT_LIB} PRIVATE
     -Wno-unused-function
