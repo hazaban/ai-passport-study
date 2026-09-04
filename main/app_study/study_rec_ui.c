@@ -495,7 +495,7 @@ void ui_rec_enter(void) {
         study_recorder_cancel();
     }
     study_recorder_set_volume(80);
-    if (!s_timer) s_timer = lv_timer_create(rec_timer_cb, 250, NULL);
+    if (!s_timer) s_timer = lv_timer_create(rec_timer_cb, 50, NULL);   /* 50ms 轮询 = 最多 50ms 响应延迟 */
     sub_show(SUB_LIST);
 }
 void ui_rec_destroy(void) {
