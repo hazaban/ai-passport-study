@@ -371,6 +371,7 @@ void ui_rec_enter(void) {
     s_wants_back = false;
     s_wants_home = false;
     s_cursor = 0;
+    study_recorder_init();   /* 懒加载：进入录音页才挂载 /rec(recordings)，幂等 */
     if (study_recorder_active()) {
         study_recorder_stop_playback();
         study_recorder_cancel();

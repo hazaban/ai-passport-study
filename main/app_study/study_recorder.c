@@ -33,6 +33,7 @@ static const char *TAG = "recorder";
 #define REC_PRIO    5
 #define CHK_EVERY   50
 
+static bool s_inited = false;   /* 懒加载：只在进录音页时初始化，避免开机占用堆/阻塞 */
 static int s_vol = 80;
 static volatile bool s_recording = false;
 static volatile bool s_playing = false;
@@ -296,6 +297,7 @@ int study_recorder_delete_seq(uint32_t seq) {
 }
 
 int study_recorder_init(void) {
+    if (s_inited) return 0;
     esp_vfs_spiffs_conf_t cf = {
         .base_path = REC_DIR,
         .partition_label = "recordings",
@@ -311,5 +313,6 @@ int study_recorder_init(void) {
     ESP_LOGI(TAG, "recordings %u/%u", (unsigned)u, (unsigned)t);
     s_seq = load_seq();
     remove(ACTIVE_TMP);
+    s_inited = true;
     return 0;
 }

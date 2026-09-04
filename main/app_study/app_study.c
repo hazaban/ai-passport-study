@@ -563,12 +563,10 @@ void app_study_enter(void) {
         study_sched_hair_set_interval(cfg_get("hair_interval", STUDY_HAIR_INTERVAL_DEFAULT));
     }
 
-    /* 2) voice 输出注入 + 语音文件系统挂载 */
+    /* 2) voice 输出注入 + 语音文件系统挂载
+     * 注：录音机不在此初始化(懒加载)，进录音页时才挂载 /rec，
+     *     以保持开机语音路径与纯语音版(1999df6)完全一致。 */
     voice_fs_init();
-    /* 2b) 录音机：挂载 /rec(recordings) 分区 */
-    if (study_recorder_init() != 0) {
-        ESP_LOGW(TAG, "录音机初始化失败（recordings 分区异常）");
-    }
     study_voice_set_output(audio_output_cb, audio_format_hint);
     s_voice_cmd_q = xQueueCreate(8, sizeof(voice_cmd_t));
     xTaskCreate(voice_worker, "study_voice", 16384, NULL, 4, &s_voice_task);
