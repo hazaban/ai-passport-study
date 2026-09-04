@@ -1,4 +1,12 @@
 // main/demo_ble.c —— NimBLE 广播示例；手机可扫描到 FoloPassport。
+#if !defined(CONFIG_BT_ENABLED) || !CONFIG_BT_ENABLED
+/* BT 关闭时：只保留对外接口空桩，便于关 BT 减内存 */
+#include "bsp_button.h"
+#include "demo.h"
+void demo_ble_enter(void) {}
+void demo_ble_exit(void) {}
+void demo_ble_key(bsp_btn_t btn, bsp_btn_ev_t ev) { (void)btn; (void)ev; }
+#else
 #include "demo.h"
 #include "demo_radio.h"
 #include "ui_pixel.h"
@@ -230,3 +238,5 @@ void demo_ble_key(bsp_btn_t btn, bsp_btn_ev_t ev)
         s_state = BLE_DEMO_FAILED;
     }
 }
+
+#endif /* CONFIG_BT_ENABLED */
