@@ -26,6 +26,7 @@
 #define REC_INK    0xFFFFFF
 #define REC_MUTED  0x9A9A9A
 #define REC_ACC    0xE43B2F
+#define REC_OK     0x2FBF71
 #define REC_GRAY   0x2A2A2A
 #define REC_BTN    0x1F1F1F
 
