@@ -169,9 +169,17 @@ static void cap_task(void *arg) {
     bsp_audio_set_volume((uint8_t)s_vol);
 
     ESP_LOGI(TAG, "CAP: codec 8k OK, heap=%d", esp_get_free_heap_size());
+    int pre_free_kb = study_recorder_free_kb();
+    ESP_LOGI(TAG, "CAP 前 recordings 剩余 %dKB, heap=%d", pre_free_kb, esp_get_free_heap_size());
+    if (pre_free_kb >= 0 && pre_free_kb < 100) {   /* 分区已满：直接拒绝，不再尝试建文件 */
+        ESP_LOGE(TAG, "CAP: 存储已满 剩余仅 %dKB", pre_free_kb);
+        push_evt(REC_EVT_STORAGE_FULL);
+        s_recording = false; s_cap_task = NULL; vTaskDelete(NULL); return;
+    }
     study_frc_writer_t *w = study_frc_create(ACTIVE_TMP);
     if (!w) {
-        ESP_LOGE(TAG, "CAP: 建文件失败(存储满?)");
+        ESP_LOGE(TAG, "CAP: 建文件失败 剩余=%dKB heap=%d(满=存储, 非满=内存/编码器)",
+                 pre_free_kb, esp_get_free_heap_size());
         push_evt(REC_EVT_STORAGE_FULL);
         s_recording = false; s_cap_task = NULL; vTaskDelete(NULL); return;
     }
