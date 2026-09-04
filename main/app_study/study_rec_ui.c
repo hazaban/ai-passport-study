@@ -129,9 +129,17 @@ static void list_refresh(void) {
     int maxp = home_pos();
     if (s_cursor > maxp) s_cursor = maxp;
 
-    if (s_btn_start) lv_obj_set_style_bg_color(s_btn_start, lv_color_hex(s_cursor == 0 ? REC_ACC : REC_BTN), 0);
-    if (s_btn_exit)  lv_obj_set_style_bg_color(s_btn_exit,  lv_color_hex(s_cursor == exit_pos() ? REC_GRAY : REC_BTN), 0);
-    if (s_btn_home)  lv_obj_set_style_bg_color(s_btn_home,  lv_color_hex(s_cursor == home_pos() ? REC_GRAY : REC_BTN), 0);
+    /* 选中态：高亮描边(白) + 底变亮，保证深色/夜间也一眼可见 */
+    lv_obj_t *btns[3] = { s_btn_start, s_btn_exit, s_btn_home };
+    int  selpos[3]   = { 0, exit_pos(), home_pos() };
+    uint32_t base[3] = { REC_ACC, REC_BTN, REC_BTN };
+    for (int i = 0; i < 3; i++) {
+        if (!btns[i]) continue;
+        bool sel = (s_cursor == selpos[i]);
+        lv_obj_set_style_bg_color(btns[i], lv_color_hex(sel ? REC_GRAY : base[i]), 0);
+        lv_obj_set_style_border_width(btns[i], sel ? 2 : 0, 0);
+        lv_obj_set_style_border_color(btns[i], lv_color_hex(0x1689E8), 0);  /* 与任务卡片选中描边同色 */
+    }
 
     if (!s_list_cont) return;
     lv_obj_clean(s_list_cont);
@@ -277,7 +285,11 @@ void ui_rec_key(uint8_t btn_u, uint8_t ev_u) {
             } else if (ev == BSP_BTN_CLICK && btn == BSP_BTN_OK) {
                 if (s_cursor == exit_pos()) { s_wants_back = true; }
                 else if (s_cursor == home_pos()) { s_wants_home = true; }
-                else if (study_recorder_start() == 0) sub_show(SUB_REC);
+                else {
+                    /* 先切录音屏再启动：即使启动失败(事件 REC_ERR)也能回列表，不留“点了没反应” */
+                    sub_show(SUB_REC);
+                    study_recorder_start();
+                }
             } else if (ev == BSP_BTN_LONG && btn == BSP_BTN_OK) {
                 int i = cur_item();
                 if (i >= 0) { s_item_seq = s_items[i].seq;

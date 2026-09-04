@@ -28,8 +28,8 @@ static const char *TAG = "recorder";
 #define REC_DIR     "/rec"
 #define ACTIVE_TMP  "/rec/ACTIVE.TMP"
 
-#define CAP_STACK   24576
-#define PLAY_STACK  24576
+#define CAP_STACK   16384
+#define PLAY_STACK  16384
 #define REC_PRIO    5
 #define CHK_EVERY   50
 
@@ -151,11 +151,14 @@ static void cap_task(void *arg) {
     }
     bsp_audio_set_volume((uint8_t)s_vol);
 
+    ESP_LOGI(TAG, "CAP 阶段: codec 16k 设置 OK, heap=%d", esp_get_free_heap_size());
     study_frc_writer_t *w = study_frc_create(ACTIVE_TMP);
     if (!w) {
+        ESP_LOGE(TAG, "CAP 阶段: 建文件失败(存储满?)");
         push_evt(REC_EVT_STORAGE_FULL);
         s_recording = false; s_cap_task = NULL; vTaskDelete(NULL); return;
     }
+    ESP_LOGI(TAG, "CAP 阶段: 录音文件 ACTIVE.TMP 创建 OK");
 
     int16_t buf[STUDY_FRAME_SAMPLES];
     uint32_t frames = 0;
@@ -163,10 +166,13 @@ static void cap_task(void *arg) {
     s_elapsed_ms = 0;
     bool autostop = false, full = false, ioerr = false;
 
+    ESP_LOGI(TAG, "cap: 录音启动 frames=0 heap=%d", esp_get_free_heap_size());
+
     while (!s_rec_cmd_stop) {
         if (bsp_audio_read(buf, sizeof(buf)) != ESP_OK) { ioerr = true; break; }
         if (study_frc_enc_frame(w, buf, STUDY_FRAME_SAMPLES) != 0) { ioerr = true; break; }
         frames++;
+        if (frames == 1) ESP_LOGI(TAG, "CAP 阶段: 首帧写入 OK → mic 有数据，正在录音");
         s_elapsed_ms = (uint32_t)((esp_timer_get_time() - start_us) / 1000);
         if ((frames % CHK_EVERY) == 0) {
             if (s_elapsed_ms >= (uint32_t)REC_MAX_SEC * 1000) { autostop = true; break; }
@@ -213,13 +219,20 @@ static void cap_task(void *arg) {
 }
 
 int study_recorder_start(void) {
-    if (s_recording || s_playing || s_cap_task) return -1;
+    ESP_LOGI(TAG, "START 请求 rec=%d play=%d heap=%d", s_recording ? 1 : 0, s_playing ? 1 : 0,
+             esp_get_free_heap_size());
+    if (s_recording || s_playing || s_cap_task) {
+        ESP_LOGW(TAG, "START 拒绝: recorder/play 已忙");
+        return -1;
+    }
     if (xTaskCreate(cap_task, "rec_cap", CAP_STACK, NULL, REC_PRIO,
                     (TaskHandle_t *)&s_cap_task) != pdPASS) {
+        ESP_LOGE(TAG, "START 失败: xTaskCreate(cap) 失败 heap=%d", esp_get_free_heap_size());
         push_evt(REC_EVT_REC_ERR);
         return -1;
     }
     push_evt(REC_EVT_REC_STARTED);
+    ESP_LOGI(TAG, "START OK: cap 任务已创建");
     return 0;
 }
 int study_recorder_stop(void) {

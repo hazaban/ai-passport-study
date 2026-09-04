@@ -84,11 +84,19 @@ static int voice_fs_open(const char *voice_key) {
     int n = snprintf(path, sizeof(path), "/spiffs/%s.frc", voice_key);
     if (n < 0 || n >= (int)sizeof(path)) return 0;
     FILE *f = fopen(path, "rb");
-    if (!f) return 0;
+    if (!f) {
+        ESP_LOGW(TAG, "VOICE open 失败(文件不存在): %s", path);
+        return 0;
+    }
     int err = 0;
     OpusDecoder *d = opus_decoder_create(VOICE_SAMPLE_RATE, 1, &err);
-    if (err != OPUS_OK || !d) { fclose(f); return 0; }
+    if (err != OPUS_OK || !d) {
+        ESP_LOGE(TAG, "VOICE open 失败(opus_decoder_create err=%d): %s", err, path);
+        fclose(f);
+        return 0;
+    }
     s_voice_fp = f; s_voice_dec = d; s_voice_pend_n = 0;
+    ESP_LOGI(TAG, "VOICE open OK: %s", path);
     return 1;
 }
 static int voice_fs_read(int handle, void *buf, int max) {
@@ -113,7 +121,10 @@ static int voice_fs_read(int handle, void *buf, int max) {
         if (plen <= 0 || plen > (int)sizeof(s_voice_pkt)) break;
         if (fread(s_voice_pkt, 1, (size_t)plen, s_voice_fp) != (size_t)plen) break;
         int ns = opus_decode(s_voice_dec, s_voice_pkt, plen, s_voice_pend, 960, 0);
-        if (ns < 0) break;
+        if (ns < 0) {
+            ESP_LOGE(TAG, "voice: opus_decode err %d (plen=%d)", ns, plen);
+            break;
+        }
         s_voice_pend_n = ns;
     }
     return got * 2;
@@ -295,6 +306,7 @@ static void record_hair_wash(void) {
 static void on_task_done_changed(int task_id, bool done) {
     study_task_t t;
     if (study_task_get(task_id, &t) != 0) return;
+    ESP_LOGI(TAG, "DONE 任务#%d '%s' done=%d category=%d", task_id, t.title, done ? 1 : 0, t.category);
 
     /* 洗头发特殊处理：OK 确认后不划线（不做完成标记），只记录本次洗头日，
      * 任务卡右上角随即自动显示下一次洗头时间（"还有X天"/"下次M/D"）。 */
@@ -356,6 +368,7 @@ static void on_task_done_changed(int task_id, bool done) {
         }
         voice_cmd_t cmd = { .kind = VCMD_COMPLETE, .category = t.category, .subtype = t.subtype };
         xQueueSend(s_voice_cmd_q, &cmd, 0);
+        ESP_LOGI(TAG, "COMPLETE 已入队 category=%d subtype=%d", t.category, t.subtype);
     }
 }
 
@@ -424,12 +437,20 @@ static void voice_worker(void *arg) {
     voice_cmd_t cmd;
     for (;;) {
         if (xQueueReceive(s_voice_cmd_q, &cmd, pdMS_TO_TICKS(200)) != pdPASS) continue;
-        if (study_recorder_active()) {   /* 录音机占用 codec 时丢弃语音命令 */
-            ESP_LOGW(TAG, "录音机忙，丢弃语音命令 kind=%d", (int)cmd.kind);
+        bool busy = study_recorder_active();
+        bool haskey = cmd.key[0] != '\0';
+        bool file = haskey && study_voice_file_exists(cmd.key);
+        ESP_LOGI(TAG, "VOICE cmd kind=%d key='%s' | file存在=%d busy(录音/回放)=%d",
+                 (int)cmd.kind, cmd.key, file ? 1 : 0, busy ? 1 : 0);
+        if (busy) {
+            ESP_LOGW(TAG, "VOICE dropped: recorder busy (录音=%d 回放=%d)",
+                     study_recorder_is_recording() ? 1 : 0,
+                     study_recorder_is_playing() ? 1 : 0);
             continue;
         }
-        ESP_LOGI(TAG, "语音播放: kind=%d key=%s", (int)cmd.kind,
-                 (cmd.kind == VCMD_COMPLETE) ? "complete" : cmd.key);
+        if (!file && (cmd.kind == VCMD_SCENE || cmd.kind == VCMD_COMPLETE)) {
+            ESP_LOGW(TAG, "VOICE fallback: 语音文件缺失 key='%s' → 走 RTTTL 提示音", cmd.key);
+        }
         study_voice_stop();
         switch (cmd.kind) {
             case VCMD_COMPLETE:
