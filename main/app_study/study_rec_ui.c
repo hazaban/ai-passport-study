@@ -379,7 +379,14 @@ void ui_rec_key(uint8_t btn_u, uint8_t ev_u) {
                 study_recorder_set_volume(study_recorder_volume() + 10); play_vol_update();
             } else if (ev == BSP_BTN_CLICK && btn == BSP_BTN_DOWN) {
                 study_recorder_set_volume(study_recorder_volume() - 10); play_vol_update();
-            } else if (btn == BSP_BTN_OK && (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG)) {
+            } else if (ev == BSP_BTN_LONG && btn == BSP_BTN_DOWN) {
+                /* 长按下：重新播放当前录音（播放中或播完都能用） */
+                study_recorder_stop_playback();
+                study_recorder_play_seq(s_item_seq);
+            } else if (btn == BSP_BTN_OK && ev == BSP_BTN_CLICK) {
+                study_recorder_stop_playback(); sub_show(SUB_LIST);
+            } else if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG) {
+                /* 长按OK：停止并回列表（同短OK，但保留长按兜底） */
                 study_recorder_stop_playback(); sub_show(SUB_LIST);
             }
             break;
@@ -444,7 +451,7 @@ static void poll_events(void) {
                 break;
             case REC_EVT_PLAY_DONE:
                 msg = "Play done"; color = REC_OK;
-                if (s_sub == SUB_PLAY) sub_show(SUB_LIST);
+                /* 停在播放页，用户可长按DOWN重播或长按OK回列表 */
                 banner_set(msg, color);
                 break;
             case REC_EVT_PLAY_ERR:
