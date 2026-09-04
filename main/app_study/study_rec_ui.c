@@ -241,7 +241,7 @@ static void rec_build(void) {
     s_rec_time_lbl = txt(s_scr, "00:00 / 20:00", REC_INK, 8, 96);
     lv_obj_set_style_text_align(s_rec_time_lbl, LV_TEXT_ALIGN_CENTER, 0);
     banner_create();
-    hint_line(s_scr, "短按OK:暂停/继续  双按OK:保存", "", "");
+    hint_line(s_scr, "短OK:暂停  长OK:保存", "短下:放弃并退出", "");
 }
 static void rec_update(void) {
     if (s_sub != SUB_REC || !s_rec_time_lbl) return;
@@ -350,11 +350,13 @@ void ui_rec_key(uint8_t btn_u, uint8_t ev_u) {
         }
         case SUB_REC: {
             if (btn == BSP_BTN_OK && ev == BSP_BTN_CLICK)
-                study_recorder_toggle_pause();          /* 短按OK：暂停/继续 */
-            else if (btn == BSP_BTN_OK && ev == BSP_BTN_DOUBLE)
-                study_recorder_stop();                  /* 双击OK：确认保存 */
-            else if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG)
-                study_recorder_stop();                  /* 长按OK兜底保存 */
+                study_recorder_toggle_pause();            /* 短OK：暂停/继续 */
+            else if (btn == BSP_BTN_OK && (ev == BSP_BTN_DOUBLE || ev == BSP_BTN_LONG))
+                study_recorder_stop();                   /* OK长/双：保存 */
+            else if (btn == BSP_BTN_DOWN && ev == BSP_BTN_CLICK) {
+                study_recorder_cancel();                 /* 短下：放弃退出 → 直接回设置页 */
+                s_wants_back = true;                     /* 让外层 app_study_key 检测并销毁 */
+            }
             break;
         }
         case SUB_PLAY: {
@@ -405,7 +407,9 @@ static void poll_events(void) {
                 break;
             case REC_EVT_REC_CANCELLED:
                 msg = "Cancelled"; color = REC_MUTED;
-                if (s_sub == SUB_REC) sub_show(SUB_LIST);
+                /* 短DOWN放弃时 s_wants_back 已置位，外层会直接销毁回设置页，
+                   不再回列表；其他场景（如空间不足自动停）才回列表。 */
+                if (s_sub == SUB_REC && !s_wants_back) sub_show(SUB_LIST);
                 banner_set(msg, color);
                 break;
             case REC_EVT_REC_ERR:

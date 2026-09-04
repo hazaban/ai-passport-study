@@ -114,7 +114,7 @@ static void enter_menu(void) {
 // 按键回调运行在 button 组件的任务里,操作 LVGL 必须加锁。
 static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
     (void)user;
-    if (!bsp_lvgl_lock(500)) return;
+    if (!bsp_lvgl_lock(100)) return;   /* 超时从 500ms→100ms，避免按键被 LVGL 刷新阻塞 */
 
     if (s_active >= 0) {
         /* 非 Study 演示：长按 OK 统一返回目录；

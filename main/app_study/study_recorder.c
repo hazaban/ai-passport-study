@@ -244,13 +244,14 @@ int study_recorder_start(void) {
         ESP_LOGW(TAG, "START 拒绝: recorder/play 已忙");
         return -1;
     }
-    /* 先停 WiFi 并等其释放内存，再建大栈任务，保证 20KB 栈 + opus 编码器都放得下 */
+    /* 只给 WiFi pause 发信号，让 cap_task 自己等——按钮回调线程不能被 vTaskDelay 阻塞，
+       否则用户点"开始录音"后 300ms 内所有按键无响应（之前 Opus 时代这里要腾堆，ADPCM 已不需要） */
     study_wifi_pause();
-    vTaskDelay(pdMS_TO_TICKS(300));
     ESP_LOGI(TAG, "START 建任务前 heap=%d", esp_get_free_heap_size());
     if (xTaskCreate(cap_task, "rec_cap", CAP_STACK_BYTES, NULL, REC_PRIO,
                     (TaskHandle_t *)&s_cap_task) != pdPASS) {
-        ESP_LOGE(TAG, "START 失败: xTaskCreate(cap,20KB) 失败 heap=%d", esp_get_free_heap_size());
+        ESP_LOGE(TAG, "START 失败: xTaskCreate(cap,%d) 失败 heap=%d", CAP_STACK_BYTES,
+                 esp_get_free_heap_size());
         push_evt(REC_EVT_REC_ERR);
         return -1;
     }

@@ -643,7 +643,7 @@ static void nav_back(void) {
 }
 
 void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
-    if (!bsp_lvgl_lock(500)) return;
+    if (!bsp_lvgl_lock(100)) return;   /* 超时从 500ms→100ms，避免按键回调被 LVGL 刷新长时间阻塞 */
 
     /* 有鼓励/场景弹窗（完成语音正在播）时：短按/长按 OK 都=停止语音并关闭弹窗 */
     if (ui_encourage_is_showing()) {
