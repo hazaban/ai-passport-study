@@ -317,7 +317,9 @@ int study_frc_read_pcm(study_frc_reader_t *r, int16_t *out, int max_samples) {
                 ESP_LOGE(TAG, "speex_decode err %d (plen=%d)", ns, plen);
                 return -1;
             }
-            r->pending_n = ns;
+            /* 注意：fixed-point 下 speex_decode_int 成功时返回 0（nb_decode 末行 return 0），
+             * 真正的解码样本数是 NB 帧大小 STUDY_FRAME_SAMPLES，不能拿 ns 当代回样本数。 */
+            r->pending_n = STUDY_FRAME_SAMPLES;
             continue;
         }
 #endif
