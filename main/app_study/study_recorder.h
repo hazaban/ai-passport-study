@@ -49,6 +49,8 @@ int  study_recorder_free_kb(void);
 
 /* ---------- 录音 ---------- */
 bool     study_recorder_is_recording(void);
+bool     study_recorder_is_paused(void);
+void     study_recorder_toggle_pause(void);   /* 短按OK：暂停/继续 */
 int      study_recorder_start(void);       /* 0 成功 */
 int      study_recorder_stop(void);        /* 停止并保存，0 成功 */
 void     study_recorder_cancel(void);      /* 放弃当前段 */

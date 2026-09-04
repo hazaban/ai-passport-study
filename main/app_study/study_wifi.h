@@ -34,6 +34,9 @@ void study_wifi_start_ap_config(void);
 
 /* 主动断开 WiFi / 停止配网。 */
 void study_wifi_stop(void);
+/* 录音临时释放 WiFi 内存；录完恢复。仅 stop/start WiFi(配置保留)，HTTP 服务不受影响。 */
+void study_wifi_pause(void);
+void study_wifi_resume(void);
 
 /* 状态 / SSID / 信号(dBm, 未连接=0) */
 study_wifi_state_t study_wifi_get_state(void);

@@ -461,6 +461,18 @@ void study_wifi_stop(void) {
     set_state(WIFI_STATE_IDLE);
 }
 
+/* 录音时临时让出 WiFi 内存（可释放约几十 KB 堆），录完恢复。仅 stop/start，配置保留。 */
+void study_wifi_pause(void) {
+    if (!s_ready) return;
+    esp_wifi_stop();
+    set_state(WIFI_STATE_IDLE);
+}
+void study_wifi_resume(void) {
+    if (!s_ready) return;
+    esp_wifi_start();   /* APSTA 配置仍在：热点恢复，STA 由事件自动重连 */
+    s_retry_count = 0;
+}
+
 void study_wifi_init(const char *ap_ssid_prefix) {
     /* 幂等 */
     if (s_ready) return;
@@ -510,6 +522,8 @@ bool study_wifi_has_stored_creds(void) { return false; }
 void study_wifi_init(const char *ap_ssid_prefix) { (void)ap_ssid_prefix; }
 void study_wifi_start_ap_config(void) {}
 void study_wifi_stop(void) {}
+void study_wifi_pause(void) {}
+void study_wifi_resume(void) {}
 study_wifi_state_t study_wifi_get_state(void) { return WIFI_STATE_IDLE; }
 const char *study_wifi_get_ssid(void) { return ""; }
 int study_wifi_get_rssi(void) { return 0; }

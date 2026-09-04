@@ -51,6 +51,7 @@ static lv_obj_t *s_btn_home  = NULL;
 static uint32_t s_item_seq = 0;
 
 static lv_obj_t *s_rec_time_lbl = NULL;
+static lv_obj_t *s_rec_state_lbl = NULL;
 static lv_obj_t *s_play_vol_lbl = NULL;
 
 static void sub_show(rec_sub_t sub);
@@ -199,13 +200,15 @@ static void rec_build(void) {
     lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_color(dot, lv_color_hex(REC_ACC), 0);
     lv_obj_set_style_border_width(dot, 0, 0);
-    txt(s_scr, "录制中", REC_ACC, 34, 56);
+    s_rec_state_lbl = txt(s_scr, "录制中", REC_ACC, 34, 56);
     s_rec_time_lbl = txt(s_scr, "00:00 / 20:00", REC_INK, 8, 96);
     lv_obj_set_style_text_align(s_rec_time_lbl, LV_TEXT_ALIGN_CENTER, 0);
-    hint_line(s_scr, "短按OK:停止并保存", "", "");
+    hint_line(s_scr, "短按OK:暂停/继续  双击OK:保存", "", "");
 }
 static void rec_update(void) {
     if (s_sub != SUB_REC || !s_rec_time_lbl) return;
+    bool pau = study_recorder_is_paused();
+    if (s_rec_state_lbl) lv_label_set_text(s_rec_state_lbl, pau ? "已暂停(OK继续)" : "录制中");
     char mm[16], el[16];
     mmss(el, sizeof(el), study_recorder_elapsed_ms());
     mmss(mm, sizeof(mm), (uint32_t)REC_MAX_SEC * 1000);
@@ -303,8 +306,12 @@ void ui_rec_key(uint8_t btn_u, uint8_t ev_u) {
             break;
         }
         case SUB_REC: {
-            if (btn == BSP_BTN_OK && (ev == BSP_BTN_CLICK || ev == BSP_BTN_LONG))
-                study_recorder_stop();
+            if (btn == BSP_BTN_OK && ev == BSP_BTN_CLICK)
+                study_recorder_toggle_pause();          /* 短按OK：暂停/继续 */
+            else if (btn == BSP_BTN_OK && ev == BSP_BTN_DOUBLE)
+                study_recorder_stop();                  /* 双击OK：确认保存 */
+            else if (btn == BSP_BTN_OK && ev == BSP_BTN_LONG)
+                study_recorder_stop();                  /* 长按OK兜底保存 */
             break;
         }
         case SUB_PLAY: {

@@ -8,6 +8,7 @@
  */
 #include "study_recorder.h"
 #include "study_audio_codec.h"
+#include "study_wifi.h"     /* 录音期间暂停 WiFi 释放堆 */
 #include "bsp_audio.h"
 #include "esp_spiffs.h"
 #include "esp_log.h"
@@ -36,6 +37,7 @@ static const char *TAG = "recorder";
 static bool s_inited = false;   /* 懒加载：只在进录音页时初始化，避免开机占用堆/阻塞 */
 static int s_vol = 80;
 static volatile bool s_recording = false;
+static volatile bool s_paused = false;      /* 录音暂停(短按OK切换) */
 static volatile bool s_playing = false;
 static volatile bool s_stop_play = false;
 static volatile bool s_rec_cmd_stop = false;
@@ -88,6 +90,12 @@ int study_recorder_volume(void) { return s_vol; }
 
 bool study_recorder_active(void)       { return s_recording || s_playing; }
 bool study_recorder_is_recording(void) { return s_recording; }
+bool study_recorder_is_paused(void) { return s_paused; }
+void study_recorder_toggle_pause(void) {
+    if (!s_recording) return;
+    s_paused = !s_paused;
+    ESP_LOGI(TAG, "录音 %s", s_paused ? "暂停" : "继续");
+}
 bool study_recorder_is_playing(void)   { return s_playing; }
 
 study_rec_evt_t study_recorder_poll_evt(void) {
@@ -140,15 +148,18 @@ static void cap_task(void *arg) {
     s_recording = true;
     s_rec_cmd_stop = false;
     s_rec_cancel = false;
+    s_paused = false;
+    study_wifi_pause();   /* 暂停 WiFi，释放几十 KB 堆给 Opus 编码 */
+    ESP_LOGI(TAG, "CAP: WiFi 已暂停, heap=%d", esp_get_free_heap_size());
 
-    if (esp_get_free_heap_size() < 60000) {
+    if (esp_get_free_heap_size() < 45000) {
         ESP_LOGE(TAG, "heap low(%d), 不录", esp_get_free_heap_size());
         push_evt(REC_EVT_AUDIO_ERR);
-        s_recording = false; s_cap_task = NULL; vTaskDelete(NULL); return;
+        study_wifi_resume(); s_recording = false; s_cap_task = NULL; vTaskDelete(NULL); return;
     }
     if (bsp_audio_set_format(STUDY_CODEC_RATE, 16, 1) != ESP_OK) {
         push_evt(REC_EVT_AUDIO_ERR);
-        s_recording = false; s_cap_task = NULL; vTaskDelete(NULL); return;
+        study_wifi_resume(); s_recording = false; s_cap_task = NULL; vTaskDelete(NULL); return;
     }
     bsp_audio_set_volume((uint8_t)s_vol);
 
@@ -157,26 +168,30 @@ static void cap_task(void *arg) {
     if (!w) {
         ESP_LOGE(TAG, "CAP 阶段: 建文件失败(存储满?)");
         push_evt(REC_EVT_STORAGE_FULL);
-        s_recording = false; s_cap_task = NULL; vTaskDelete(NULL); return;
+        study_wifi_resume(); s_recording = false; s_cap_task = NULL; vTaskDelete(NULL); return;
     }
     ESP_LOGI(TAG, "CAP 阶段: 录音文件 ACTIVE.TMP 创建 OK");
 
     int16_t buf[STUDY_FRAME_SAMPLES];
     uint32_t frames = 0;
-    uint32_t start_us = (uint32_t)esp_timer_get_time();
     s_elapsed_ms = 0;
     bool autostop = false, full = false, ioerr = false;
 
     ESP_LOGI(TAG, "cap: 录音启动 frames=0 heap=%d", esp_get_free_heap_size());
 
     while (!s_rec_cmd_stop) {
+        if (s_paused) {              /* 短按OK暂停：不读麦、不计时长 */
+            s_elapsed_ms = frames * 20;
+            vTaskDelay(pdMS_TO_TICKS(30));
+            continue;
+        }
         if (bsp_audio_read(buf, sizeof(buf)) != ESP_OK) { ioerr = true; break; }
         if (study_frc_enc_frame(w, buf, STUDY_FRAME_SAMPLES) != 0) { ioerr = true; break; }
         frames++;
         if (frames == 1) ESP_LOGI(TAG, "CAP 阶段: 首帧写入 OK → mic 有数据，正在录音");
-        s_elapsed_ms = (uint32_t)((esp_timer_get_time() - start_us) / 1000);
+        s_elapsed_ms = frames * 20;   /* 按有效录音帧数计时(暂停不计入) */
         if ((frames % CHK_EVERY) == 0) {
-            if (s_elapsed_ms >= (uint32_t)REC_MAX_SEC * 1000) { autostop = true; break; }
+            if (frames * 20u >= (uint32_t)REC_MAX_SEC * 1000u) { autostop = true; break; }
             int kb = study_recorder_free_kb();
             if (kb >= 0 && kb < 350) { full = true; break; }
         }
@@ -214,6 +229,7 @@ static void cap_task(void *arg) {
         }
     }
     s_elapsed_ms = 0;
+    study_wifi_resume();   /* 录完恢复 WiFi */
     s_recording = false;
     s_cap_task = NULL;
     vTaskDelete(NULL);
@@ -252,14 +268,15 @@ static void play_task(void *arg) {
     char *path = (char *)arg;
     s_playing = true;
     s_stop_play = false;
+    study_wifi_pause();
     if (bsp_audio_set_format(STUDY_CODEC_RATE, 16, 1) != ESP_OK) {
-        free(path); push_evt(REC_EVT_PLAY_ERR); s_playing = false; s_play_task = NULL; vTaskDelete(NULL); return;
+        study_wifi_resume(); free(path); push_evt(REC_EVT_PLAY_ERR); s_playing = false; s_play_task = NULL; vTaskDelete(NULL); return;
     }
     bsp_audio_set_volume((uint8_t)s_vol);
 
     study_frc_reader_t *rd = study_frc_open(path);
     free(path);
-    if (!rd) { push_evt(REC_EVT_PLAY_ERR); s_playing = false; s_play_task = NULL; vTaskDelete(NULL); return; }
+    if (!rd) { study_wifi_resume(); push_evt(REC_EVT_PLAY_ERR); s_playing = false; s_play_task = NULL; vTaskDelete(NULL); return; }
 
     int16_t pcm[512];
     int r = 0;
@@ -268,6 +285,7 @@ static void play_task(void *arg) {
     }
     study_frc_close(rd);
     push_evt(r < 0 ? REC_EVT_PLAY_ERR : REC_EVT_PLAY_DONE);
+    study_wifi_resume();
     s_playing = false;
     s_play_task = NULL;
     vTaskDelete(NULL);
