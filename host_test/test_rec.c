@@ -97,9 +97,15 @@ int main(void) {
     double snr = (sp > 1e-6 && se > 1e-9) ? 10 * log10(sp / se) : 99;
     printf("best_shift=%d  corr=%.2f  shifted_SNR_dB=%.1f\n", bestlag, bestc, snr);
 
-    /* 判定：SNR > 8dB 视为还原良好（codec 正常） */
+    /* 判定：以相关度为主（>0.9 即还原成立），SNR 为次级佐证。
+     * Speex NB Q3 对窄带语音本身就有量化噪声，纯看 SNR 阈值会误报 "CODEC-BROKEN"。 */
     printf("== VERDICT ==\n");
-    if (snr > 8.0)  printf("CODEC-OK  （还原良好，问题大概率在固件采集/播放链路）\n");
-    else            printf("CODEC-BROKEN（还原即噪声，codec 逻辑需排查）\n");
+    if (bestc >= 0.90 && snr > 5.0)
+        printf("CODEC-OK（corr=%.2f>0.9 SNR=%.1fdB，解码还原成立；剩余问题应在固件采集/播放链路）\n",
+               bestc, snr);
+    else if (bestc >= 0.70)
+        printf("CODEC-BORDERLINE（corr=%.2f 偏低但非噪声，需结合实机听感判断）\n", bestc);
+    else
+        printf("CODEC-BROKEN（corr=%.2f 极低，解码即噪声，codec 逻辑需排查）\n", bestc);
     return 0;
 }
