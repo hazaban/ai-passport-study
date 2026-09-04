@@ -242,14 +242,10 @@ static void home_time_refresh(void) {
     if (s_home_date) {
         char dbuf[36];
         if (ok) {
-            /* 星期用大写中文数字，用 memcpy 追加以规避 -Werror=format-truncation */
-            static const char *wd = "日一二三四五六"; /* 每个 3 字节 UTF-8 */
-            int n = snprintf(dbuf, sizeof(dbuf), "%d年%d月%d日 ",
-                             tv.tm_year + 1900, tv.tm_mon + 1, tv.tm_mday);
-            if (n >= 0 && n + 3 < (int)sizeof(dbuf)) {
-                memcpy(dbuf + n, wd + tv.tm_wday * 3, 3);
-                dbuf[n + 3] = '\0';
-            }
+            /* 星期用阿拉伯数字（1-7，周日=7），规避字体缺"六"等字的方框 */
+            snprintf(dbuf, sizeof(dbuf), "%d年%d月%d日 %d",
+                     tv.tm_year + 1900, tv.tm_mon + 1, tv.tm_mday,
+                     (tv.tm_wday == 0) ? 7 : tv.tm_wday);
         } else {
             snprintf(dbuf, sizeof(dbuf), "请设时间");
         }
@@ -336,7 +332,7 @@ void ui_home_build(void) {
     lv_obj_t *cnt = home_card(82, 138, 0xFFFFFF);
     lv_obj_t *cap = ui_pixel_label(cnt, "考研倒计时", F_STUDY, HACC);
     lv_obj_set_align(cap, LV_ALIGN_TOP_MID);
-    lv_obj_set_pos(cap, 0, 10);
+    lv_obj_set_pos(cap, -22, 10);   /* 左移一个字宽，视觉居中于天数 */
     lv_obj_set_style_text_align(cap, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_transform_scale(cap, 333, 0);   /* ≈1.3x → 视觉 19px */
 
