@@ -9,7 +9,7 @@
 #include "study_recorder.h"
 #include "study_audio_codec.h"
 #include "bsp_audio.h"
-#include "esp_vfs_spiffs.h"
+#include "esp_spiffs.h"
 #include "esp_log.h"
 #include "esp_system.h"
 #include "esp_timer.h"
