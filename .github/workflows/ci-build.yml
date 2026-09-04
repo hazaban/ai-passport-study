@@ -8,87 +8,44 @@ on:
 jobs:
   build-firmware:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 40
+    env:
+      # release-v5.5 持续跟踪 ESP-IDF release/v5.5 分支（当前即 v5.5.3，与 dependencies.lock 一致）。
+      # 官方镜像已内置完整 ESP-IDF（含 esp_wifi/lib 等全部子模块）+ 工具链 + Python venv，
+      # 用 Docker 层缓存代替 git clone --recurse-submodules + install.sh，又快又稳。
+      IDF_IMG: espressif/idf:release-v5.5
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        submodules: 'recursive'
 
-    - name: Cache ESP-IDF (clone + toolchain)
-      id: cache-idf
-      uses: actions/cache@v4
-      with:
-        path: |
-          $HOME/esp
-          $HOME/.espressif
-        key: esp-idf-${{ runner.os }}-v5.5.3
+    - name: Pull ESP-IDF image
+      run: docker pull "$IDF_IMG"
 
-    - name: Install prerequisites and ESP-IDF
+    - name: Build firmware
       run: |
         set -e
-        mkdir -p $HOME/esp
-        cd $HOME/esp
-        # NOTE: components/bsp requires esp_driver_i2c/i2s which only exist in
-        # IDF >= v5.3; dependencies.lock was resolved against v5.5.3. Keep in sync.
-        # 命中缓存时跳过 clone 与工具链安装，避免每次构建重新下载 IDF。
-        if [ ! -d esp-idf ]; then
-          for i in 1 2 3; do
-            git clone --branch v5.5.3 --depth 1 --recurse-submodules https://github.com/espressif/esp-idf.git esp-idf && break || sleep 10
-          done
-        fi
-        cd esp-idf
-        sudo apt-get update || true
-        sudo apt-get install -y ffmpeg   # 语音包：mp3 -> wav 转码用
-        if [ ! -d $HOME/.espressif ]; then ./install.sh; fi
-        # Source the export script for the rest of the steps
-        . $HOME/esp/esp-idf/export.sh
-        idf.py --version
-      shell: bash
-
-    - name: Detect project directory
-      id: detect
-      run: |
-        if [ -f ./CMakeLists.txt ]; then
-          echo "project=./" >> $GITHUB_OUTPUT
-        elif [ -f ./ai-passport-study-main/CMakeLists.txt ]; then
-          echo "project=./ai-passport-study-main" >> $GITHUB_OUTPUT
-        elif [ -f ./app_study/CMakeLists.txt ]; then
-          echo "project=./" >> $GITHUB_OUTPUT
-        else
-          echo "project=" >> $GITHUB_OUTPUT
-        fi
-      shell: bash
-
-    - name: Build project
-      if: steps.detect.outputs.project != ''
-      run: |
-        set -e
-        echo "Building project in '${{ steps.detect.outputs.project }}'"
-        cd "${{ steps.detect.outputs.project }}"
-        . $HOME/esp/esp-idf/export.sh
-        idf.py set-target esp32c3
-        # 语音包：把 assets/voice_packs/*.mp3 转成 build/voicepack/*.wav，
-        # 之后 spiffs_create_partition_image(voicepack ...) 会生成 voicepack.bin 并纳入产物。
-        # main/CMakeLists 用 if(EXISTS build/voicepack) 在【配置期】判断(set-target 后目录不存在，
-        # 先配好不含语音的图)，故 set-target 之后生成 wav，再 reconfigure 让分区镜像目标进入
-        # 构建图，最终 build 才会产出 voicepack.bin。
-        python3 tools/build_voice_spiffs.py
-        idf.py reconfigure
-        idf.py build
-      shell: bash
+        docker run --rm \
+          -v "$PWD:/project" -w /project \
+          --entrypoint bash \
+          -e HOME=/tmp \
+          -e IDF_GIT_SAFE_DIR='*' \
+          "$IDF_IMG" -lc '
+            set -e
+            . "$IDF_PATH/export.sh" >/dev/null
+            # 语音包 mp3 -> opus(.frc) 需要 ffmpeg(含 libopus)
+            apt-get update -qq && apt-get install -y -qq ffmpeg >/dev/null
+            idf.py set-target esp32c3
+            # set-target 后再生成 wav/.frc，并 reconfigure 让 voicepack 分区镜像进入构建图，最后 build。
+            python3 tools/build_voice_spiffs.py
+            idf.py reconfigure
+            idf.py build
+          '
 
     - name: Upload firmware artifacts
-      if: steps.detect.outputs.project != ''
       uses: actions/upload-artifact@v4
       with:
         name: firmware-bins
         path: |
-          ${{ steps.detect.outputs.project }}/build/**/*.bin
-          ${{ steps.detect.outputs.project }}/build/*.bin
-
-    - name: Fail if project not found
-      if: steps.detect.outputs.project == ''
-      run: |
-        echo "Could not find project CMakeLists.txt in repo; adjust workflow or repository layout." && exit 1
-      shell: bash
+          build/**/*.bin
+          build/*.bin
+        if-no-files-found: error
