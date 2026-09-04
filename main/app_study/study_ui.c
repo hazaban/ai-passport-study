@@ -242,10 +242,19 @@ static void home_time_refresh(void) {
     if (s_home_date) {
         char dbuf[36];
         if (ok) {
-            /* 星期用阿拉伯数字（1-7，周日=7），规避字体缺"六"等字的方框 */
-            snprintf(dbuf, sizeof(dbuf), "%d年%d月%d日 %d",
-                     tv.tm_year + 1900, tv.tm_mon + 1, tv.tm_mday,
-                     (tv.tm_wday == 0) ? 7 : tv.tm_wday);
+            /* 星期用大写中文数字；"六"字体缺字，仅周六改用小写数字 6 */
+            static const char *wd = "日一二三四五六"; /* 每个 3 字节 UTF-8 */
+            int n = snprintf(dbuf, sizeof(dbuf), "%d年%d月%d日 ",
+                             tv.tm_year + 1900, tv.tm_mon + 1, tv.tm_mday);
+            if (n >= 0 && n + 4 < (int)sizeof(dbuf)) {
+                if (tv.tm_wday == 6) {   /* 六（U+516D）缺失 → 数字 6 */
+                    dbuf[n] = '6';
+                    dbuf[n + 1] = '\0';
+                } else {
+                    memcpy(dbuf + n, wd + tv.tm_wday * 3, 3);
+                    dbuf[n + 3] = '\0';
+                }
+            }
         } else {
             snprintf(dbuf, sizeof(dbuf), "请设时间");
         }
