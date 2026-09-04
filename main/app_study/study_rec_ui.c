@@ -180,7 +180,7 @@ static void list_refresh(void) {
         bool sel = (s_cursor == selpos[i]);
         lv_obj_set_style_bg_color(btns[i], lv_color_hex(sel ? REC_GRAY : base[i]), 0);
         lv_obj_set_style_border_width(btns[i], sel ? 2 : 0, 0);
-        lv_obj_set_style_border_color(btns[i], lv_color_hex(0x7A9BCC), 0);  /* 与首页 HB 同色：低饱和柔和蓝，不晃眼 */
+        lv_obj_set_style_border_color(btns[i], lv_color_hex(0x4E6D8E), 0);  /* 纯黑底专用：暗蓝灰，低饱和不晃眼 */
     }
 
     if (!s_list_cont) return;
