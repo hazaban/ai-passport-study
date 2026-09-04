@@ -270,7 +270,7 @@ static void play_build(uint32_t seq) {
     s_play_vol_lbl = txt(s_scr, "", REC_MUTED, 8, 88);
     lv_label_set_text(s_play_vol_lbl, "音量 80%");
     banner_create();
-    hint_line(s_scr, "上下:音量  OK:停止", "长按OK:停止并返回", "");
+    hint_line(s_scr, "上下:音量  短OK:停止并返回", "长按下:重新播放", "");
 }
 static void play_vol_update(void) {
     if (s_play_vol_lbl) {
