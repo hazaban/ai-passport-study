@@ -29,8 +29,8 @@ static const char *TAG = "recorder";
 #define REC_DIR     "/rec"
 #define ACTIVE_TMP  "/rec/ACTIVE.TMP"
 
-#define CAP_STACK_W  8192      /* 32KB，单位=字；静态栈，不从堆分配(libopus 首帧编码需大栈) */
-#define PLAY_STACK   16384
+#define CAP_STACK_BYTES  20480   /* 20KB 动态栈：停WiFi后堆充足时创建 */
+#define PLAY_STACK       16384
 #define REC_PRIO    5
 #define CHK_EVERY   50
 
@@ -43,8 +43,6 @@ static volatile bool s_stop_play = false;
 static volatile bool s_rec_cmd_stop = false;
 static volatile bool s_rec_cancel = false;
 static TaskHandle_t s_cap_task = NULL;
-static StackType_t s_cap_stk[CAP_STACK_W];   /* 静态栈：录音不占堆 */
-static StaticTask_t s_cap_tcb;
 static TaskHandle_t s_play_task = NULL;
 static uint32_t s_seq = 1;
 static uint32_t s_elapsed_ms = 0;
@@ -245,12 +243,13 @@ int study_recorder_start(void) {
         ESP_LOGW(TAG, "START 拒绝: recorder/play 已忙");
         return -1;
     }
-    /* ESP-IDF 的栈大小按“字节”计；静态数组按“字(StackType_t)”分配 */
-    s_cap_task = xTaskCreateStatic(cap_task, "rec_cap",
-                                   (uint32_t)(CAP_STACK_W * sizeof(StackType_t)), NULL, REC_PRIO,
-                                   s_cap_stk, &s_cap_tcb);
-    if (!s_cap_task) {
-        ESP_LOGE(TAG, "START 失败: xTaskCreateStatic(cap) 失败");
+    /* 先停 WiFi 并等其释放内存，再建大栈任务，保证 20KB 栈 + opus 编码器都放得下 */
+    study_wifi_pause();
+    vTaskDelay(pdMS_TO_TICKS(300));
+    ESP_LOGI(TAG, "START 建任务前 heap=%d", esp_get_free_heap_size());
+    if (xTaskCreate(cap_task, "rec_cap", CAP_STACK_BYTES, NULL, REC_PRIO,
+                    (TaskHandle_t *)&s_cap_task) != pdPASS) {
+        ESP_LOGE(TAG, "START 失败: xTaskCreate(cap,20KB) 失败 heap=%d", esp_get_free_heap_size());
         push_evt(REC_EVT_REC_ERR);
         return -1;
     }
