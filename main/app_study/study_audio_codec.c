@@ -84,7 +84,7 @@ static int16_t adpcm_decode_sample(adpcm_state_t *s, uint8_t nibble) {
 
 /* ---------- 读/写帧头部 ---------- */
 
-static void write_frc_payload(uint8_t *dst, const adpcm_state_t *state,
+static void write_frc_payload(uint8_t *dst, adpcm_state_t *state,
                               const int16_t *pcm, int samples) {
     /* header: pred(i16LE) + idx(u8) + resv(u8=0) = 4 字节 */
     uint16_t pred = (uint16_t)(int16_t)state->pred;   /* 存 int16 截断值（IMA-ADPCM pred 应始终在 [-32768,32767] 内） */
