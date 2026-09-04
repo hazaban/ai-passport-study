@@ -223,7 +223,7 @@ static void list_build(void) {
 
     banner_create();   /* 状态横幅：顶栏下 */
     list_refresh();
-    hint_line(s_scr, "上下:选择 短按OK:开始录音", "长按OK:播放 长按上:删除", "长按下:Wi-Fi导出");
+    hint_line(s_scr, "上下:选择 光标在录音上短OK=播放", "光标在开始上短OK=录音 长按OK:兜底", "长按上:删除 长按下:Wi-Fi导出");
 }
 
 /* ---------------- REC / PLAY / CONFIRM / EXPORT ---------------- */
@@ -331,16 +331,24 @@ void ui_rec_key(uint8_t btn_u, uint8_t ev_u) {
             } else if (ev == BSP_BTN_CLICK && btn == BSP_BTN_OK) {
                 if (s_cursor == exit_pos()) { s_wants_back = true; }
                 else if (s_cursor == home_pos()) { s_wants_home = true; }
-                else {
-                    /* 先切录音屏再启动：即使启动失败(事件 REC_ERR)也能回列表，不留“点了没反应” */
+                else if (s_cursor == 0) {
+                    /* 光标在"开始录音"按钮 → 开始录音 */
                     sub_show(SUB_REC);
                     study_recorder_start();
+                } else {
+                    /* 光标在录音条目上 → 立即播放（80ms 触发，比长按快） */
+                    int i = cur_item();
+                    if (i >= 0) { s_item_seq = s_items[i].seq;
+                                  if (study_recorder_play_seq(s_items[i].seq) == 0) sub_show(SUB_PLAY); }
                 }
             } else if (ev == BSP_BTN_LONG && btn == BSP_BTN_OK) {
-                /* 长按OK(500ms)：播放选中录音 */
-                int i = cur_item();
-                if (i >= 0) { s_item_seq = s_items[i].seq;
-                              if (study_recorder_play_seq(s_items[i].seq) == 0) sub_show(SUB_PLAY); }
+                /* 长按OK(500ms)：兜底 */
+                if (s_cursor == 0) { sub_show(SUB_REC); study_recorder_start(); }
+                else {
+                    int i = cur_item();
+                    if (i >= 0) { s_item_seq = s_items[i].seq;
+                                  if (study_recorder_play_seq(s_items[i].seq) == 0) sub_show(SUB_PLAY); }
+                }
             } else if (ev == BSP_BTN_LONG && btn == BSP_BTN_UP) {
                 int i = cur_item();
                 if (i >= 0) { s_item_seq = s_items[i].seq; sub_show(SUB_CONFIRM); }
