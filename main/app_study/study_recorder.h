@@ -16,10 +16,10 @@
 #include "study_audio_codec.h"   /* 提供 STUDY_REC_OPUS 与 FRC 容器 / 编解码 */
 
 #define REC_MAX_FILES   32
-/* 单条时长上限：由录音编码决定（ADPCM 4KB/s≈12min；Opus ~6kbps≈60min）。
-   study_frc 容器头部带 codec_id，回放/导出按文件自描述解码，兼容两种编码。 */
-#if defined(STUDY_REC_OPUS) && STUDY_REC_OPUS
-#define REC_MAX_SEC     60 * 60      /* Opus 窄带 ~0.75KB/s → 3MB 分区约 65min，留余量 60min */
+/* 单条时长上限：由录音编码决定（ADPCM 4KB/s≈12min；Speex/Opus ~0.75KB/s≈60min）。
+   study_frc 容器头部带 codec_id，回放/导出按文件自描述解码，兼容三种编码。 */
+#if (defined(STUDY_REC_SPEEX) && STUDY_REC_SPEEX) || (defined(STUDY_REC_OPUS) && STUDY_REC_OPUS)
+#define REC_MAX_SEC     60 * 60      /* Speex/Opus 窄带 ~0.75KB/s → 3MB 分区约 65min，留余量 60min */
 #else
 #define REC_MAX_SEC     12 * 60      /* IMA-ADPCM 4KB/s → 3MB 分区约 11.8min，留余量 12min */
 #endif

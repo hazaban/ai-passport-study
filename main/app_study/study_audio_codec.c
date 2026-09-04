@@ -17,6 +17,9 @@
 #if STUDY_REC_OPUS
 #include "opus.h"
 #endif
+#if STUDY_REC_SPEEX
+#include "speex/speex.h"
+#endif
 
 static const char *TAG = "codec";
 
@@ -150,25 +153,31 @@ static int decode_frc_payload(const uint8_t *payload, adpcm_state_t *state,
 
 struct study_frc_reader {
     FILE   *fp;
-    int     codec;                              /* STUDY_CODEC_ADPCM / STUDY_CODEC_OPUS */
+    int     codec;                              /* STUDY_CODEC_ADPCM / OPUS / SPEEX */
     adpcm_state_t state;                        /* ADPCM 专用 */
-#if STUDY_REC_OPUS
-    OpusDecoder *dec;                           /* OPUS 专用（按需创建） */
+    void    *dec;                               /* OPUS / SPEEX 解码器指针（共用） */
+#if STUDY_REC_SPEEX
+    SpeexBits bits;                             /* 复用位流 */
 #endif
     uint32_t      num_frames;
     int16_t       pending[STUDY_FRAME_SAMPLES];
     int           pending_n;
     uint8_t       pkt[STUDY_FRC_PAYLOAD_LEN];   /* ADPCM 单帧读缓冲 */
     uint8_t       opkt[OPUS_MAX_PKT];           /* OPUS 单帧读缓冲 */
+    uint8_t       spkt[STUDY_SPEEX_MAX_FRAME];  /* SPEEX 单帧读缓冲 */
 };
 
 struct study_frc_writer {
     FILE   *fp;
     int     codec;
     adpcm_state_t state;                        /* ADPCM 专用 */
+    void    *enc;                               /* OPUS / SPEEX 编码器指针（共用） */
 #if STUDY_REC_OPUS
-    OpusEncoder *enc;                           /* OPUS 专用 */
     uint8_t     *opkt;                          /* OPUS 编码输出（calloc 一次） */
+#endif
+#if STUDY_REC_SPEEX
+    SpeexBits bits;                             /* 复用位流 */
+    uint8_t    spkt[STUDY_SPEEX_MAX_FRAME];
 #endif
     uint32_t num_frames;
 };
@@ -208,7 +217,9 @@ study_frc_reader_t *study_frc_open(const char *path) {
             uint8_t cid = 0;
             if (fread(&cid, 1, 1, fp) == 1) {
                 r->num_frames = frames;
-                r->codec = (cid == STUDY_CODEC_OPUS) ? STUDY_CODEC_OPUS : STUDY_CODEC_ADPCM;
+                r->codec = STUDY_CODEC_ADPCM;
+                if (cid == STUDY_CODEC_OPUS) r->codec = STUDY_CODEC_OPUS;
+                else if (cid == STUDY_CODEC_SPEEX) r->codec = STUDY_CODEC_SPEEX;
             } else {
                 fseek(fp, 0, SEEK_SET);
                 r->codec = STUDY_CODEC_ADPCM;
@@ -226,6 +237,21 @@ study_frc_reader_t *study_frc_open(const char *path) {
         r->num_frames = count_frames(fp);
     }
 
+#if STUDY_REC_SPEEX
+    if (r->codec == STUDY_CODEC_SPEEX) {
+        int sr = STUDY_CODEC_RATE;
+        r->dec = speex_decoder_init(&speex_nb_mode);
+        if (!r->dec) {
+            ESP_LOGE(TAG, "speex_decoder_init 失败 heap=%d", esp_get_free_heap_size());
+            study_frc_close(r);
+            return NULL;
+        }
+        speex_decoder_ctl(r->dec, SPEEX_SET_SAMPLING_RATE, &sr);
+        speex_bits_init(&r->bits);
+        ESP_LOGI(TAG, "Speex open OK: %s frames=%lu heap=%d",
+                 path, (unsigned long)r->num_frames, esp_get_free_heap_size());
+    } else
+#endif
 #if STUDY_REC_OPUS
     if (r->codec == STUDY_CODEC_OPUS) {
         int err = OPUS_OK;
@@ -254,6 +280,10 @@ void study_frc_close(study_frc_reader_t *r) {
 #if STUDY_REC_OPUS
     if (r->dec) { opus_decoder_destroy(r->dec); r->dec = NULL; }
 #endif
+#if STUDY_REC_SPEEX
+    if (r->dec) { speex_decoder_destroy(r->dec); r->dec = NULL; }
+    speex_bits_destroy(&r->bits);
+#endif
     if (r->fp) fclose(r->fp);
     free(r);
 }
@@ -274,6 +304,23 @@ int study_frc_read_pcm(study_frc_reader_t *r, int16_t *out, int max_samples) {
         uint8_t h[2];
         if (fread(h, 1, 2, r->fp) != 2) break;                 /* EOF */
         int plen = h[0] | (h[1] << 8);
+#if STUDY_REC_SPEEX
+        if (r->codec == STUDY_CODEC_SPEEX) {
+            if (plen <= 0 || plen > STUDY_SPEEX_MAX_FRAME) {
+                ESP_LOGE(TAG, "speex read: bad plen=%d", plen);
+                return -1;
+            }
+            if (fread(r->spkt, 1, (size_t)plen, r->fp) != (size_t)plen) return -1;
+            speex_bits_read_from(&r->bits, (const char *)r->spkt, plen);
+            int ns = speex_decode_int(r->dec, &r->bits, r->pending);
+            if (ns < 0) {
+                ESP_LOGE(TAG, "speex_decode err %d (plen=%d)", ns, plen);
+                return -1;
+            }
+            r->pending_n = ns;
+            continue;
+        }
+#endif
 #if STUDY_REC_OPUS
         if (r->codec == STUDY_CODEC_OPUS) {
             if (plen <= 0 || plen > OPUS_MAX_PKT) {
@@ -315,7 +362,28 @@ study_frc_writer_t *study_frc_create(const char *path) {
     w->fp = fp;
     w->state.pred = 0;
     w->state.idx  = 0;
-#if STUDY_REC_OPUS
+#if STUDY_REC_SPEEX
+    w->codec = STUDY_CODEC_SPEEX;
+    /* Speex 窄带定点编码器：NB、Q3（~5.8kbps ≈ 0.73KB/s） */
+    w->enc = speex_encoder_init(&speex_nb_mode);
+    if (!w->enc) {
+        ESP_LOGE(TAG, "speex_encoder_init 失败 heap=%d", esp_get_free_heap_size());
+        study_frc_abort(w);
+        return NULL;
+    }
+    {
+        int q   = 3;                       /* 0-10；voice 常用 2-4 */
+        int sr  = STUDY_CODEC_RATE;
+        int vad = 0;
+        int dtx = 0;
+        speex_encoder_ctl(w->enc, SPEEX_SET_QUALITY, &q);
+        speex_encoder_ctl(w->enc, SPEEX_SET_SAMPLING_RATE, &sr);
+        speex_encoder_ctl(w->enc, SPEEX_SET_VAD, &vad);
+        speex_encoder_ctl(w->enc, SPEEX_SET_DTX, &dtx);
+    }
+    speex_bits_init(&w->bits);
+    ESP_LOGI(TAG, "Speex create OK: %s (heap=%d, q3 NB)", path, esp_get_free_heap_size());
+#elif STUDY_REC_OPUS
     w->codec = STUDY_CODEC_OPUS;
     /* Opus 编码器：窄带 SILK-only、complexity=0（绕开 ~120KB 信号分析重路径）、VOIP */
     int err = OPUS_OK;
@@ -353,6 +421,28 @@ int study_frc_enc_frame(study_frc_writer_t *w, const int16_t *pcm, int samples) 
     if (!w || samples <= 0 || samples > STUDY_FRAME_SAMPLES) return -1;
     uint8_t hb[2];
     (void)hb;
+#if STUDY_REC_SPEEX
+    if (w->codec == STUDY_CODEC_SPEEX) {
+        if (!w->enc) return -1;
+        speex_bits_reset(&w->bits);
+        if (speex_encode_int(w->enc, (spx_int16_t *)pcm, &w->bits) < 0) {
+            ESP_LOGE(TAG, "speex_encode_int 失败");
+            return -1;
+        }
+        speex_bits_insert_terminator(&w->bits);
+        int n = speex_bits_write(&w->bits, (char *)w->spkt, STUDY_SPEEX_MAX_FRAME);
+        if (n <= 0 || n > STUDY_SPEEX_MAX_FRAME) {
+            ESP_LOGE(TAG, "speex 写帧失败 n=%d", n);
+            return -1;
+        }
+        hb[0] = (uint8_t)(n & 0xFF);
+        hb[1] = (uint8_t)((n >> 8) & 0xFF);
+        if (fwrite(hb, 1, 2, w->fp) != 2) return -1;
+        if (fwrite(w->spkt, 1, (size_t)n, w->fp) != (size_t)n) return -1;
+        w->num_frames++;
+        return 0;
+    }
+#endif
 #if STUDY_REC_OPUS
     if (w->codec == STUDY_CODEC_OPUS) {
         if (!w->enc) return -1;
@@ -402,12 +492,24 @@ int study_frc_finalize(study_frc_writer_t *w) {
         fclose(w->fp);
         w->fp = NULL;
     }
+#if STUDY_REC_SPEEX
+    if (w->enc) { speex_encoder_destroy(w->enc); w->enc = NULL; }
+    speex_bits_destroy(&w->bits);
+#endif
+#if STUDY_REC_OPUS
+    if (w->enc) { opus_encoder_destroy(w->enc); w->enc = NULL; }
+    if (w->opkt) { free(w->opkt); w->opkt = NULL; }
+#endif
     free(w);
     return 0;
 }
 
 void study_frc_abort(study_frc_writer_t *w) {
     if (!w) return;
+#if STUDY_REC_SPEEX
+    if (w->enc) { speex_encoder_destroy(w->enc); w->enc = NULL; }
+    speex_bits_destroy(&w->bits);
+#endif
 #if STUDY_REC_OPUS
     if (w->enc) { opus_encoder_destroy(w->enc); w->enc = NULL; }
     if (w->opkt) { free(w->opkt); w->opkt = NULL; }

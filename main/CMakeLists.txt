@@ -29,7 +29,7 @@ idf_component_register(
     INCLUDE_DIRS "."
                  "app_study"
     REQUIRES bsp bt esp_event esp_hw_support esp_netif esp_timer esp_wifi
-             nvs_flash spiffs lwip esp_http_server json opus
+             nvs_flash spiffs lwip esp_http_server json opus speex
 )
 
 # ----- 考研助手：把 build/voicepack 目录打成 voicepack 分区的 SPIFFS 镜像并纳入烧录 -----

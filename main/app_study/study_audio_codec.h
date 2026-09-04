@@ -17,17 +17,25 @@
 #include <stdint.h>
 #include <stddef.h>
 
-/* 录音编码选择：1=Opus(窄带, ~6kbps, 时长 ~5x ADPCM)；0=IMA-ADPCM(4KB/s, 极省内存) */
-#define STUDY_REC_OPUS  1
+/* 录音编码选择（编译期开关；FRC2 头带 codec_id，读端自描述解码，任选均可）：
+   · STUDY_REC_SPEEX：Speex 窄带定点，~0.75KB/s(Q3)，栈/堆小 —— 当前默认
+   · STUDY_REC_OPUS ：Opus 窄带 SILK(complexity=0)，~6kbps，需 32KB 栈
+   · STUDY_REC_ADPCM：IMA-ADPCM 4KB/s，极省内存 */
+#define STUDY_REC_SPEEX  1
+#define STUDY_REC_OPUS   1   /* 保留：老 Opus 文件读端兼容 */
+#define STUDY_REC_ADPCM  0
 
 #define STUDY_CODEC_RATE     8000        /* 录音重设 ES8311 到 8kHz 单声道 */
 #define STUDY_FRAME_SAMPLES  160         /* 20ms @8kHz (8000 × 0.02 = 160) */
 /* 固定 payload 布局(ADPCM): 2(pred) + 1(idx) + 1(resv) + 80(ADPCM nibbles) = 84 */
 #define STUDY_FRC_PAYLOAD_LEN 84
+/* Speex 单帧编码后最大字节数：NB Q3 ~150B/20ms，留足余量 */
+#define STUDY_SPEEX_MAX_FRAME  512
 
 /* FRC 容器：头部自描述编码器 ID */
 #define STUDY_CODEC_ADPCM   0
 #define STUDY_CODEC_OPUS    1
+#define STUDY_CODEC_SPEEX   2
 
 typedef struct study_frc_reader study_frc_reader_t;
 

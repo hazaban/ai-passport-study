@@ -29,8 +29,10 @@ static const char *TAG = "recorder";
 #define REC_DIR     "/rec"
 #define ACTIVE_TMP  "/rec/ACTIVE.TMP"
 
-/* cap 栈：Opus 编码（低复杂度）在 cap_task 内跑，需更大栈；ADPCM 4~6KB 足够 */
-#if defined(STUDY_REC_OPUS) && STUDY_REC_OPUS
+/* cap 栈：Speex 窄带定点编码轻量（~8KB），Opus 低复杂度需更大栈，ADPCM 最小 */
+#if defined(STUDY_REC_SPEEX) && STUDY_REC_SPEEX
+#define CAP_STACK_BYTES  16384   /* 16KB：Speex 定点 NB 峰值栈，留足余量 */
+#elif defined(STUDY_REC_OPUS) && STUDY_REC_OPUS
 #define CAP_STACK_BYTES  32768   /* 32KB：SILK 滤波 + MDCT + 编码临时变量峰值栈（complexity=0 已尽量压） */
 #else
 #define CAP_STACK_BYTES  12288   /* 12KB：ADPCM 编码峰值栈仅 4~6KB，留足余量 */
