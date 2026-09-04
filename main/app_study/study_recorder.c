@@ -248,7 +248,7 @@ static void play_task(void *arg) {
     if (!rd) { push_evt(REC_EVT_PLAY_ERR); s_playing = false; s_play_task = NULL; vTaskDelete(NULL); return; }
 
     int16_t pcm[512];
-    int r;
+    int r = 0;
     while (!s_stop_play && (r = study_frc_read_pcm(rd, pcm, 512)) > 0) {
         if (bsp_audio_write(pcm, (size_t)r * 2) != ESP_OK) { r = -1; break; }
     }
