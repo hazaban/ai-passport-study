@@ -245,7 +245,9 @@ int study_recorder_start(void) {
         ESP_LOGW(TAG, "START 拒绝: recorder/play 已忙");
         return -1;
     }
-    s_cap_task = xTaskCreateStatic(cap_task, "rec_cap", CAP_STACK_W, NULL, REC_PRIO,
+    /* ESP-IDF 的栈大小按“字节”计；静态数组按“字(StackType_t)”分配 */
+    s_cap_task = xTaskCreateStatic(cap_task, "rec_cap",
+                                   (uint32_t)(CAP_STACK_W * sizeof(StackType_t)), NULL, REC_PRIO,
                                    s_cap_stk, &s_cap_tcb);
     if (!s_cap_task) {
         ESP_LOGE(TAG, "START 失败: xTaskCreateStatic(cap) 失败");
