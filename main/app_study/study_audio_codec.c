@@ -1,12 +1,12 @@
 /*
- * study_audio_codec.c — 8kHz/单声道 IMA-ADPCM 裸流编解码（录音专用，与语音包 Opus 链路彻底隔离）
+ * study_audio_codec.c — 录音编解码（8kHz/单声道）
  *
- * 本 codec 运行时堆占用约 200~500 B（FILE* + adpcm_state + 小 pkt 缓冲），
- * 不需要 Opus 的 ~120KB 伪栈，在 ESP32-C3 录音瞬间 ~60KB 空闲堆下完全不会 OOM。
+ * 由 STUDY_REC_OPUS 选择编码：
+ *   · Opus 窄带：SILK-only, complexity=0（绕开 libopus ~120KB 信号分析重路径）。
+ *     编码器状态 ~20KB 堆 + 帧内临时缓冲可控，目标码率 ~0.75KB/s。
+ *   · IMA-ADPCM：仅 ~200~500B 状态，固定 4KB/s，OOM 风险最低。
  *
- * 算法参考：Intel/DVI IMA ADPCM 4-bit，标准 step table (89 entries) 与 index adjust 表。
- * 同一套表 + 同一套状态结构在 encoder/decoder 间共享，避免 study_voice.c 那份解码器
- * 与本文件之间的格式漂移（本文件的 decoder 只为录音回放服务，和 study_voice 无关）。
+ * 同用 FRC 容器：FRC2 头部带 codec_id，读端据此自描述解码；老 FRC1 文件仍按 ADPCM 读。
  */
 #include "study_audio_codec.h"
 #include <stdio.h>
@@ -14,12 +14,22 @@
 #include <string.h>
 #include "esp_log.h"
 #include "esp_system.h"
+#if STUDY_REC_OPUS
+#include "opus.h"
+#endif
 
 static const char *TAG = "codec";
 
-/* FRC 文件头：magic + 4字节总帧数（小端），旧文件无此头则用 count_frames fallback */
-#define FRC_MAGIC    0x46524331   /* "FRC1" */
-#define FRC_HEADER_SZ 8
+/* FRC 头部：magic(4) + 帧数(4) [+ codec_id(1)，FRC2 时]。旧文件无 codec_id 则按 ADPCM。 */
+#define FRC_MAGIC    0x46524331   /* "FRC1"：旧 ADPCM，无 codec_id */
+#define FRC_MAGIC2   0x32435246   /* "FRC2"：新头部，含 codec_id */
+#define FRC_HDR_SZ   8            /* FRC1 头大小 */
+#define FRC_HDR2_SZ  9            /* FRC2 头大小：+1 codec_id */
+
+/* Opus 每帧最长包：RFC6716 上限 1275B（任意 20ms 帧），留余量 */
+#define OPUS_MAX_PKT 1400
+/* Opus 解码输出最大样本（20ms帧@8k=160；留 40ms 兼容=320） */
+#define OPUS_MAX_SAMPLES 480
 
 /* ---------- IMA-ADPCM 标准表（Flash 常量，不占堆） ---------- */
 static const int16_t s_step_size[89] = {
@@ -139,18 +149,28 @@ static int decode_frc_payload(const uint8_t *payload, adpcm_state_t *state,
 /* ---------- study_frc_reader / writer 结构体 ---------- */
 
 struct study_frc_reader {
-    FILE         *fp;
-    adpcm_state_t state;
+    FILE   *fp;
+    int     codec;                              /* STUDY_CODEC_ADPCM / STUDY_CODEC_OPUS */
+    adpcm_state_t state;                        /* ADPCM 专用 */
+#if STUDY_REC_OPUS
+    OpusDecoder *dec;                           /* OPUS 专用（按需创建） */
+#endif
     uint32_t      num_frames;
-    int16_t       pending[STUDY_FRAME_SAMPLES];   /* 单帧 PCM 缓冲（小栈安全） */
+    int16_t       pending[STUDY_FRAME_SAMPLES];
     int           pending_n;
-    uint8_t       pkt[STUDY_FRC_PAYLOAD_LEN];      /* 单帧 payload 读缓冲 */
+    uint8_t       pkt[STUDY_FRC_PAYLOAD_LEN];   /* ADPCM 单帧读缓冲 */
+    uint8_t       opkt[OPUS_MAX_PKT];           /* OPUS 单帧读缓冲 */
 };
 
 struct study_frc_writer {
-    FILE         *fp;
-    adpcm_state_t state;
-    uint32_t      num_frames;
+    FILE   *fp;
+    int     codec;
+    adpcm_state_t state;                        /* ADPCM 专用 */
+#if STUDY_REC_OPUS
+    OpusEncoder *enc;                           /* OPUS 专用 */
+    uint8_t     *opkt;                          /* OPUS 编码输出（calloc 一次） */
+#endif
+    uint32_t num_frames;
 };
 
 /* ---------- 仅用于 open 预扫描帧数（纯 len 校验，不解析内容） ---------- */
@@ -179,18 +199,50 @@ study_frc_reader_t *study_frc_open(const char *path) {
     r->fp = fp;
     r->state.pred = 0;
     r->state.idx  = 0;
-    /* 先尝试读新格式 magic header */
+    r->codec = STUDY_CODEC_ADPCM;   /* 默认；FRC2 或 fallback 时再修正 */
+
+    /* 先试 FRC2：magic + frames + codec_id。再试 FRC1：magic + frames（无 codec_id）。 */
     uint32_t magic = 0, frames = 0;
-    if (fread(&magic, 4, 1, fp) == 1 && magic == FRC_MAGIC &&
-        fread(&frames, 4, 1, fp) == 1) {
-        r->num_frames = frames;   /* 直接用头里的值，O(1) */
+    if (fread(&magic, 4, 1, fp) == 1) {
+        if (magic == FRC_MAGIC2 && fread(&frames, 4, 1, fp) == 1) {
+            uint8_t cid = 0;
+            if (fread(&cid, 1, 1, fp) == 1) {
+                r->num_frames = frames;
+                r->codec = (cid == STUDY_CODEC_OPUS) ? STUDY_CODEC_OPUS : STUDY_CODEC_ADPCM;
+            } else {
+                fseek(fp, 0, SEEK_SET);
+                r->codec = STUDY_CODEC_ADPCM;
+                r->num_frames = count_frames(fp);
+            }
+        } else if (magic == FRC_MAGIC && fread(&frames, 4, 1, fp) == 1) {
+            r->num_frames = frames;   /* FRC1：老 ADPCM，直接用头 */
+        } else {
+            /* 无有效头：按 ADPCM 遍历 */
+            fseek(fp, 0, SEEK_SET);
+            r->num_frames = count_frames(fp);
+        }
     } else {
-        /* 旧格式（无 header）或 header 损坏：rewind 后遍历全文件 */
         fseek(fp, 0, SEEK_SET);
         r->num_frames = count_frames(fp);
     }
-    ESP_LOGI(TAG, "ADPCM open OK: %s frames=%lu heap=%d",
-             path, (unsigned long)r->num_frames, esp_get_free_heap_size());
+
+#if STUDY_REC_OPUS
+    if (r->codec == STUDY_CODEC_OPUS) {
+        int err = OPUS_OK;
+        r->dec = opus_decoder_create(STUDY_CODEC_RATE, 1, &err);
+        if (err != OPUS_OK || !r->dec) {
+            ESP_LOGE(TAG, "opus_decoder_create err=%d", err);
+            study_frc_close(r);
+            return NULL;
+        }
+        ESP_LOGI(TAG, "Opus open OK: %s frames=%lu heap=%d",
+                 path, (unsigned long)r->num_frames, esp_get_free_heap_size());
+    } else
+#endif
+    {
+        ESP_LOGI(TAG, "ADPCM open OK: %s frames=%lu heap=%d",
+                 path, (unsigned long)r->num_frames, esp_get_free_heap_size());
+    }
     return r;
 }
 
@@ -199,6 +251,9 @@ uint32_t study_frc_rate(const study_frc_reader_t *r) { (void)r; return STUDY_COD
 
 void study_frc_close(study_frc_reader_t *r) {
     if (!r) return;
+#if STUDY_REC_OPUS
+    if (r->dec) { opus_decoder_destroy(r->dec); r->dec = NULL; }
+#endif
     if (r->fp) fclose(r->fp);
     free(r);
 }
@@ -219,6 +274,22 @@ int study_frc_read_pcm(study_frc_reader_t *r, int16_t *out, int max_samples) {
         uint8_t h[2];
         if (fread(h, 1, 2, r->fp) != 2) break;                 /* EOF */
         int plen = h[0] | (h[1] << 8);
+#if STUDY_REC_OPUS
+        if (r->codec == STUDY_CODEC_OPUS) {
+            if (plen <= 0 || plen > OPUS_MAX_PKT) {
+                ESP_LOGE(TAG, "opus read: bad plen=%d", plen);
+                return -1;
+            }
+            if (fread(r->opkt, 1, (size_t)plen, r->fp) != (size_t)plen) return -1;
+            int ns = opus_decode(r->dec, r->opkt, plen, r->pending, STUDY_FRAME_SAMPLES, 0);
+            if (ns < 0) {
+                ESP_LOGE(TAG, "opus_decode err %d (plen=%d)", ns, plen);
+                return -1;
+            }
+            r->pending_n = ns;
+            continue;
+        }
+#endif
         if (plen != STUDY_FRC_PAYLOAD_LEN) {
             ESP_LOGE(TAG, "read_pcm: payload len=%d expected=%d", plen, STUDY_FRC_PAYLOAD_LEN);
             return -1;
@@ -239,33 +310,78 @@ study_frc_writer_t *study_frc_create(const char *path) {
         ESP_LOGE(TAG, "create fopen 失败: %s (heap=%d)", path, esp_get_free_heap_size());
         return NULL;
     }
-    /* 先写 8 字节 header：magic + 帧数占位（finalize 时回填） */
-    uint32_t magic_placeholder = FRC_MAGIC;
-    uint32_t frames_placeholder = 0;
-    fwrite(&magic_placeholder, 4, 1, fp);
-    fwrite(&frames_placeholder, 4, 1, fp);
     study_frc_writer_t *w = (study_frc_writer_t *)calloc(1, sizeof(*w));
     if (!w) { fclose(fp); ESP_LOGE(TAG, "create calloc 失败"); return NULL; }
     w->fp = fp;
     w->state.pred = 0;
     w->state.idx  = 0;
+#if STUDY_REC_OPUS
+    w->codec = STUDY_CODEC_OPUS;
+    /* Opus 编码器：窄带 SILK-only、complexity=0（绕开 ~120KB 信号分析重路径）、VOIP */
+    int err = OPUS_OK;
+    w->enc = opus_encoder_create(STUDY_CODEC_RATE, 1, OPUS_APPLICATION_VOIP, &err);
+    if (err != OPUS_OK || !w->enc) {
+        ESP_LOGE(TAG, "opus_encoder_create err=%d (heap=%d)", err, esp_get_free_heap_size());
+        study_frc_abort(w);
+        return NULL;
+    }
+    opus_encoder_ctl(w->enc, OPUS_SET_COMPLEXITY(0));
+    opus_encoder_ctl(w->enc, OPUS_SET_BANDWIDTH(OPUS_BANDWIDTH_NARROWBAND));
+    /* 编码输出缓冲 calloc 一次，避免每帧大栈 */
+    w->opkt = (uint8_t *)calloc(1, OPUS_MAX_PKT);
+    if (!w->opkt) {
+        ESP_LOGE(TAG, "opus outbuf calloc 失败 (heap=%d)", esp_get_free_heap_size());
+        study_frc_abort(w);
+        return NULL;
+    }
+    ESP_LOGI(TAG, "Opus create OK: %s (heap=%d)", path, esp_get_free_heap_size());
+#else
+    w->codec = STUDY_CODEC_ADPCM;
     ESP_LOGI(TAG, "ADPCM create OK: %s (heap=%d)", path, esp_get_free_heap_size());
+#endif
+    /* 写新头部：FRC2 magic + frames 占位 + codec_id（finalize 回填帧数） */
+    uint32_t magic = FRC_MAGIC2;
+    uint32_t frames = 0;
+    uint8_t cid = (uint8_t)w->codec;
+    fwrite(&magic, 4, 1, w->fp);
+    fwrite(&frames, 4, 1, w->fp);
+    fwrite(&cid, 1, 1, w->fp);
     return w;
 }
 
 int study_frc_enc_frame(study_frc_writer_t *w, const int16_t *pcm, int samples) {
     if (!w || samples <= 0 || samples > STUDY_FRAME_SAMPLES) return -1;
     uint8_t hb[2];
-    uint8_t payload[STUDY_FRC_PAYLOAD_LEN];
-
-    write_frc_payload(payload, &w->state, pcm, samples);
-
-    hb[0] = (uint8_t)(STUDY_FRC_PAYLOAD_LEN & 0xFF);
-    hb[1] = (uint8_t)((STUDY_FRC_PAYLOAD_LEN >> 8) & 0xFF);
-    if (fwrite(hb, 1, 2, w->fp) != 2) return -1;
-    if (fwrite(payload, 1, STUDY_FRC_PAYLOAD_LEN, w->fp) != STUDY_FRC_PAYLOAD_LEN) return -1;
-    w->num_frames++;
-    return 0;
+    (void)hb;
+#if STUDY_REC_OPUS
+    if (w->codec == STUDY_CODEC_OPUS) {
+        if (!w->enc) return -1;
+        int n = opus_encode(w->enc, (const opus_int16 *)pcm, samples,
+                            w->opkt, OPUS_MAX_PKT);
+        if (n < 0) {
+            ESP_LOGE(TAG, "opus_encode err %d (samples=%d heap=%d)",
+                     n, samples, esp_get_free_heap_size());
+            return -1;
+        }
+        hb[0] = (uint8_t)(n & 0xFF);
+        hb[1] = (uint8_t)((n >> 8) & 0xFF);
+        if (fwrite(hb, 1, 2, w->fp) != 2) return -1;
+        if (fwrite(w->opkt, 1, (size_t)n, w->fp) != (size_t)n) return -1;
+        w->num_frames++;
+        return 0;
+    }
+#endif
+    {
+        uint8_t payload[STUDY_FRC_PAYLOAD_LEN];
+        write_frc_payload(payload, &w->state, pcm, samples);
+        uint8_t h0[2];
+        h0[0] = (uint8_t)(STUDY_FRC_PAYLOAD_LEN & 0xFF);
+        h0[1] = (uint8_t)((STUDY_FRC_PAYLOAD_LEN >> 8) & 0xFF);
+        if (fwrite(h0, 1, 2, w->fp) != 2) return -1;
+        if (fwrite(payload, 1, STUDY_FRC_PAYLOAD_LEN, w->fp) != STUDY_FRC_PAYLOAD_LEN) return -1;
+        w->num_frames++;
+        return 0;
+    }
 }
 
 uint32_t study_frc_written_frames(const study_frc_writer_t *w) {
@@ -275,12 +391,14 @@ uint32_t study_frc_written_frames(const study_frc_writer_t *w) {
 int study_frc_finalize(study_frc_writer_t *w) {
     if (!w) return -1;
     if (w->fp) {
-        /* 回到文件头，回填真实帧数 */
-        uint32_t magic = FRC_MAGIC;
+        /* 回到文件头，回填 FRC2 头：magic + 帧数 + codec_id */
+        uint32_t magic = FRC_MAGIC2;
         uint32_t frames = w->num_frames;
+        uint8_t cid = (uint8_t)w->codec;
         rewind(w->fp);
         fwrite(&magic, 4, 1, w->fp);
         fwrite(&frames, 4, 1, w->fp);
+        fwrite(&cid, 1, 1, w->fp);
         fclose(w->fp);
         w->fp = NULL;
     }
@@ -290,6 +408,10 @@ int study_frc_finalize(study_frc_writer_t *w) {
 
 void study_frc_abort(study_frc_writer_t *w) {
     if (!w) return;
+#if STUDY_REC_OPUS
+    if (w->enc) { opus_encoder_destroy(w->enc); w->enc = NULL; }
+    if (w->opkt) { free(w->opkt); w->opkt = NULL; }
+#endif
     if (w->fp) { fclose(w->fp); w->fp = NULL; }
     free(w);
 }

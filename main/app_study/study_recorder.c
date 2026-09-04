@@ -1,10 +1,11 @@
 /*
  * study_recorder.c — 录音引擎（device-only，见 study_recorder.h）
  *
- * 录音通路：8kHz/单声道 IMA-ADPCM 裸流（u16LE 包长 + [pred/idx 状态头] + 80B 压缩，20ms 帧）。
- * capture 任务读麦克风(160 采样/帧) → ADPCM 编码 → 写 /rec/ACTIVE.TMP；
+ * 录音通路：8kHz/单声道 → 编码流（u16LE 包长 + payload，FRC2 容器头部带 codec_id）。
+ *   STUDY_REC_OPUS=1 用 Opus 窄带（低复杂度，~6kbps）；=0 用 IMA-ADPCM（4KB/s）。
+ * capture 任务读麦克风(160 采样/帧) → 编码 → 写 /rec/ACTIVE.TMP；
  * 短按 OK/到 REC_MAX_SEC/空间不足 → 定稿为 /rec/R%07u.FRC。
- * 回放/导出同用 study_audio_codec 解码（本 codec 与语音包的 Opus 链路彻底隔离）。
+ * 回放/导出同用 study_audio_codec 解码（按文件头 codec_id 自描述）。
  */
 #include "study_recorder.h"
 #include "study_audio_codec.h"
@@ -28,7 +29,12 @@ static const char *TAG = "recorder";
 #define REC_DIR     "/rec"
 #define ACTIVE_TMP  "/rec/ACTIVE.TMP"
 
-#define CAP_STACK_BYTES  12288   /* 12KB 动态栈：ADPCM 编码峰值栈仅 4~6KB，留足余量 */
+/* cap 栈：Opus 编码（低复杂度）在 cap_task 内跑，需更大栈；ADPCM 4~6KB 足够 */
+#if defined(STUDY_REC_OPUS) && STUDY_REC_OPUS
+#define CAP_STACK_BYTES  32768   /* 32KB：SILK 滤波 + MDCT + 编码临时变量峰值栈（complexity=0 已尽量压） */
+#else
+#define CAP_STACK_BYTES  12288   /* 12KB：ADPCM 编码峰值栈仅 4~6KB，留足余量 */
+#endif
 #define PLAY_STACK       16384
 #define REC_PRIO    5
 #define CHK_EVERY   50
