@@ -60,11 +60,7 @@ esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user) {
             .min          = BTN_MV[i][0],
             .max          = BTN_MV[i][1],
         };
-        /* 按键参数调优：短按阈值 80ms（加快单击确认），长按阈值 500ms（提前判定长按） */
-        const button_config_t bc = {
-            .long_press_time  = 500,
-            .short_press_time = 80,
-        };
+        const button_config_t bc = { 0 };  /* 全零 = 用 sdkconfig 默认值(短按180ms/长按700ms) */
         esp_err_t e = iot_button_new_adc_device(&bc, &ac, &s_btn[i]);
         if (e != ESP_OK || !s_btn[i]) {
             ESP_LOGE(TAG, "按键 %d 创建失败 (%s) —— 检查 GPIO%d 的 ADC 配置与分压电阻",
