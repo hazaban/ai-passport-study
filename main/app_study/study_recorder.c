@@ -194,7 +194,8 @@ static void cap_task(void *arg) {
         if ((frames % CHK_EVERY) == 0) {
             if (frames * 20u >= (uint32_t)REC_MAX_SEC * 1000u) { autostop = true; break; }
             int kb = study_recorder_free_kb();
-            if (kb >= 0 && kb < 350) { full = true; break; }
+            /* ADPCM(4KB/s) 下留 100KB ≈ 25 秒余量，避免 SPIFFS 写满前正好撞存满 */
+            if (kb >= 0 && kb < 100) { full = true; break; }
         }
     }
 
