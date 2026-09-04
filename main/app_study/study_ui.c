@@ -67,18 +67,18 @@ typedef struct {
     uint32_t pill;      /* 倒计时胶囊底 */
 } ui_theme_t;
 
-/* 夜间：黑底白字，蓝色降饱和不晃眼 */
+/* 夜间：深靛蓝底，蓝色再压一档，避免晃眼；白天不动 */
 static const ui_theme_t s_theme_night = {
     .bg        = 0x111A24,
     .card      = 0x1D2834,
     .ink       = 0xEDF3F8,
     .muted     = 0x9AA8B8,
-    .primary   = 0x7EA6D6,   /* 原 0x6FA8FF → 降饱和 */
-    .primary_d = 0x6390C4,
+    .primary   = 0x5C7BA0,   /* 原 0x7EA6D6 → 亮度 169→125，降饱和降亮度 */
+    .primary_d = 0x456282,   /* 原 0x6390C4 → 亮度 146→99，实心选中不刺眼 */
     .line      = 0x2B3948,
     .accent    = 0xFFB23E,
     .sel       = 0x2E3A55,
-    .sel_border= 0x7EA6D6,
+    .sel_border= 0x5C7BA0,   /* 和 primary 对齐 */
     .pill      = 0x22314B,
 };
 
