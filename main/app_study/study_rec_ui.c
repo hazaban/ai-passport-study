@@ -159,10 +159,15 @@ static lv_obj_t *mk_btn(lv_obj_t *parent, int x, int y, int w, int h, const char
 }
 
 /* ---------------- LIST ---------------- */
-static void list_refresh(void) {
-    if (!s_scr) return;
+/* 扫描 SPIFFS 录音文件到 s_items[] — 只在进页面/保存/删除后调一次 */
+static void list_scan(void) {
     s_item_n = study_recorder_scan(s_items, REC_MAX_FILES);
     if (s_item_n > VIS_ROWS) s_item_n = VIS_ROWS;
+}
+
+/* 只刷新 UI 高亮，不扫盘 — 上下移动光标时用这个（快） */
+static void list_refresh(void) {
+    if (!s_scr) return;
     int maxp = home_pos();
     if (s_cursor > maxp) s_cursor = maxp;
 
@@ -205,6 +210,7 @@ static void list_refresh(void) {
 
 static void list_build(void) {
     s_cursor = 0;
+    list_scan();                 /* 先扫描一次，缓存到 s_items[] */
     s_scr = mk_screen();
     topbar(s_scr, "录音笔");
 
@@ -433,7 +439,7 @@ static void poll_events(void) {
                 break;
             case REC_EVT_REC_SAVED:
                 msg = "Saved OK"; color = REC_OK;
-                if (s_sub == SUB_REC) sub_show(SUB_LIST);
+                if (s_sub == SUB_REC) { list_scan(); sub_show(SUB_LIST); }
                 banner_set(msg, color);
                 break;
             case REC_EVT_PLAY_DONE:
@@ -448,6 +454,7 @@ static void poll_events(void) {
                 break;
             case REC_EVT_DEL_DONE:
                 msg = "Deleted"; color = REC_OK;
+                list_scan();          /* 删除后重新扫盘更新 s_items[] */
                 if (s_sub == SUB_CONFIRM) sub_show(SUB_LIST);
                 else need_list_refresh = true;
                 banner_set(msg, color);
