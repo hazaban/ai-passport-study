@@ -29,7 +29,7 @@ static const char *TAG = "recorder";
 #define REC_DIR     "/rec"
 #define ACTIVE_TMP  "/rec/ACTIVE.TMP"
 
-#define CAP_STACK_W  4096      /* 16KB，单位=字；静态栈，不从堆分配 */
+#define CAP_STACK_W  8192      /* 32KB，单位=字；静态栈，不从堆分配(libopus 首帧编码需大栈) */
 #define PLAY_STACK   16384
 #define REC_PRIO    5
 #define CHK_EVERY   50
