@@ -68,6 +68,7 @@ static void banner_set(const char *msg, uint32_t color) {
     lv_obj_set_style_radius(s_banner, 6, 0);
     s_banner_deadline_ms = lv_tick_get() + 3000;   /* 3 秒后自动清空 */
 }
+static lv_obj_t *txt(lv_obj_t *parent, const char *s, uint32_t color, int x, int y);
 static void banner_tick(void) {
     if (!s_banner || s_banner_deadline_ms == 0) return;
     if (lv_tick_get() >= s_banner_deadline_ms) {
