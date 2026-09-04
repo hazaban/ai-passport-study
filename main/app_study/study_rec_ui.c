@@ -54,6 +54,41 @@ static lv_obj_t *s_rec_time_lbl = NULL;
 static lv_obj_t *s_rec_state_lbl = NULL;
 static lv_obj_t *s_play_vol_lbl = NULL;
 
+/* 状态横幅：顶栏下显示 3 秒提示（空间不足/录满/错误/保存成功） */
+static lv_obj_t      *s_banner = NULL;
+static uint32_t      s_banner_deadline_ms = 0;   /* 0 = 无提示 */
+
+static void banner_set(const char *msg, uint32_t color) {
+    if (!s_banner) return;
+    lv_label_set_text(s_banner, msg ? msg : "");
+    lv_obj_set_style_text_color(s_banner, lv_color_hex(color), 0);
+    /* 给它一块黑色背景 + 圆角，醒目 */
+    lv_obj_set_style_bg_color(s_banner, lv_color_hex(0x2A2A2A), 0);
+    lv_obj_set_style_bg_opa(s_banner, LV_OPA_COVER, 0);
+    lv_obj_set_style_radius(s_banner, 6, 0);
+    s_banner_deadline_ms = lv_tick_get() + 3000;   /* 3 秒后自动清空 */
+}
+static void banner_tick(void) {
+    if (!s_banner || s_banner_deadline_ms == 0) return;
+    if (lv_tick_get() >= s_banner_deadline_ms) {
+        lv_label_set_text(s_banner, "");
+        lv_obj_set_style_bg_opa(s_banner, LV_OPA_TRANSP, 0);
+        s_banner_deadline_ms = 0;
+    }
+}
+static lv_obj_t *banner_create(void) {
+    /* 固定位置：顶栏 title(y=6) 正下方，宽 230，高 16 */
+    lv_obj_t *b = txt(s_scr, "", REC_INK, 5, 26);
+    lv_obj_set_size(b, 230, 16);
+    lv_obj_set_style_radius(b, 6, 0);
+    lv_obj_set_style_bg_opa(b, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(b, 0, 0);
+    lv_obj_set_style_text_align(b, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_font(b, &study_font, 0);
+    s_banner = b;
+    return b;
+}
+
 static void sub_show(rec_sub_t sub);
 
 static int cur_item(void) {           /* 光标所指录音下标，-1=非录音 */
@@ -185,6 +220,7 @@ static void list_build(void) {
     s_btn_exit = mk_btn(s_scr, 10, 186, 106, 32, "退出录音", REC_BTN, REC_MUTED);
     s_btn_home = mk_btn(s_scr, 124, 186, 106, 32, "返回主页面", REC_BTN, REC_MUTED);
 
+    banner_create();   /* 状态横幅：顶栏下 */
     list_refresh();
     hint_line(s_scr, "上下:选择 短按OK:开始录音", "长按OK:播放 长按上:删除", "长按下:Wi-Fi导出");
 }
@@ -203,6 +239,7 @@ static void rec_build(void) {
     s_rec_state_lbl = txt(s_scr, "录制中", REC_ACC, 34, 56);
     s_rec_time_lbl = txt(s_scr, "00:00 / 20:00", REC_INK, 8, 96);
     lv_obj_set_style_text_align(s_rec_time_lbl, LV_TEXT_ALIGN_CENTER, 0);
+    banner_create();
     hint_line(s_scr, "短按OK:暂停/继续  双按OK:保存", "", "");
 }
 static void rec_update(void) {
@@ -225,6 +262,7 @@ static void play_build(uint32_t seq) {
     txt(s_scr, line, REC_INK, 8, 60);
     s_play_vol_lbl = txt(s_scr, "", REC_MUTED, 8, 88);
     lv_label_set_text(s_play_vol_lbl, "音量 80%");
+    banner_create();
     hint_line(s_scr, "上下:音量  OK:停止", "长按OK:停止并返回", "");
 }
 static void play_vol_update(void) {
@@ -242,6 +280,7 @@ static void confirm_build(uint32_t seq) {
     snprintf(line, sizeof(line), "录音 #%lu 将删除", (unsigned long)seq);
     txt(s_scr, line, REC_INK, 8, 70);
     txt(s_scr, "短按OK:删除  上下:取消", REC_MUTED, 8, 100);
+    banner_create();
 }
 static void export_build(void) {
     s_scr = mk_screen();
@@ -253,6 +292,7 @@ static void export_build(void) {
     txt(s_scr, STUDY_WIFI_AP_PASS, REC_INK, 12, 116);
     txt(s_scr, "打开网址:", REC_MUTED, 8, 144);
     txt(s_scr, "http://192.168.4.1/rec/list", REC_OK, 12, 164);
+    banner_create();
     hint_line(s_scr, "长按下:退出导出", "浏览器播放/下载 WAV", "");
 }
 
@@ -261,6 +301,8 @@ static void sub_show(rec_sub_t sub) {
     s_scr = NULL;
     s_list_cont = NULL; s_btn_start = NULL; s_btn_exit = NULL; s_btn_home = NULL;
     s_rec_time_lbl = NULL; s_play_vol_lbl = NULL;
+    s_banner = NULL;   /* 屏换了，banner 跟随重建 */
+    s_banner_deadline_ms = 0;
     s_sub = sub;
     switch (sub) {
         case SUB_LIST:    list_build(); break;
@@ -344,23 +386,63 @@ void ui_rec_key(uint8_t btn_u, uint8_t ev_u) {
 static void poll_events(void) {
     study_rec_evt_t e;
     while ((e = study_recorder_poll_evt()) != REC_EVT_NONE) {
+        const char *msg = NULL;
+        uint32_t color = REC_INK;
+        bool need_list_refresh = false;
+
         switch (e) {
             case REC_EVT_REC_STARTED:    break;
             case REC_EVT_MAX_TIME:
-            case REC_EVT_STORAGE_FULL:
-            case REC_EVT_REC_CANCELLED:
-            case REC_EVT_REC_ERR:
-            case REC_EVT_AUDIO_ERR:
-            case REC_EVT_REC_SAVED:
+                msg = "已录满 12 分钟"; color = REC_OK;
                 if (s_sub == SUB_REC) sub_show(SUB_LIST);
+                banner_set(msg, color);
+                break;
+            case REC_EVT_STORAGE_FULL:
+                msg = "空间不足, 请先删旧录音"; color = REC_ACC;
+                if (s_sub == SUB_REC) sub_show(SUB_LIST);
+                banner_set(msg, color);
+                break;
+            case REC_EVT_REC_CANCELLED:
+                msg = "已取消录音"; color = REC_MUTED;
+                if (s_sub == SUB_REC) sub_show(SUB_LIST);
+                banner_set(msg, color);
+                break;
+            case REC_EVT_REC_ERR:
+                msg = "录音出错, 请重试"; color = REC_ACC;
+                if (s_sub == SUB_REC) sub_show(SUB_LIST);
+                banner_set(msg, color);
+                break;
+            case REC_EVT_AUDIO_ERR:
+                msg = "麦克风初始化失败"; color = REC_ACC;
+                if (s_sub == SUB_REC) sub_show(SUB_LIST);
+                banner_set(msg, color);
+                break;
+            case REC_EVT_REC_SAVED:
+                msg = "录音已保存"; color = REC_OK;
+                if (s_sub == SUB_REC) sub_show(SUB_LIST);
+                banner_set(msg, color);
                 break;
             case REC_EVT_PLAY_DONE:
-            case REC_EVT_PLAY_ERR:
+                msg = "播放结束"; color = REC_OK;
                 if (s_sub == SUB_PLAY) sub_show(SUB_LIST);
+                banner_set(msg, color);
+                break;
+            case REC_EVT_PLAY_ERR:
+                msg = "播放出错"; color = REC_ACC;
+                if (s_sub == SUB_PLAY) sub_show(SUB_LIST);
+                banner_set(msg, color);
                 break;
             case REC_EVT_DEL_DONE:
+                msg = "已删除"; color = REC_OK;
+                if (s_sub == SUB_CONFIRM) sub_show(SUB_LIST);
+                else need_list_refresh = true;
+                banner_set(msg, color);
+                if (need_list_refresh) list_refresh();
+                break;
             case REC_EVT_DEL_ERR:
-                if (s_sub == SUB_LIST) list_refresh();
+                msg = "删除失败"; color = REC_ACC;
+                if (s_sub == SUB_CONFIRM) sub_show(SUB_LIST);
+                banner_set(msg, color);
                 break;
             default: break;
         }
@@ -371,6 +453,7 @@ static void rec_timer_cb(lv_timer_t *t) {
     if (s_sub == SUB_REC) rec_update();
     if (s_sub == SUB_PLAY) play_vol_update();
     poll_events();
+    banner_tick();   /* 每 250ms 检查一次 banner 是否过期 */
 }
 
 /* ---------------- 对外接口 ---------------- */
