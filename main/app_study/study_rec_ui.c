@@ -336,7 +336,13 @@ void ui_rec_key(uint8_t btn_u, uint8_t ev_u) {
                     sub_show(SUB_REC);
                     study_recorder_start();
                 }
+            } else if (ev == BSP_BTN_DOUBLE && btn == BSP_BTN_OK) {
+                /* 双击OK：立即播放选中录音（第二次按下瞬间触发，比长按快） */
+                int i = cur_item();
+                if (i >= 0) { s_item_seq = s_items[i].seq;
+                              if (study_recorder_play_seq(s_items[i].seq) == 0) sub_show(SUB_PLAY); }
             } else if (ev == BSP_BTN_LONG && btn == BSP_BTN_OK) {
+                /* 长按OK：兜底播放（500ms 触发，不习惯双击的也能用） */
                 int i = cur_item();
                 if (i >= 0) { s_item_seq = s_items[i].seq;
                               if (study_recorder_play_seq(s_items[i].seq) == 0) sub_show(SUB_PLAY); }
