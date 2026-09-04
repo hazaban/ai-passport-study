@@ -8,8 +8,18 @@
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 
 static const char *TAG = "bsp_btn";
+
+/* 异键幽灵点击锁：三键共用一路 ADC，按压过渡瞬间电压会短暂穿越相邻档位窗口，
+   使同一次物理按键额外派生出"相反方向键"的单击（例如按"下"却跟着一个"下→上"）。
+   首页原有的 250ms 锁只挡单个幽灵，挡不住多连。这里在输入层统一处理：
+   距上一个已放行的单击 250ms 内、且来自不同键的单击一律按幽灵丢弃。
+   注意：双击(OK,OK)走的是库的 BUTTON_DOUBLE_CLICK 独立事件，不是两次单击，不受此锁影响。 */
+#define BSP_GHOST_CLICK_WINDOW_MS  250   /* 异键幽灵判定窗口 */
+static bsp_btn_t s_last_btn = (bsp_btn_t)-1;
+static int64_t  s_last_click_ms = -1;    /* 最后一次“放行的”单击时刻(ms, esp_timer) */
 
 static const uint16_t BTN_MV[BSP_BTN_COUNT][2] = BSP_BTN_MV_TABLE;
 
@@ -31,7 +41,22 @@ static adc_cali_handle_t         s_cali;
 static void on_event(void *arg, void *usr_data, bsp_btn_ev_t ev) {
     (void)arg;
     if (!s_cb) return;
-    s_cb((bsp_btn_t)(intptr_t)usr_data, ev, s_user);
+    bsp_btn_t btn = (bsp_btn_t)(intptr_t)usr_data;
+    /* 异键幽灵锁：仅对"单击"生效；双击走库里独立的 DOUBLE 事件(非两次单击)。
+       PRESS/LONG 等事件不参与，避免误伤长按/即时反馈。
+       放行后才更新锁时刻 —— 幽灵连串不吞掉后续的正常按键。 */
+    if (ev == BSP_BTN_CLICK) {
+        int64_t now = (int64_t)(esp_timer_get_time() / 1000);
+        if (s_last_click_ms >= 0 && (now - s_last_click_ms) < BSP_GHOST_CLICK_WINDOW_MS
+            && btn != s_last_btn) {
+            ESP_LOGD(TAG, "ghost click: %d after %d, drop", btn,
+                     (int)(now - s_last_click_ms));
+            return;   /* 异键幽灵单击：丢弃 */
+        }
+        s_last_btn = btn;
+        s_last_click_ms = now;
+    }
+    s_cb(btn, ev, s_user);
 }
 static void cb_press (void *a, void *u) { on_event(a, u, BSP_BTN_PRESS);  }
 static void cb_click (void *a, void *u) { on_event(a, u, BSP_BTN_CLICK);  }
