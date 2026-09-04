@@ -171,16 +171,15 @@ static void list_refresh(void) {
     int maxp = home_pos();
     if (s_cursor > maxp) s_cursor = maxp;
 
-    /* 选中态：高亮描边(白) + 底变亮，保证深色/夜间也一眼可见 */
+    /* 选中态：底变红 + 暗蓝灰描边；未选中：中性深灰底 */
     lv_obj_t *btns[3] = { s_btn_start, s_btn_exit, s_btn_home };
     int  selpos[3]   = { 0, exit_pos(), home_pos() };
-    uint32_t base[3] = { REC_ACC, REC_BTN, REC_BTN };
     for (int i = 0; i < 3; i++) {
         if (!btns[i]) continue;
         bool sel = (s_cursor == selpos[i]);
-        lv_obj_set_style_bg_color(btns[i], lv_color_hex(sel ? REC_GRAY : base[i]), 0);
+        lv_obj_set_style_bg_color(btns[i], lv_color_hex(sel ? REC_ACC : REC_BTN), 0);
         lv_obj_set_style_border_width(btns[i], sel ? 2 : 0, 0);
-        lv_obj_set_style_border_color(btns[i], lv_color_hex(0x4E6D8E), 0);  /* 纯黑底专用：暗蓝灰，低饱和不晃眼 */
+        lv_obj_set_style_border_color(btns[i], lv_color_hex(0x4E6D8E), 0);
     }
 
     if (!s_list_cont) return;
@@ -214,7 +213,7 @@ static void list_build(void) {
     s_scr = mk_screen();
     topbar(s_scr, "录音笔");
 
-    s_btn_start = mk_btn(s_scr, 10, 30, 220, 30, "开始录音", REC_ACC, 0xFFFFFF);
+    s_btn_start = mk_btn(s_scr, 10, 30, 220, 30, "开始录音", REC_BTN, REC_MUTED);
 
     s_list_cont = lv_obj_create(s_scr);
     lv_obj_remove_flag(s_list_cont, LV_OBJ_FLAG_SCROLLABLE);
