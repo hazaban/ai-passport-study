@@ -171,15 +171,14 @@ static void list_refresh(void) {
     int maxp = home_pos();
     if (s_cursor > maxp) s_cursor = maxp;
 
-    /* 选中态：底变红 + 暗蓝灰描边；未选中：中性深灰底 */
+    /* 选中态：底变红；未选中：中性深灰底（仅底色区分，无边框） */
     lv_obj_t *btns[3] = { s_btn_start, s_btn_exit, s_btn_home };
     int  selpos[3]   = { 0, exit_pos(), home_pos() };
     for (int i = 0; i < 3; i++) {
         if (!btns[i]) continue;
         bool sel = (s_cursor == selpos[i]);
         lv_obj_set_style_bg_color(btns[i], lv_color_hex(sel ? REC_ACC : REC_BTN), 0);
-        lv_obj_set_style_border_width(btns[i], sel ? 2 : 0, 0);
-        lv_obj_set_style_border_color(btns[i], lv_color_hex(0x4E6D8E), 0);
+        lv_obj_set_style_border_width(btns[i], 0, 0);   /* 选中态仅红底，不再描边框 */
     }
 
     if (!s_list_cont) return;
