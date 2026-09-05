@@ -25,15 +25,21 @@
 
 static const char *TAG = "main";
 
-/* -------- 自动休眠(官方身份牌"无操作→深睡,任意键唤醒") -------- */
-#define IDLE_SLEEP_MS      (3 * 60 * 1000)   /* 无操作 3 分钟进入深睡 */
+/* -------- 自动休眠(官方身份牌"无操作→浅睡,任意键唤醒") -------- */
+#define IDLE_SLEEP_MS      (3 * 60 * 1000)   /* 无操作 3 分钟进入浅睡 */
 #define SLEEP_WAKE_PIN     GPIO_NUM_0        /* 三键共用 ADC 引脚;按下任意键拉低→低电平唤醒 */
 static int64_t s_last_activity_ms = 0;       /* 最近一次按键活动时刻(esp_timer, ms) */
 
 static void touch_activity(void) { s_last_activity_ms = esp_timer_get_time() / 1000; }
 
-/* 闲置监看：每秒检查,连续 3 分钟无按键且不在录音/回放 → 关背光 → 深睡。
- * 醒来是冷启动(esp_deep_sleep_start 不返回),app_main 会重新初始化并直接重进考研助手。 */
+/* idle_sleep_task 在浅睡唤醒后要重建按键,前向声明 on_key(定义在本文件后部) */
+static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user);
+
+/* 闲置监看:每秒检查,连续 3 分钟无按键且不在录音/回放 → 关背光 → 浅睡。
+ * 用 esp_light_sleep_start()(不是深睡):浅睡只停 CPU,保留 RAM 与系统时钟,
+ * 唤醒后本函数原地返回、整个应用/UI/任务进度/设置全部原地续跑,不会冷启动丢状态。
+ * 只需补两件事:唤醒源在入睡前把 GPIO0 从 ADC 临时切成数字输入(按键拉低可唤醒),
+ * 醒来后把 GPIO0 切回 ADC 并重建按键,再把背光恢复到入睡前亮度。 */
 static void idle_sleep_task(void *arg) {
     (void)arg;
     for (;;) {
@@ -41,9 +47,10 @@ static void idle_sleep_task(void *arg) {
         if (study_recorder_is_recording() || study_recorder_is_playing()) continue; /* 忙碌不休眠 */
         int64_t now = esp_timer_get_time() / 1000;
         if (now - s_last_activity_ms < IDLE_SLEEP_MS) continue;
-        ESP_LOGI(TAG, "已闲置 %lld ms,准备深睡(按任意键唤醒)",
+        ESP_LOGI(TAG, "已闲置 %lld ms,准备浅睡(按任意键唤醒)",
                  (long long)(now - s_last_activity_ms));
-        /* ① 把三键共用引脚从 ADC 切回数字输入(带上拉):空闲为高,按键拉低即可唤唤醒 */
+        /* ① 把三键共用引脚从 ADC 切回数字输入(带上拉):空闲为高,按键拉低即可唤唤醒。
+         *    注意:浅睡【不是冷启动】,唤醒后此引脚仍停在数字态,须在下面重建按键 ADC。 */
         gpio_config_t io = {
             .pin_bit_mask = 1ULL << SLEEP_WAKE_PIN,
             .mode         = GPIO_MODE_INPUT,
@@ -52,21 +59,30 @@ static void idle_sleep_task(void *arg) {
             .intr_type    = GPIO_INTR_DISABLE,
         };
         gpio_config(&io);
-        /* ② 先配好唤醒源并确认成功,再关背光/睡眠 —— 避免"配失败却睡死"或"黑屏空转"。
-         *    注意第一参数是位掩码(1ULL<<0),不是引脚号; LOW = 任意键按下即唤醒 */
-        esp_err_t we = esp_deep_sleep_enable_gpio_wakeup(1ULL << SLEEP_WAKE_PIN,
-                                                         ESP_GPIO_WAKEUP_GPIO_LOW);
+        /* ② 浅睡用 esp_sleep_enable_gpio_wakeup(注意是浅睡版本,不是 esp_deep_sleep_*)。
+         *    先配好唤醒源并确认成功,再关背光/睡眠 —— 避免"配失败却睡死"或"黑屏空转"。
+         *    第一参数是位掩码(1ULL<<0),不是引脚号; LOW = 任意键按下即唤醒 */
+        esp_err_t we = esp_sleep_enable_gpio_wakeup(1ULL << SLEEP_WAKE_PIN,
+                                                    ESP_GPIO_WAKEUP_GPIO_LOW);
         if (we != ESP_OK) {
             ESP_LOGE(TAG, "唤醒配置失败(%s),本次不休眠,3 分钟后再试", esp_err_to_name(we));
+            /* 已把 GPIO0 切走,先恢复按键 ADC,避免失败期间按键失灵 */
+            bsp_button_deinit();
+            bsp_button_init(on_key, NULL);
             s_last_activity_ms = esp_timer_get_time() / 1000;
             continue;
         }
+        uint8_t bl = bsp_display_backlight_get();   /* 记住入睡前亮度,唤醒后还原 */
         bsp_display_backlight(0);
-        /* ③ 深睡前把当前时间写进 NVS:否则唤醒(尤其离线断网)后会退回"烧录时刻" */
-        app_study_persist_time();
-        ESP_LOGI(TAG, "进入深睡:按任意键(GPIO0 低电平)唤醒");
-        /* ④ 深睡:该函数声明为 void __noreturn__,调用后不再返回,其后代码不可达 */
-        esp_deep_sleep_start();
+        ESP_LOGI(TAG, "进入浅睡:按任意键(GPIO0 低电平)唤醒");
+        /* ③ 浅睡:该函数会【返回】——返回即已按任意键唤醒,应用原地续跑,不需要重进考研助手 */
+        esp_light_sleep_start();
+        /* ④ 唤醒后恢复外设:背光亮度 + 把 GPIO0 切回 ADC、重建按键 */
+        bsp_display_backlight(bl);
+        bsp_button_deinit();
+        bsp_button_init(on_key, NULL);
+        ESP_LOGI(TAG, "浅睡唤醒,恢复背光 %u%%/按键", bl);
+        s_last_activity_ms = esp_timer_get_time() / 1000;   /* 重置闲置时钟,重新计时 */
     }
 }
 

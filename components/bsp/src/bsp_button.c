@@ -120,6 +120,25 @@ esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user) {
     return ESP_OK;
 }
 
+void bsp_button_deinit(void) {
+    for (int i = 0; i < BSP_BTN_COUNT; i++) {
+        if (s_btn[i]) {
+            iot_button_delete(s_btn[i]);
+            s_btn[i] = NULL;
+        }
+    }
+    if (s_cali) {
+        adc_cali_delete_scheme_curve_fitting(s_cali);
+        s_cali = NULL;
+    }
+    if (s_adc) {
+        adc_oneshot_del_unit(s_adc);
+        s_adc = NULL;
+    }
+    s_last_btn = (bsp_btn_t)-1;
+    s_last_click_ms = -1;
+}
+
 int bsp_button_read_mv(void) {
     // 读的是 bsp_button_init() 建好、并与 iot_button 共用的那一路 ADC。
     // 单次采样与组件的按键轮询互不干扰(oneshot 内部自带锁)。

@@ -16,6 +16,7 @@ static const char *TAG = "bsp_disp";
 static esp_lcd_panel_handle_t    s_panel;
 static esp_lcd_panel_io_handle_t s_io;
 static bool                      s_bl_ready;
+static uint8_t                   s_bl_percent = 100;   /* 最近一次设定的背光亮度 */
 
 // ---------------------------------------------------------------------------
 // ST7789P3 厂商专属初始化序列(porch / power / gamma)。
@@ -142,8 +143,13 @@ esp_lcd_panel_io_handle_t bsp_display_io(void) { return s_io; }
 void bsp_display_backlight(uint8_t percent) {
     if (!s_bl_ready) return;
     if (percent > 100) percent = 100;
+    s_bl_percent = percent;
     uint32_t max_duty = (1u << BSP_BL_LEDC_RES) - 1u;
     uint32_t duty = (max_duty * percent) / 100u;
     ledc_set_duty(BSP_BL_LEDC_MODE, BSP_BL_LEDC_CHANNEL, duty);
     ledc_update_duty(BSP_BL_LEDC_MODE, BSP_BL_LEDC_CHANNEL);
+}
+
+uint8_t bsp_display_backlight_get(void) {
+    return s_bl_percent;
 }
