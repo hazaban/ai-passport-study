@@ -61,10 +61,12 @@ static void idle_sleep_task(void *arg) {
         };
         gpio_config(&io);
         /* ② 浅睡用 esp_sleep_enable_gpio_wakeup(注意是浅睡版本,不是 esp_deep_sleep_*)。
-         *    先配好唤醒源并确认成功,再关背光/睡眠 —— 避免"配失败却睡死"或"黑屏空转"。
-         *    第一参数是位掩码(1ULL<<0),不是引脚号; LOW = 任意键按下即唤醒 */
-        esp_err_t we = esp_sleep_enable_gpio_wakeup(1ULL << SLEEP_WAKE_PIN,
-                                                    ESP_GPIO_WAKEUP_GPIO_LOW);
+         *    IDF v5.5 起该函数无参:唤醒引脚与电平需先用 gpio_wakeup_enable() 单独配置。
+         *    GPIO_INTR_LOW_LEVEL = 任意键按下拉低即唤醒;先配好并确认成功,再关背光/睡眠,
+         *    避免"配失败却睡死"或"黑屏空转"。 */
+        esp_err_t we =
+            gpio_wakeup_enable(SLEEP_WAKE_PIN, GPIO_INTR_LOW_LEVEL);
+        if (we == ESP_OK) we = esp_sleep_enable_gpio_wakeup();
         if (we != ESP_OK) {
             ESP_LOGE(TAG, "唤醒配置失败(%s),本次不休眠,3 分钟后再试", esp_err_to_name(we));
             /* 已把 GPIO0 切走,先恢复按键 ADC,避免失败期间按键失灵 */
