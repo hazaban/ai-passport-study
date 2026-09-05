@@ -1419,15 +1419,78 @@ e = s_evt[s_evt_r]; s_evt_r = (s_evt_r + 1) % EVT_N;
 <ul>
 <li><strong>按字节寻址</strong>：每一个字节一个唯一地址。(用字寻址则每个 4 字节单元一个地址，地址少 2 位。)</li>
 <li><strong>地址位数 ↔ 可寻址容量</strong>：n 位地址可寻址 <code>2^n</code> 个单元（如 32 位地址空间 4GB）。</li>
-<li><strong>本项目 SPI Flash 分区</strong>就是<strong>固定地址分区</strong>（也是一种"主存分区"的映射）：
-  <code>nvs           @0x00009000    (配置/射频校准)
-  factory       @0x00010000    (应用 bin，约 3MB)
-  voicepack     @0x0035A000    (语音包/声音资源)
-  recordings    @0x003D2000    (录音文件区，约 3.05MB)
-  recovery      @0x00700000    (恢复)</code>
-  换算：<code>容量 = 结束地址 − 起始地址</code>；<code>换算 16↔10 进制</code>要到张口就来（如 <code>0x10000=64KB</code>，<code>0x003D2000=3D2000₁₆=4006144≈3.05MB</code>）。
-  这段就是要你对"地址是用字节量化、地址区间=长度"有直觉。</li>
+<li><strong>本项目 SPI Flash 分区</strong>就是<strong>固定地址分区</strong>（也是一种"主存分区"的映射）。</li>
+<li><strong>整片容量</strong>：按官方仓库基线，本设备 SPI Flash 为 <strong>8MB</strong>（<code>sdkconfig</code> 里 <code>CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y</code>）。分区表由 <code>partitions.csv</code> 描述，每个分区 = 一块<strong>起始偏移 + 大小</strong>的连续区域，各分区<strong>首尾相接</strong>，最后一个分区 <code>recovery</code> 结束于 <code>0x800000</code>，正好是 8MB——即"分区拼起来刚好占满整片 Flash"。</li>
 </ul>
+<table>
+<thead>
+<tr>
+<th>分区名</th>
+<th>起始地址</th>
+<th>大小</th>
+<th>类型</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>nvs</code></td>
+<td><code>0x9000</code></td>
+<td>24KB</td>
+<td>data/nvs</td>
+<td>非易失存储：WiFi 凭证、时间、任务完成度、设置项</td>
+</tr>
+<tr>
+<td><code>phy_init</code></td>
+<td><code>0xf000</code></td>
+<td>4KB</td>
+<td>data/phy</td>
+<td>射频校准数据</td>
+</tr>
+<tr>
+<td><code>factory</code></td>
+<td><code>0x10000</code></td>
+<td>3MB</td>
+<td>app/factory</td>
+<td>应用固件（考研助手 + 菜单 demo），开机默认启动</td>
+</tr>
+<tr>
+<td><code>cardid</code></td>
+<td><code>0x356000</code></td>
+<td>16KB</td>
+<td>data/nvs</td>
+<td>BLE Recovery 安装器固定地址（官方，不可改）</td>
+</tr>
+<tr>
+<td><code>voicepack</code></td>
+<td><code>0x35a000</code></td>
+<td>480KB</td>
+<td>data/spiffs</td>
+<td>语音包/声音资源（mp3→opus <code>.frc</code>）</td>
+</tr>
+<tr>
+<td><code>recordings</code></td>
+<td><code>0x3d2000</code></td>
+<td>≈3.17MB</td>
+<td>data/spiffs</td>
+<td>用户录音（ADPCM@8kHz → 约 12 分钟容量）</td>
+</tr>
+<tr>
+<td><code>recovery</code></td>
+<td><code>0x700000</code></td>
+<td>1MB</td>
+<td>app/test</td>
+<td>官方的 BLE Recovery 恢复/升级固件</td>
+</tr>
+</tbody>
+</table>
+<p>换算：<code>容量 = 结束地址 − 起始地址</code>；<code>换算 16↔10 进制</code>要到张口就来（如 <code>0x10000=64KB</code>，<code>0x003D2000=3D2000₁₆=4006144≈3.05MB</code>）。
+  这段就是要你对"地址是用字节量化、地址区间=长度"有直觉。</p>
+<p><strong>几个关键点（也贴合 408 的"存储分配"考点）：</strong>
+  - <strong>分区是大块连续分配</strong>，类似固定分区/静态分配：一次定好大小、地址固定，不存在页式那种动态换页——所以 <code>factory</code> 预留 3MB、<code>recordings</code> 预留约 3MB，都是"按上限多给余量"的静态划分。
+  - <strong><code>cardid</code> / <code>recovery</code> 是官方 BLE Recovery 安装器写死的地址</strong>，二创不能动——这就是"系统/厂商保留分区"，挪了会导致官方安装器无法定位。
+  - <strong><code>nvs</code> 是键值非易失存储</strong>：深睡/断电后要保留的 WiFi、时间、任务进度都在这里，开机读回（对应"外存非易失、掉电不丢"）。
+  - <strong><code>voicepack</code> / <code>recordings</code> 用的是 SPIFFS 文件系统分区</strong>：里面是一个个文件，靠 SPIFFS 做<strong>块位图管理 + 磨损均衡</strong>（对应 OS 文件管理那章的位示图 / 磨损均衡知识点）。</p>
 <h3 id="34-cache">3.4 ★Cache 与地址映射（计算大头，务必会算）</h3>
 <p><strong>主存地址划分</strong>（Cache 结构下的视图）：</p>
 <pre><code>高──────────────────────────低
