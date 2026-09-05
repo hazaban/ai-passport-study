@@ -15,10 +15,49 @@
 #include "lvgl.h"
 #include "esp_log.h"
 #include "esp_sleep.h"
+#include "esp_timer.h"
+#include "driver/gpio.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 /* -------- 考研助手 -------- */
 #include "app_study/app_study.h"
+#include "app_study/study_recorder.h"   /* is_recording / is_playing: 忙碌时不自动休眠 */
 
 static const char *TAG = "main";
+
+/* -------- 自动休眠(官方身份牌"无操作→深睡,任意键唤醒") -------- */
+#define IDLE_SLEEP_MS      (3 * 60 * 1000)   /* 无操作 3 分钟进入深睡 */
+#define SLEEP_WAKE_PIN     GPIO_NUM_0        /* 三键共用 ADC 引脚;按下任意键拉低→低电平唤醒 */
+static int64_t s_last_activity_ms = 0;       /* 最近一次按键活动时刻(esp_timer, ms) */
+
+static void touch_activity(void) { s_last_activity_ms = esp_timer_get_time() / 1000; }
+
+/* 闲置监看：每秒检查,连续 3 分钟无按键且不在录音/回放 → 关背光 → 深睡。
+ * 醒来是冷启动(esp_deep_sleep_start 不返回),app_main 会重新初始化并直接重进考研助手。 */
+static void idle_sleep_task(void *arg) {
+    (void)arg;
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        if (study_recorder_is_recording() || study_recorder_is_playing()) continue; /* 忙碌不休眠 */
+        int64_t now = esp_timer_get_time() / 1000;
+        if (now - s_last_activity_ms < IDLE_SLEEP_MS) continue;
+        ESP_LOGI(TAG, "已闲置 %lld ms,进入深睡(按任意键唤醒)",
+                 (long long)(now - s_last_activity_ms));
+        bsp_display_backlight(0);
+        /* 把三键共用引脚从 ADC 切回数字输入(带上拉):空闲为高,按键拉低即可唤唤醒 */
+        gpio_config_t io = {
+            .pin_bit_mask = 1ULL << SLEEP_WAKE_PIN,
+            .mode         = GPIO_MODE_INPUT,
+            .pull_up_en   = GPIO_PULLUP_ENABLE,
+            .pull_down_en = GPIO_PULLDOWN_DISABLE,
+            .intr_type    = GPIO_INTR_DISABLE,
+        };
+        gpio_config(&io);
+        /* 注意第一参数是位掩码(1ULL<<0),不是引脚号; LOW = 任意键按下即唤醒 */
+        esp_deep_sleep_enable_gpio_wakeup(1ULL << SLEEP_WAKE_PIN, ESP_GPIO_WAKEUP_GPIO_LOW);
+        esp_deep_sleep_start();   /* 不返回;冷启动后从头初始化 */
+    }
+}
 
 static const demo_entry_t DEMOS[] = {
     { "Study",   app_study_enter,    app_study_exit,    app_study_key    },  /* 考研助手（默认第一项） */
@@ -114,6 +153,7 @@ static void enter_menu(void) {
 // 按键回调运行在 button 组件的任务里,操作 LVGL 必须加锁。
 static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
     (void)user;
+    touch_activity();   /* 任意按键都视为用户活动,重置 3 分钟记时 */
     if (!bsp_lvgl_lock(100)) return;   /* 超时从 500ms→100ms，避免按键被 LVGL 刷新阻塞 */
 
     if (s_active >= 0) {
@@ -176,9 +216,13 @@ void app_main(void) {
         /* 开机直接进入考研助手（Study 为第一个菜单项），
          * 不再显示官方像素机器狗菜单。长按 OK 可回到上方现代目录。 */
         s_active = 0;
+        touch_activity();                          // 初始化活动时钟,避免开机立刻进休眠
         DEMOS[0].enter();
         bsp_lvgl_unlock();
     }
+
+    /* 启动闲置监测任务:无操作 3 分钟自动深睡,按任意键(GPIO0 低电平)唤醒 */
+    xTaskCreate(idle_sleep_task, "idle_sleep", 3072, NULL, 3, NULL);
 
     ESP_LOGI(TAG, "就绪:Display=%d Button=%d Audio=%d Battery=%d",
              s_ok[0], s_ok[1], s_ok[2], s_ok[3]);

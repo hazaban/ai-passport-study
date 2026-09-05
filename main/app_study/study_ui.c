@@ -170,6 +170,8 @@ static lv_obj_t *s_home_date;        /* 首页日期(含星期/WiFi图标) */
 static lv_obj_t *s_home_clock;       /* 首页当前时间(秒级走表) */
 static lv_timer_t *s_home_timer;     /* 每秒刷新日期与时间 */
 static lv_obj_t *s_home_btn[2];      /* 0=进入学习 1=设置 */
+static lv_obj_t *s_home_bat_fill;    /* 首页小电池内部填充(每秒刷新) */
+static lv_obj_t *s_home_bat_pct;     /* 首页小电池百分比数字(每秒刷新) */
 static int s_home_sel;
 static uint32_t s_home_key_ms;   /* 上次接受的导航事件的时刻(ms),用于按键去抖 */
 static bool s_home_wants_study;
@@ -267,6 +269,24 @@ static void home_time_refresh(void) {
         lv_obj_set_style_text_color(s_home_clock,
             lv_color_hex(wi ? HBAT_HI : HMUTED), 0);
     }
+    /* 首页小电池：每秒刷新填充宽度与颜色 + 百分比数字 */
+    if (s_home_bat_fill || s_home_bat_pct) {
+        int soc = bsp_battery_soc();
+        if (soc < 0) soc = 0;
+        uint32_t col = (soc <= 20) ? HBAT_LO : ((soc <= 40) ? HBAT_MD : HBAT_HI);
+        if (s_home_bat_fill) {
+            int fw = (soc > 100) ? 30 : (30 * soc / 100);
+            if (fw < 2) fw = 2;
+            lv_obj_set_size(s_home_bat_fill, fw, 9);
+            lv_obj_set_style_bg_color(s_home_bat_fill, lv_color_hex(col), 0);
+        }
+        if (s_home_bat_pct) {
+            char pb[16];
+            snprintf(pb, sizeof(pb), "%d%%", soc);
+            lv_label_set_text(s_home_bat_pct, pb);
+            lv_obj_set_style_text_color(s_home_bat_pct, lv_color_hex(col), 0);
+        }
+    }
 }
 static void home_timer_cb(lv_timer_t *t) { (void)t; home_time_refresh(); }
 
@@ -289,40 +309,45 @@ void ui_home_build(void) {
     lv_obj_t *t = ui_pixel_label(head, "考研日程助手", F_STUDY, HINK);
     lv_obj_set_pos(t, 16, 16);
 
-    /* 电池：横向进度条式填充（无数字/无竖条），低电红、中电橙、满电/高电绿 */
+    /* 电池：官方身份牌式样 —— 小电池图标(轮廓+极帽+内部填充) + 左侧小百分比数字。
+     * 低电红、中电橙、高电绿；fill/pct 句柄保留，由 home_time_refresh 每秒刷新 */
     {
         int soc = bsp_battery_soc();
-        if (soc >= 0) {
-            uint32_t col = (soc <= 20) ? HBAT_LO : ((soc <= 40) ? HBAT_MD : HBAT_HI);
-            lv_obj_t *body = lv_obj_create(head);
-            lv_obj_remove_flag(body, LV_OBJ_FLAG_SCROLLABLE);
-            lv_obj_set_size(body, 42, 18);
-            lv_obj_set_style_radius(body, 4, 0);
-            lv_obj_set_style_bg_color(body, lv_color_hex(0xF6F9FD), 0);
-            lv_obj_set_style_border_width(body, 1, 0);
-            lv_obj_set_style_border_color(body, lv_color_hex(0xB9C6D6), 0);
-            lv_obj_set_style_pad_all(body, 0, 0);
-            lv_obj_set_align(body, LV_ALIGN_TOP_RIGHT);
-            lv_obj_set_pos(body, -14, 16);
-            /* 极帽(右侧小突出) */
-            lv_obj_t *nub = lv_obj_create(body);
-            lv_obj_remove_flag(nub, LV_OBJ_FLAG_SCROLLABLE);
-            lv_obj_set_size(nub, 4, 8);
-            lv_obj_set_pos(nub, 40, 5);
-            lv_obj_set_style_radius(nub, 2, 0);
-            lv_obj_set_style_border_width(nub, 0, 0);
-            lv_obj_set_style_bg_color(nub, lv_color_hex(0xB9C6D6), 0);
-            /* 内部进度填充 */
-            lv_obj_t *fill = lv_obj_create(body);
-            lv_obj_remove_flag(fill, LV_OBJ_FLAG_SCROLLABLE);
-            int fw = (soc > 100) ? 38 : (38 * soc / 100);
-            if (fw < 2) fw = 2;
-            lv_obj_set_size(fill, fw, 12);
-            lv_obj_set_pos(fill, 2, 3);
-            lv_obj_set_style_radius(fill, 2, 0);
-            lv_obj_set_style_border_width(fill, 0, 0);
-            lv_obj_set_style_bg_color(fill, lv_color_hex(col), 0);
-        }
+        if (soc < 0) soc = 0;
+        uint32_t col = (soc <= 20) ? HBAT_LO : ((soc <= 40) ? HBAT_MD : HBAT_HI);
+        /* 小百分比数字(电池左侧) */
+        s_home_bat_pct = ui_pixel_label(head, "", &lv_font_montserrat_14, col);
+        lv_obj_set_align(s_home_bat_pct, LV_ALIGN_TOP_RIGHT);
+        lv_obj_set_pos(s_home_bat_pct, -56, 16);
+        /* 小电池轮廓 */
+        lv_obj_t *body = lv_obj_create(head);
+        lv_obj_remove_flag(body, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_size(body, 34, 15);
+        lv_obj_set_style_radius(body, 3, 0);
+        lv_obj_set_style_bg_color(body, lv_color_hex(0xF6F9FD), 0);
+        lv_obj_set_style_border_width(body, 1, 0);
+        lv_obj_set_style_border_color(body, lv_color_hex(0x9AA7B8), 0);
+        lv_obj_set_style_pad_all(body, 0, 0);
+        lv_obj_set_align(body, LV_ALIGN_TOP_RIGHT);
+        lv_obj_set_pos(body, -14, 16);
+        /* 极帽(右侧小突出) */
+        lv_obj_t *nub = lv_obj_create(body);
+        lv_obj_remove_flag(nub, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_size(nub, 3, 6);
+        lv_obj_set_pos(nub, 32, 4);
+        lv_obj_set_style_radius(nub, 1, 0);
+        lv_obj_set_style_border_width(nub, 0, 0);
+        lv_obj_set_style_bg_color(nub, lv_color_hex(0x9AA7B8), 0);
+        /* 内部填充(保留句柄,每秒按电量刷新宽度与颜色) */
+        s_home_bat_fill = lv_obj_create(body);
+        lv_obj_remove_flag(s_home_bat_fill, LV_OBJ_FLAG_SCROLLABLE);
+        int fw = (soc > 100) ? 30 : (30 * soc / 100);
+        if (fw < 2) fw = 2;
+        lv_obj_set_size(s_home_bat_fill, fw, 9);
+        lv_obj_set_pos(s_home_bat_fill, 2, 3);
+        lv_obj_set_style_radius(s_home_bat_fill, 1, 0);
+        lv_obj_set_style_border_width(s_home_bat_fill, 0, 0);
+        lv_obj_set_style_bg_color(s_home_bat_fill, lv_color_hex(col), 0);
     }
 
     /* 第二行：日期(左) + 秒级时钟(右) */
@@ -341,7 +366,7 @@ void ui_home_build(void) {
     lv_obj_t *cnt = home_card(82, 138, 0xFFFFFF);
     lv_obj_t *cap = ui_pixel_label(cnt, "考研倒计时", F_STUDY, HACC);
     lv_obj_set_align(cap, LV_ALIGN_TOP_MID);
-    lv_obj_set_pos(cap, -22, 10);   /* 左移一个字宽，视觉居中于天数 */
+    lv_obj_set_pos(cap, -17, 10);   /* 居中向左偏移半字宽（比原 -22 右移半个字） */
     lv_obj_set_style_text_align(cap, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_transform_scale(cap, 333, 0);   /* ≈1.3x → 视觉 19px */
 
@@ -386,6 +411,8 @@ void ui_home_destroy(void) {
     if (s_home_timer) { lv_timer_del(s_home_timer); s_home_timer = NULL; }
     s_home_date = NULL;
     s_home_clock = NULL;
+    s_home_bat_fill = NULL;
+    s_home_bat_pct = NULL;
     if (s_home_scr) { lv_obj_delete(s_home_scr); s_home_scr = NULL; }
 }
 
