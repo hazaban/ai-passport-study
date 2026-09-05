@@ -44,6 +44,12 @@ CONFIG_FREERTOS_HZ=1000
 # 考研助手不依赖任务看门狗（main 任务结束/长阻塞会误触发复位）；按需关闭，避免刷屏/复位。
 CONFIG_ESP_TASK_WDT_EN=n
 
+# --- 省电：浅睡真正生效的前提 ---
+# CONFIG_PM_ENABLE 启动 IDF 电源管理；CONFIG_FREERTOS_USE_TICKLESS_IDLE 让空闲时停止节拍中断，
+# 二者缺一会导致 esp_light_sleep_start() 被 FreeRTOS 节拍每 1ms 反复唤醒，几乎不省电。
+CONFIG_PM_ENABLE=y
+CONFIG_FREERTOS_USE_TICKLESS_IDLE=y
+
 # --- LVGL 软渲染字体位图格式支持 ---
 # study_font 为 bpp2(A2) 抗锯齿；缺 A1/A2/A4 支持时汉字会被画成一团黑块。
 CONFIG_LV_DRAW_SW_SUPPORT_A1=y

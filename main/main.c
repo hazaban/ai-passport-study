@@ -22,6 +22,7 @@
 /* -------- 考研助手 -------- */
 #include "app_study/app_study.h"
 #include "app_study/study_recorder.h"   /* is_recording / is_playing: 忙碌时不自动休眠 */
+#include "app_study/study_wifi.h"        /* 浅睡时停 WiFi(省电),唤醒后恢复并 SNTP 重校 */
 
 static const char *TAG = "main";
 
@@ -38,8 +39,8 @@ static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user);
 /* 闲置监看:每秒检查,连续 3 分钟无按键且不在录音/回放 → 关背光 → 浅睡。
  * 用 esp_light_sleep_start()(不是深睡):浅睡只停 CPU,保留 RAM 与系统时钟,
  * 唤醒后本函数原地返回、整个应用/UI/任务进度/设置全部原地续跑,不会冷启动丢状态。
- * 只需补两件事:唤醒源在入睡前把 GPIO0 从 ADC 临时切成数字输入(按键拉低可唤醒),
- * 醒来后把 GPIO0 切回 ADC 并重建按键,再把背光恢复到入睡前亮度。 */
+ * 浅睡期间做三件事降耗+保状态:停 WiFi(省电)、入睡前把 GPIO0 从 ADC 临时切成数字输入
+ * (按键拉低可唤醒)、关背光;唤醒后恢复背光亮度、把 GPIO0 切回 ADC 重建按键、恢复 WiFi。 */
 static void idle_sleep_task(void *arg) {
     (void)arg;
     for (;;) {
@@ -74,14 +75,18 @@ static void idle_sleep_task(void *arg) {
         }
         uint8_t bl = bsp_display_backlight_get();   /* 记住入睡前亮度,唤醒后还原 */
         bsp_display_backlight(0);
+        /* ③ 省电：浅睡期间停掉 WiFi(配置保留,唤醒后按事件自动重连并 SNTP 重校)。
+         *    否则连着的 WiFi/常开的 AP 会让 CPU 被 beacon/收包频繁唤醒，浅睡形同虚设。 */
+        study_wifi_pause();
         ESP_LOGI(TAG, "进入浅睡:按任意键(GPIO0 低电平)唤醒");
-        /* ③ 浅睡:该函数会【返回】——返回即已按任意键唤醒,应用原地续跑,不需要重进考研助手 */
+        /* ④ 浅睡:该函数会【返回】——返回即已按任意键唤醒,应用原地续跑,不需要重进考研助手 */
         esp_light_sleep_start();
-        /* ④ 唤醒后恢复外设:背光亮度 + 把 GPIO0 切回 ADC、重建按键 */
+        /* ⑤ 唤醒后恢复外设:背光亮度 + 把 GPIO0 切回 ADC、重建按键 + 恢复 WiFi */
         bsp_display_backlight(bl);
         bsp_button_deinit();
         bsp_button_init(on_key, NULL);
-        ESP_LOGI(TAG, "浅睡唤醒,恢复背光 %u%%/按键", bl);
+        study_wifi_resume();
+        ESP_LOGI(TAG, "浅睡唤醒,恢复背光 %u%%/按键/WiFi", bl);
         s_last_activity_ms = esp_timer_get_time() / 1000;   /* 重置闲置时钟,重新计时 */
     }
 }
