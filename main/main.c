@@ -62,12 +62,9 @@ static void idle_sleep_task(void *arg) {
             continue;
         }
         bsp_display_backlight(0);
-        /* ③ 深睡:正常不会返回;若返回说明失败,补个日志、开回背光、隔一会再试,不忙转 */
-        esp_err_t se = esp_deep_sleep_start();
-        ESP_LOGE(TAG, "esp_deep_sleep_start 意外返回(%s),放弃本次休眠", esp_err_to_name(se));
-        bsp_display_backlight(100);
-        s_last_activity_ms = esp_timer_get_time() / 1000;
-        vTaskDelay(pdMS_TO_TICKS(10000));
+        ESP_LOGI(TAG, "进入深睡:按任意键(GPIO0 低电平)唤醒");
+        /* ③ 深睡:该函数声明为 void __noreturn__,调用后不再返回,其后代码不可达 */
+        esp_deep_sleep_start();
     }
 }
 
