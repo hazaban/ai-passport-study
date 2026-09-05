@@ -62,8 +62,10 @@ static void idle_sleep_task(void *arg) {
             continue;
         }
         bsp_display_backlight(0);
+        /* ③ 深睡前把当前时间写进 NVS:否则唤醒(尤其离线断网)后会退回"烧录时刻" */
+        app_study_persist_time();
         ESP_LOGI(TAG, "进入深睡:按任意键(GPIO0 低电平)唤醒");
-        /* ③ 深睡:该函数声明为 void __noreturn__,调用后不再返回,其后代码不可达 */
+        /* ④ 深睡:该函数声明为 void __noreturn__,调用后不再返回,其后代码不可达 */
         esp_deep_sleep_start();
     }
 }
