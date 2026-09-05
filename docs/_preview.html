@@ -1,0 +1,2604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>408 四科考点精讲</title>
+<style>
+@page {
+  size: A4;
+  margin: 1.6cm 1.5cm 1.8cm 1.5cm;
+  @bottom-center { content: counter(page) " / " counter(pages);
+                   font-family: "Noto Sans CJK SC","DejaVu Sans"; font-size: 8pt; color: #888; }
+}
+html { -weasy-hyphens: none; }
+body {
+  font-family: "Noto Sans CJK SC","DejaVu Sans",sans-serif;
+  font-size: 10.5pt; line-height: 1.65; color: #1b1b1b;
+  margin: 0;
+}
+h1,h2,h3,h4 { font-family: "Noto Sans CJK SC","DejaVu Sans",sans-serif;
+              color: #0d3b66; line-height: 1.3; }
+h1 { font-size: 17pt; border-bottom: 3px solid #0d3b66; padding-bottom: 6px;
+     margin-top: 0; }
+h2 { font-size: 14pt; border-bottom: 1.5px solid #92b4d4; padding-bottom: 4px; }
+h3 { font-size: 11.5pt; color: #14507a; }
+h4 { font-size: 10.8pt; color: #333; }
+
+/* 每一大部分(h1)另起一页；TOC 内不强制分页 */
+.content > h1 { break-before: page; }
+
+pre, code { font-family: "Noto Sans CJK SC","DejaVu Sans Mono",monospace; }
+p code, li code { background:#f2f4f7; padding:0 3px; border-radius:3px; }
+pre {
+  background:#f6f8fa; border:1px solid #d9dee3; border-radius:5px;
+  padding:8px 10px; font-size:8.8pt; line-height:1.45; white-space:pre-wrap;
+  word-break:break-word; overflow-wrap:break-word;
+}
+blockquote { margin:8px 0; padding:4px 14px; border-left:4px solid #b0c4de;
+             background:#f6f8fb; color:#333; }
+table { border-collapse:collapse; width:100%; margin:8px 0; font-size:9.3pt;
+        table-layout:fixed; }
+th,td { border:1px solid #b9c4ce; padding:3px 6px; vertical-align:top;
+        overflow-wrap:break-word; word-break:break-word; }
+th { background:#e8eef5; text-align:left; }
+tr:nth-child(even) td { background:#fafbfc; }
+a { color: #0d3b66; }
+
+/* -------- 目录 -------- */
+header.title { text-align:center; padding:10pt 0 6pt 0; border-bottom:none; }
+header.title h1.t { border:none; font-size:22pt; margin:0; }
+header.title .sub { color:#666; font-size:11pt; margin-top:4pt; }
+.tocbox { width:100%; }
+.toc > ul { list-style:none; padding-left:0; margin:4px 0; }
+.toc > ul > li > a { font-weight:bold; font-size:11.5pt; }
+.toc ul ul { list-style:none; padding-left:18px; }
+.toc ul ul ul { padding-left:18px; font-size:9.5pt; }
+.toc li { margin:2px 0; }
+.toc a { text-decoration:none; color:#14507a; }
+/* 目录右侧显示页码 */
+.toc a::after { content: leader(". ") target-counter(attr(href), page);
+                color:#888; }
+.toc > div > p { display:none; }
+h1.t { break-before:auto !important; }
+.tocbox h2 { border-bottom:none; }
+</style>
+</head>
+<body>
+<header class="title">
+  <h1 class="t">408 四科考点精讲</h1>
+  <div class="sub">以考研助手 AI-Passport 设备为贯穿案例 · 数据结构 / 计组 / 操作系统 / 计网</div>
+</header>
+<div class="tocbox">
+  <h2>目录（点击可跳转）</h2>
+  <div class="toc">
+<ul>
+<li><a href="#408-ai-passport">408 四科考点精讲（以考研助手 AI-Passport 设备为贯穿案例）</a><ul>
+<li><a href="#_1">〇、总纲：先建立"知识地图"，再逐点填肉</a><ul>
+<li><a href="#_2">复习节奏建议（三轮制）</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#_3">第一大部分 数据结构（先把"怎么组织"想清楚）</a><ul>
+<li><a href="#d1-adt">D1 绪论：什么是数据结构 / 抽象数据类型 ADT / 算法复杂度</a><ul>
+<li><a href="#11">1.1 数据结构的三要素（背，这个直接决定后面怎么记）</a></li>
+<li><a href="#12-adt">1.2 抽象数据类型 ADT（概念题/简答题）</a></li>
+<li><a href="#13">1.3 算法与复杂度（必考、送分）</a></li>
+</ul>
+</li>
+<li><a href="#d1">D1 练习题</a></li>
+<li><a href="#d2">D2 线性表（顺序表 + 链表）</a><ul>
+<li><a href="#21-sequential-list">2.1 顺序表（Sequential List）</a></li>
+<li><a href="#22-singly-linked-list">2.2 单链表（Singly Linked List）</a></li>
+<li><a href="#23">2.3 双链表 / 循环链表</a></li>
+<li><a href="#24-vs">2.4 顺序表 vs 链表（必背对照表）</a></li>
+<li><a href="#25">2.5 易错点</a></li>
+</ul>
+</li>
+<li><a href="#d2_1">D2 练习题</a></li>
+<li><a href="#d3">D3 栈、队列（★ 循环队列大题，本章是重点）</a><ul>
+<li><a href="#31-stack">3.1 栈（Stack）</a></li>
+<li><a href="#32-queue">3.2 队列（Queue）</a></li>
+<li><a href="#33">★3.3 循环队列（重点，计算题必考）</a></li>
+<li><a href="#34-deque">3.4 双端队列（Deque）、优先队列</a></li>
+<li><a href="#35">3.5 易错点</a></li>
+</ul>
+</li>
+<li><a href="#d3_1">D3 练习题</a></li>
+<li><a href="#d4-bf-kmp">D4 串（模式匹配：BF 与 KMP）</a><ul>
+<li><a href="#41">4.1 串的基本概念</a></li>
+<li><a href="#42">4.2 串的存储</a></li>
+<li><a href="#43">4.3 ★模式匹配</a></li>
+<li><a href="#44">4.4 本项目落点</a></li>
+</ul>
+</li>
+<li><a href="#d4">D4 练习题</a></li>
+<li><a href="#d5">D5 树与二叉树（第二大重点，记忆量最大）</a><ul>
+<li><a href="#51">5.1 树的基本概念</a></li>
+<li><a href="#52">5.2 ★二叉树的重要性质（必背五条 + 每题都要能推）</a></li>
+<li><a href="#53">5.3 二叉树的存储</a></li>
+<li><a href="#54">5.4 二叉树的遍历（必背 + 会写递归/掌握非递归用栈/队列）</a></li>
+<li><a href="#55">5.5 线索二叉树（线索化）</a></li>
+<li><a href="#56-bst">5.6 二叉排序树 BST（二叉查找树）</a></li>
+<li><a href="#57-avl">5.7 平衡二叉树 AVL</a></li>
+<li><a href="#58-wpl">5.8 哈夫曼树 / 哈夫曼编码（★ WPL 计算 + 构造）</a></li>
+<li><a href="#59-heap">5.9 堆（Heap，优先队列的实现）</a></li>
+<li><a href="#510">5.10 树的应用（本项目直接对应）</a></li>
+</ul>
+</li>
+<li><a href="#d5_1">D5 练习题</a></li>
+<li><a href="#d6">D6 图</a><ul>
+<li><a href="#61">6.1 图的基本概念</a></li>
+<li><a href="#62">6.2 图的存储（★ 必会）</a></li>
+<li><a href="#63">6.3 图的遍历（必背）</a></li>
+<li><a href="#64-mst">6.4 最小生成树 MST（★ 计算题）</a></li>
+<li><a href="#65">6.5 最短路径（★ 必考计算）</a></li>
+<li><a href="#66">6.6 拓扑排序与关键路径（● 结合项目"任务依赖"）</a></li>
+<li><a href="#67">6.7 易错点</a></li>
+</ul>
+</li>
+<li><a href="#d6_1">D6 练习题</a></li>
+<li><a href="#d7">D7 查找（★ 哈希是重灾区）</a><ul>
+<li><a href="#71">7.1 顺序查找</a></li>
+<li><a href="#72-asl">7.2 二分查找（★ 必须会手写与算 ASL）</a></li>
+<li><a href="#73-b">7.3 二叉排序树 / 平衡树 / B 树 / 散列</a></li>
+<li><a href="#74">7.4 ★散列（哈希）——分值最高，务必多练</a></li>
+</ul>
+</li>
+<li><a href="#d7_1">D7 练习题</a></li>
+<li><a href="#d8">D8 排序（★ 复杂度与稳定性必背 + 手推堆排/快排）</a><ul>
+<li><a href="#81">8.1 八大排序总表（必须背熟）</a></li>
+<li><a href="#82">8.2 各算法灵魂（理解才有底气）</a></li>
+<li><a href="#83">8.3 排序是否需要"比较"（概念）：</a></li>
+<li><a href="#84">8.4 项目落点</a></li>
+</ul>
+</li>
+<li><a href="#d8_1">D8 练习题</a></li>
+<li><a href="#_4">【数据结构部分小结】（背这一页）</a></li>
+</ul>
+</li>
+<li><a href="#_5">第二大部分 计算机组成原理（★考得最细、分值最重，务必花最多时间）</a><ul>
+<li><a href="#c1-1">C1 计算机系统概述：层次结构、性能指标（袁 §1）</a><ul>
+<li><a href="#11_1">1.1 计算机系统的层次（由顶到底，抽象逐层下降）</a></li>
+<li><a href="#12">1.2 计算机的性能指标（必背公式）</a></li>
+<li><a href="#13-c-bin">1.3 从 C 语言到 bin 的完整旅程（★本项目最应深讲的一段，考纲多次以它为背景）</a></li>
+<li><a href="#14-flash-ram">1.4 段的细节与"代码在 Flash、变量在 RAM"（必懂）</a></li>
+<li><a href="#15-16k">1.5 链接优化：函数级裁剪（结合本项目 16k 内存紧张）</a></li>
+</ul>
+</li>
+<li><a href="#c1">C1 练习题</a></li>
+<li><a href="#c2-23">C2 数据的表示与运算（对应袁 §2/§3，选择里算分之王）</a><ul>
+<li><a href="#21">2.1 数制与真值/机器数</a></li>
+<li><a href="#22-n-1-n1">2.2 原码 / 反码 / 补码 / 移码（n 位有效数值，1 位符号，总 n+1 位）</a></li>
+<li><a href="#23_1">2.3 ★补码运算与溢出判断（选择/大题高频）</a></li>
+<li><a href="#24-q">2.4 定点数与 Q 格式（本项目核心，一定要懂）</a></li>
+<li><a href="#25-ieee-754">2.5 IEEE 754 浮点（★背诵 + 手算）</a></li>
+<li><a href="#26">2.6 校验码（选做，但常考）</a></li>
+</ul>
+</li>
+<li><a href="#c2">C2 练习题</a></li>
+<li><a href="#c3-6">C3 存储系统（对应袁 §6，★计算重地）</a><ul>
+<li><a href="#31">3.1 存储系统的层次与局部性（背概念）</a></li>
+<li><a href="#32-sram-dram-flash">3.2 SRAM / DRAM / Flash（记忆 + 特性）</a></li>
+<li><a href="#33_1">3.3 主存与"按字节寻址"、「地址空间」「分区（本项目直接实践）」</a></li>
+<li><a href="#34-cache">3.4 ★Cache 与地址映射（计算大头，务必会算）</a></li>
+<li><a href="#35_1">3.5 替换算法与写策略</a></li>
+<li><a href="#36-tlb-408">3.6 虚拟存储器（★页表 / TLB / 缺页，408 大题）</a></li>
+</ul>
+</li>
+<li><a href="#c3">C3 练习题</a></li>
+<li><a href="#c4-4">C4 指令系统（对应袁 §4，指令编码是亮点）</a><ul>
+<li><a href="#41-riscv-rv32-6-r-i">4.1 指令格式（RISC‑V RV32 有 6 种基本格式，重点 R 与 I）</a></li>
+<li><a href="#42-8">4.2 寻址方式（背 8 种 + 各举一例）</a></li>
+<li><a href="#43_1">4.3 分支与跳转的范围</a></li>
+</ul>
+</li>
+<li><a href="#c4-408">C4 练习题（指令编码，408 风格）</a></li>
+<li><a href="#c5-5">C5 中央处理器（对应袁 §5，★流水线与中断是大题）</a><ul>
+<li><a href="#51_1">5.1 数据通路：五阶段取指执行模型</a></li>
+<li><a href="#52-vs">5.2 硬布线 vs 微程序（选择高频）</a></li>
+<li><a href="#53_1">5.3 ★指令流水线（计算 + 冒险）</a></li>
+<li><a href="#54_1">5.4 异常与中断（★必背流程，本机整流/闪退都在讲）</a></li>
+<li><a href="#55_1">5.5 中断向量表、上下文切换</a></li>
+</ul>
+</li>
+<li><a href="#c5">C5 练习题</a></li>
+<li><a href="#c6-io-7dma">C6 总线与 I/O（对应袁 §7，★DMA 重点）</a><ul>
+<li><a href="#61_1">6.1 总线基础</a></li>
+<li><a href="#62-io">6.2 I/O 的三种控制方式（★对照表必背）</a></li>
+<li><a href="#63_1">6.3 缓冲与通道</a></li>
+</ul>
+</li>
+<li><a href="#c6">C6 练习题</a></li>
+<li><a href="#_6">[第二部分小结：计组的"一根主线 + 七个计算"（背）]</a></li>
+</ul>
+</li>
+<li><a href="#pv">第三大部分 操作系统（管"资源"，计算与 PV 是大头）</a><ul>
+<li><a href="#o1-os">O1 OS 概述与运行环境</a><ul>
+<li><a href="#11-os">1.1 OS 的功能与特征（背）</a></li>
+<li><a href="#12_1">1.2 内核态 / 用户态（特权级）</a></li>
+<li><a href="#13-system-call">1.3 系统调用（system call）</a></li>
+<li><a href="#14-os">1.4 中断在 OS 中的地位（与计组衔接）</a></li>
+</ul>
+</li>
+<li><a href="#o1">O1 练习题</a></li>
+<li><a href="#o2">O2 进程与线程（★调度、同步、死锁是全年重点）</a><ul>
+<li><a href="#21-pcb">2.1 进程、线程、PCB</a></li>
+<li><a href="#22">2.2 进程的状态与转换（三态/五态）</a></li>
+<li><a href="#23-context-switch">2.3 上下文切换（context switch）</a></li>
+<li><a href="#24">2.4 ★处理机调度（调度算法 + 会算平均周转/等待）</a></li>
+<li><a href="#25-pv">2.5 同步与互斥（★PV 操作，大题）</a></li>
+<li><a href="#26_1">2.6 死锁（★判断与避免可计算）</a></li>
+</ul>
+</li>
+<li><a href="#o2_1">O2 练习题</a></li>
+<li><a href="#o3">O3 内存管理（★分页、页面置换计算是大题）</a><ul>
+<li><a href="#31_1">3.1 连续分配</a></li>
+<li><a href="#32">3.2 页式存储（★必会换算）</a></li>
+<li><a href="#33_2">3.3 分段 / 段页式</a></li>
+<li><a href="#34">3.4 ★页面置换算法（★计算大题）</a></li>
+<li><a href="#35-tlb">3.5 页面分配、抖动、TLB（快表）</a></li>
+</ul>
+</li>
+<li><a href="#o3_1">O3 练习题</a></li>
+<li><a href="#o4">O4 文件管理（★索引文件、磁盘调度是大题）</a><ul>
+<li><a href="#41_1">4.1 文件与逻辑结构</a></li>
+<li><a href="#42_1">4.2 文件的物理结构（★重点）</a></li>
+<li><a href="#43-fcb">4.3 目录与 FCB、路径</a></li>
+<li><a href="#44_1">4.4 空闲空间管理与磁盘调度（★计算）</a></li>
+<li><a href="#45">4.5 文件一致性 / 原子性（本项目活案例）</a></li>
+</ul>
+</li>
+<li><a href="#o4_1">O4 练习题</a></li>
+<li><a href="#o5-io-c7">O5 I/O 管理（与计组 C7 呼应）</a><ul>
+<li><a href="#51-io">5.1 I/O 系统的软件层次</a></li>
+<li><a href="#52_1">5.2 缓冲技术</a></li>
+<li><a href="#53-spooling">5.3 SPOOLing（假脱机技术）</a></li>
+<li><a href="#54_2">5.4 设备分配</a></li>
+</ul>
+</li>
+<li><a href="#o5">O5 练习题</a></li>
+<li><a href="#os">[第三部分小结：OS 的"六张计算表"（背）]</a></li>
+</ul>
+</li>
+<li><a href="#_7">第四大部分 计算机网络（把"跨机器传数据"讲透）</a><ul>
+<li><a href="#n1">N1 概述与分层</a><ul>
+<li><a href="#11_2">1.1 为什么要分层（背）</a></li>
+<li><a href="#12-osi-vs-tcpip-lwip">1.2 OSI 七层 vs TCP/IP 五层（本项目 LwIP 用五层）</a></li>
+<li><a href="#13_1">1.3 性能指标（背 + 会算）</a></li>
+</ul>
+</li>
+<li><a href="#n1_1">N1 练习题 （时延计算）</a></li>
+<li><a href="#n2">N2 物理层</a><ul>
+<li><a href="#21_1">2.1 编码与调制</a></li>
+<li><a href="#22_1">2.2 复用技术（★考计算/概念）</a></li>
+<li><a href="#23_2">2.3 传输介质与极限速率</a></li>
+</ul>
+</li>
+<li><a href="#n2_1">N2 练习题</a></li>
+<li><a href="#n3-crccsma">N3 数据链路层（★CRC、窗口、CSMA 是大题）</a><ul>
+<li><a href="#31_2">3.1 封装成帧与链路标识</a></li>
+<li><a href="#32-crc">3.2 差错检测（★CRC 会算）</a></li>
+<li><a href="#33-gbnsr">3.3 可靠传输：停止等待、GBN、SR（★窗口计算）</a></li>
+<li><a href="#34-mac">3.4 ★介质访问控制（随机访问 MAC）</a></li>
+<li><a href="#35-vlan">3.5 以太网、VLAN</a></li>
+</ul>
+</li>
+<li><a href="#n3">N3 练习题</a></li>
+<li><a href="#n4-ip">N4 网络层（★IP、子网划分、路由是大题）</a><ul>
+<li><a href="#41-ipv4">4.1 IPv4 与地址分类（背）</a></li>
+<li><a href="#42-cidr">4.2 ★子网划分与 CIDR（送分计算，务必刷熟）</a></li>
+<li><a href="#43-arp-dhcp-icmp">4.3 ARP / DHCP / ICMP / 路由（背流程）</a></li>
+<li><a href="#44-nat">4.4 NAT（网络地址转换）</a></li>
+</ul>
+</li>
+<li><a href="#n4">N4 练习题</a></li>
+<li><a href="#n5-tcp">N5 传输层（★TCP 可靠/流量/拥塞控制是全年大题必守）</a><ul>
+<li><a href="#51-udp-vs-tcp">5.1 UDP vs TCP 对比（背）</a></li>
+<li><a href="#52-tcp">5.2 TCP 报文段（背关键字段）</a></li>
+<li><a href="#53_2">5.3 可靠传输与流量控制（★计算）</a></li>
+<li><a href="#54-tcp">5.4 ★TCP 拥塞控制（★状态机，背死）</a></li>
+</ul>
+</li>
+<li><a href="#n5">N5 练习题</a></li>
+<li><a href="#n6-http">N6 应用层（★HTTP 讲透，本项目配网/下载全靠它）</a><ul>
+<li><a href="#61-dns">6.1 DNS（域名系统）</a></li>
+<li><a href="#62-http">6.2 ★HTTP（本项目配网 + 下载的核心协议）</a></li>
+<li><a href="#63_2">6.3 其他应用层协议（背）</a></li>
+</ul>
+</li>
+<li><a href="#n6">N6 练习题</a></li>
+<li><a href="#_8">[第四部分小结：计网"一张分层图 + 四类必算"（背）]</a></li>
+</ul>
+</li>
+<li><a href="#_9">第五大部分 专题回顾 + 综合演练（把四科串起来）</a><ul>
+<li><a href="#os_1">◆ 专题一：按一次按键，发生了什么？（跨计组 + OS + 数据结构）</a></li>
+<li><a href="#16khz-esp_rst_panic-os">◆ 专题二：录音 16kHz 崩溃（ESP_RST_PANIC）背后是哪个考点？（跨计组 + OS）</a></li>
+<li><a href="#_10">◆ 专题三：配网 + 下载录音 = 整个计网章节的"活体演练"</a></li>
+</ul>
+</li>
+<li><a href="#_11">第六大部分 全书复盘 &amp; 考前冲刺清单</a><ul>
+<li><a href="#61_2">6.1 三科主线的"一口闷"记忆卡</a></li>
+<li><a href="#62_1">6.2 最容易记混 &amp; 高频陷阱（按科列出，考前必扫）</a></li>
+<li><a href="#63-408">6.3 考点优先级（按 408 历年出现频率）</a></li>
+<li><a href="#64">6.4 最后：复习节奏建议（回到总纲）</a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+</div>
+<div class="content">
+<h1 id="408-ai-passport">408 四科考点精讲（以考研助手 AI-Passport 设备为贯穿案例）</h1>
+<blockquote>
+<p>用途：<strong>考研 408 统考系统复习资料</strong>。紧扣《408 考试大纲》，把「数据结构 / 计算机组成原理 / 操作系统 / 计算机网络」四科每个考点的
+<strong>定义 → 存储结构 → 原理推导 → 公式/规则 → 易错点 → 本项目硬件落点 → 典型例题+手写解析</strong> 一次讲透。</p>
+<p>案例载体：一台使用 <strong>ESP32-C3(RISC-V 内核)</strong> 的录音学习机（真实代码可对照仓库）。它把四科抽象概念几乎全部具象化，
+你学到每个考点，都能在这台设备里"摸到"它。因此我尽量把每一条<strong>理论都落到这台设备的具体行为</strong>上，让"抽象"变成"看得见"。</p>
+</blockquote>
+<hr />
+<h2 id="_1">〇、总纲：先建立"知识地图"，再逐点填肉</h2>
+<p>408 的四科不是四门孤立学科，而是一条"从问题到机器"的主线。用这台设备串起来就是：</p>
+<pre><code>你按下的物理按键（硬件 I/O）
+   │ 中断 → CPU 取指→译码→执行（计组）
+到了哪个 C 函数、哪个任务（数据结构/OS）
+   │ 录成 FRC 文件存进分区（文件系统 OS）
+   │ 通过 WiFi / TCP / HTTP 发给手机（计网）
+</code></pre>
+<p>四科各自负责管一块：
+- <strong>数据结构</strong>：解决"数据怎么组织、算法怎么快"——你在写任何 <code>for</code> / 链表 / 队列时都在用。
+- <strong>计组</strong>：解决"机器到底怎么算"——从 <code>int16_t</code> 的补码到 CPU 的每条指令，再到 Cache、加法器、中断。
+- <strong>OS</strong>：解决"多个程序怎么共享资源"——任务切换、内存分配、文件系统、中断管理。
+- <strong>计网</strong>：解决"数据怎么跨机器传"——IP、TCP、HTTP、配网、下载。</p>
+<p><strong>四科都从"这台设备"出发的好处</strong>：任何一道抽象真题，你都能先想"如果是我的设备会怎样"，再套理论。这就是把知识"长"在身上，而不是"背"进脑。</p>
+<h3 id="_2">复习节奏建议（三轮制）</h3>
+<ul>
+<li><strong>第一轮（打地基）</strong>：逐科过一遍本文档"定义+原理"，每个 ★ 例题手推一遍。</li>
+<li><strong>第二轮（刷计算）</strong>：只做标记为"送分计算"的题（Cache 容量、子网划分、页面置换、TCP cwnd），刷熟公式。</li>
+<li><strong>第三轮（串考点）</strong>：用文末"综合演练"把多科考点串起来，检验"知识不再是一块一块，而是一张网"。</li>
+</ul>
+<hr />
+<h1 id="_3">第一大部分　数据结构（先把"怎么组织"想清楚）</h1>
+<blockquote>
+<p>数据结构考的是"你怎么选择和组织数据，让关键操作最快"。408 里数据结构的题<strong>分值不高但必考</strong>，
+且选择题考得细（复杂度、性质、公式），大题考代码/手推过程。下面每章按"定义→存储→操作→复杂度→易错→例题"讲。</p>
+</blockquote>
+<hr />
+<h2 id="d1-adt">D1　绪论：什么是数据结构 / 抽象数据类型 ADT / 算法复杂度</h2>
+<h3 id="11">1.1 数据结构的三要素（背，这个直接决定后面怎么记）</h3>
+<p>一个数据结构 = <strong>三要素</strong>同时成立：</p>
+<table>
+<thead>
+<tr>
+<th>要素</th>
+<th>含义</th>
+<th>项目实例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>逻辑结构</strong></td>
+<td>元素之间的抽象逻辑关系（与存储无关）</td>
+<td>录音任务列表"顺序"关系；科目→子类→任务"树"关系</td>
+</tr>
+<tr>
+<td><strong>存储结构</strong></td>
+<td>逻辑结构在机器里怎么实现（内存怎么摆）</td>
+<td>任务用<strong>顺序表（数组）</strong>存；目录用<strong>链表/树</strong>存</td>
+</tr>
+<tr>
+<td><strong>数据的运算</strong></td>
+<td>在逻辑结构上定义的操作（增删改查、排序等）</td>
+<td><code>list_add</code>、<code>find_next</code>、<code>rename</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>① 逻辑结构</strong>（四种，必考选择题）：
+- <strong>集合</strong>：元素间无关系（如一袋子无序的丢包记录）。
+- <strong>线性结构</strong>：一对一（线性表、栈、队、串）。
+- <strong>树形结构</strong>：一对多（树、二叉树）。
+- <strong>图形/网状结构</strong>：多对多（图）。</p>
+<p><strong>② 存储结构</strong>（四种，也必考）：
+- <strong>顺序存储</strong>：物理连续，逻辑相邻即物理相邻 —— 本项目任务列表 <code>study_task_t[256]</code>、录音 PCM 的 <code>int16_t buf[]</code>。
+- <strong>链式存储</strong>：用指针把物理上分散的节点串起来 —— 本项目目录树、FreeRTOS 任务链表。
+- <strong>索引存储</strong>：建一张"关键字→位置"的索引表，先查索引再取数据 —— 本项目 <code>find_task(title)</code> 先查名字。
+- <strong>散列存储</strong>：按关键字直接算出存储位置，O(1) 定位 —— 本项目 NVS 的"键值"查找（<code>find-&gt;get</code>）。</p>
+<blockquote>
+<p><strong>记忆法</strong>：逻辑结构是"关系"，存储结构是"实现"，运算定义在逻辑结构上但复杂度取决于存储结构。
+例如"找第 k 个元素"：逻辑上是线性关系；用顺序存储则 O(1)，用链表则 O(k)。</p>
+</blockquote>
+<h3 id="12-adt">1.2 抽象数据类型 ADT（概念题/简答题）</h3>
+<ul>
+<li><strong>定义</strong>：一个<strong>数学模型</strong> + 定义在该模型上的一组<strong>操作</strong>。</li>
+<li>三要素：<strong>数据对象、数据关系、基本操作</strong>。</li>
+<li>ADT 与实现分离：使用方只看操作（<code>push/pop</code>、<code>insert/delete</code>），不关心内部是用数组还是链表。</li>
+<li>C 语言两个实现手段：
+  1. <strong>结构体 + 函数指针表（vtable / 虚函数表）</strong>：一个结构体里放一组函数指针，调用时通过指针调用——本项目任务存储抽象 <code>study_task_store_t</code> 就是：<code>add/remove/save/load</code> 都定义成可替换的接口，底层可以是 SPIFFS 也可以是 NVS。
+  2. <code>typedef struct + 操作函数</code>：如 <code>typedef struct{...} Queue; Queue_new(); Queue_push();</code>。</li>
+</ul>
+<blockquote>
+<p><strong>一句话</strong>：ADT = "你说我要什么"（接口），实现 = "我具体怎么做"（细节）。考研常考"ADT 的优点"：<strong>封装、信息隐藏、可复用、便于维护</strong>。</p>
+</blockquote>
+<h3 id="13">1.3 算法与复杂度（必考、送分）</h3>
+<p><strong>算法的五个特性</strong>：<strong>有穷性、确定性、可行性、有输入、有输出</strong>。（背顺口溜"穷定可行，有输入出"）</p>
+<p><strong>时间复杂度 T(n)</strong>：算法执行<strong>基本操作次数</strong>的<strong>渐进上界</strong>。通常用大 O 表示，忽略系数和低阶项。
+- 注意常数项：<code>T(n)=3n+2</code> → <strong>O(n)</strong>，<code>T(n)=2n²+n</code> → <strong>O(n²)</strong>。
+- 双重循环不一定 O(n²)：<code>for(i..n) for(j..n)</code> 才是 n²；若 <code>for(i..n) for(j=1;j&lt;=n;j*=2)</code> 是 <strong>O(nlogn)</strong>。</p>
+<p><strong>空间复杂度 S(n)</strong>：算法运行所需<strong>额外辅助空间</strong>（不含输入本身占用）。
+- 原地算法（in-place）S(n)=O(1)。如：冒泡、插入、简单选择、堆排。
+- 归并需要额外 O(n) 数组；快排递归栈最坏 O(n)、平均 O(logn)。</p>
+<p><strong>常用阶比较</strong>（必须会排）：</p>
+<pre><code>O(1) &lt; O(logn) &lt; O(n) &lt; O(nlogn) &lt; O(n²) &lt; O(n³) &lt; O(2ⁿ) &lt; O(n!)
+</code></pre>
+<p><strong>目录里"循环里套循环看变化量"套路</strong>（高频）：
+- 步长 +1 → O(n)；步长 ×2 → O(logn)；内层又套一层外层 → O(nlogn) 或 O(n²)。
+- 递归的复杂度：若每次递归把规模减半且每层 O(n) → O(nlogn)（如快排、归并）。</p>
+<p><strong>本设备落点</strong>：
+- 录音超时检查 <code>if (frames*20 &gt;= REC_MAX_SEC*1000) break;</code> 每条循环都执行、不随数据规模变化 → <strong>O(1)</strong>。
+- <code>poll_evt</code> 从环形队列取一个事件，固定几步 → <strong>O(1)</strong>。
+- 对 PCM <code>int16_t buf[320]</code> 逐样本编码 → <strong>O(320)=O(n)</strong>（n 为帧内样本数）。
+- 查找"下一次到点提醒"：顺序扫任务列表 → <strong>O(n)</strong>（所以列表大了会慢，这是线性查找）。</p>
+<hr />
+<h2 id="d1">D1 练习题</h2>
+<p><strong>Q1</strong>：求下列代码复杂度。</p>
+<pre><code class="language-c">int count = 0;
+for (i = 1; i &lt;= n; i = i * 2)
+    for (j = 1; j &lt;= n; j = j * 2)
+        count++;
+</code></pre>
+<p><strong>解析</strong>：外层 i 以 2 倍增长，<code>i=1,2,4,...,2^k ≤ n</code> → 运行次数 <code>k=logn</code> 层（约 log₂n 次）；内层同理 <code>logn</code> 次。故总数 = logn·logn = <strong>O((logn)²)</strong>。
+（注意：<strong>两个都 ×2 是 (logn)^2，不是 nlogn</strong>。之前那个"外层 n 次、内层 logn 次"才是 nlogn。别混淆！）</p>
+<p><strong>Q2</strong>：<code>for(i=0;i&lt;n;i++) for(j=i;j&lt;n;j++) for(k=0;k&lt;n;k++) s++;</code> 的复杂度约？
+<strong>解析</strong>：三层，每层都到 n 里变化，最内层总次数 = n·(n²/2 级别) → <strong>O(n³)</strong>。（两层平方即 n²，三层立方。）</p>
+<p><strong>Q3</strong>（简答/选择）：一个算法能用递归实现，为何还要栈结构？
+<strong>解析</strong>（本书重要考点）：递归调用时，系统要用<strong>调用栈</strong>保存每层递归的<strong>返回地址、实参、局部变量、现场寄存器</strong>，逐层压栈、返回时弹栈。因此"递归程序 = 系统用栈实现"，栈是递归的<strong>必要支撑结构</strong>（对应计组章节的"调用栈/压栈现场"，见 C 部分）。若你把递归改成循环（如本项目把需要反复编码的 PCM 用循环而非递归跑），本质就是<strong>手动模拟栈</strong>。</p>
+<hr />
+<h2 id="d2">D2　线性表（顺序表 + 链表）</h2>
+<blockquote>
+<p>线性表逻辑上是一对一的线性关系，元素类型相同。它有两种存储：<strong>顺序表</strong>（数组）和<strong>链表</strong>。</p>
+</blockquote>
+<h3 id="21-sequential-list">2.1 顺序表（Sequential List）</h3>
+<p><strong>存储结构</strong>：元素存于一块<strong>连续</strong>的地址空间。</p>
+<pre><code>下标        0    1    2    3  ...  n-1
+地址   base  base+L  base+2L ...
+</code></pre>
+<p><strong>核心公式（必背）</strong>：设元素长度 L，首地址 base，第 i 个元素（从 0 开始）地址：</p>
+<pre><code>Loc(aᵢ) = base + i × L        （★推导它：每挪一格多 L 个字节）
+</code></pre>
+<ul>
+<li>由下标 O(1) 算出地址 → <strong>随机存取</strong>（Random Access）。</li>
+<li>插入/删除要<strong>搬移元素</strong>：平均移动 n/2 个 → <strong>O(n)</strong>。</li>
+</ul>
+<p><strong>插入操作（讲透平移）</strong>：在 i 位置插入一个元素，需把 i~n-1 全部后移一位：
+- 最坏在头部插：移 n 个；最好在尾部插：移 0 个；平均移 <strong>n/2</strong> → 时间 <strong>O(n)</strong>。
+- <strong>删除</strong>同理：把 i+1~n-1 前移，平均移 <strong>(n-1)/2</strong> → <strong>O(n)</strong>。</p>
+<p><strong>顺序表优缺点（背）</strong>：优点——随机存取 O(1)、存储密度高（无指针开销）；缺点——插删慢、需预分配连续大空间、扩容代价大。</p>
+<h3 id="22-singly-linked-list">2.2 单链表（Singly Linked List）</h3>
+<p><strong>存储结构</strong>：分散的内存节点，靠指针串联。</p>
+<pre><code>结点 = [data | next]
+       ^—数据域    ^—指针域(指向下一结点首地址)
+</code></pre>
+<p>带头结点 VS 不带头节点：头结点是"哨兵"，不算数据元素，方便在表头统一插入/删除（<strong>考点：头结点作用</strong>）。</p>
+<p><strong>单链表关键操作（背复杂度）</strong>：
+- 按位置/按值查找：从 head 逐个走 → <strong>O(n)</strong>（无随机存取）。
+- 已知 p 指针，在 <strong>p 后面</strong>插入新结点：
+  <code>c
+  newNode-&gt;next = p-&gt;next;
+  p-&gt;next = newNode;</code>
+  → 只需改两个指针，<strong>O(1)</strong>。
+- 已知 p 指针，删除 <strong>p 后面的</strong>结点：<code>q=p-&gt;next; p-&gt;next=q-&gt;next; free(q);</code> → <strong>O(1)</strong>。
+- 但删除操作通常要先 O(n) 找到 p，所以"整体删除"仍是 O(n)。</p>
+<p><strong>头插法 / 尾插法</strong>（经常问）：
+- 头插法建表：每次把新结点插到最前面，结果会<strong>逆序</strong>。
+- 尾插法建表：用 tail 指针尾插，结果保持原顺序。本题设备里"按 R%07u 递增录新文件"若用链表，就是尾插保持递增序。</p>
+<h3 id="23">2.3 双链表 / 循环链表</h3>
+<ul>
+<li><strong>双链表</strong>：结点 <code>[prior | data | next]</code>，可双向遍历，删除给定结点可达 O(1)（不用找前驱）。代价：多一个指针域（存储密度下降）。</li>
+<li><strong>循环链表</strong>：尾结点 <code>next</code> 指回头结点（head）。判断表空：<code>head-&gt;next==head</code>。</li>
+<li>好处：从任一结点出发都能遍历整个表。</li>
+<li>循环双链表让"在表尾插入 O(1)"且"前移 O(1)"。</li>
+<li>考研常考"从尾到头打印"：用<strong>栈</strong>或<strong>递归</strong>（等价于先压栈再出栈），也可先反转链表。</li>
+</ul>
+<h3 id="24-vs">2.4 顺序表 vs 链表（必背对照表）</h3>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>顺序表（数组）</th>
+<th>链表</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>随机访问第 k 个</td>
+<td><strong>O(1)</strong>（地址公式）</td>
+<td>O(n)（逐个走）</td>
+</tr>
+<tr>
+<td>按值查找</td>
+<td>O(n)（可配合二分若有序）</td>
+<td>O(n)</td>
+</tr>
+<tr>
+<td>表头插/删</td>
+<td>O(n)（搬移）</td>
+<td><strong>O(1)</strong></td>
+</tr>
+<tr>
+<td>表尾插/删(指向已知)</td>
+<td>O(1)</td>
+<td>单链 O(n)（要找前驱）/双链 O(1)</td>
+</tr>
+<tr>
+<td>存储密度</td>
+<td>高(1)</td>
+<td>低(多指针，通常 ≤ ½)</td>
+</tr>
+<tr>
+<td>空间</td>
+<td>需预分配连续块</td>
+<td>分散、按需分配</td>
+</tr>
+<tr>
+<td>适用</td>
+<td>查找多、增删少</td>
+<td>增删多、查找少</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>选型结论（本项目直接对应）</strong>：录音<strong>任务列表</strong>保存后要"按序号读取"，用<strong>顺序表</strong>最合适（<code>study_task_t[256]</code> 数组即可随机访问第 i 个任务）；而<strong>任务/目录间的父子关系</strong>是树（用链式）；FreeRTOS 的<strong>就绪任务队列</strong>用链表实现（频繁插入/删除）——这就是"根据操作频率选存储"的活例子。</p>
+</blockquote>
+<h3 id="25">2.5 易错点</h3>
+<ol>
+<li><strong>头结点 vs 首元结点</strong>：头结点不是数据元素，尾指针指向头结点才判"空循环链表"。</li>
+<li>单链表删除"给定结点"必须知道其前驱；真正 O(1) 删除一个已知结点的 trick：把后继数据复制到当前结点，再删后继——经典面试题，考研偶尔考。</li>
+<li>顺序表扩容（realloc）：可能整体搬移数据 → O(n)，这就是"预分配要合理"的原因。</li>
+</ol>
+<hr />
+<h2 id="d2_1">D2 练习题</h2>
+<p><strong>Q1</strong>：有 n 个元素的顺序表，在第 i 个位置（1≤i≤n+1）插入元素平均需移动几个元素？复杂度？
+<strong>解析</strong>：i=1（表头）移 n 个，i=n+1（表尾）移 0 个。平均移动数 = (n + n-1 + ... + 0)/(n+1) ≈ n/2 → <strong>O(n)</strong>。
+（要点：别把 i 记反——表头插最贵。）</p>
+<p><strong>Q2</strong>：设计判断单链表是否有环（快慢指针）的空间复杂度。
+<strong>解析</strong>：用快慢两指针，快指针每次走两步、慢指针走一步，若有环则必然追上。只用两个指针 → <strong>空间 O(1)</strong>。
+（若用哈希表记录访问过的结点也行，但空间 O(n)。<strong>选 O(1) 是得分点。</strong>）</p>
+<p><strong>Q3</strong>（综合）：要把一列数据"尾部拼新数据 + 从头删旧数据"高频执行，顺序表和链表各适合吗？
+<strong>解析</strong>：该模式=<strong>队列</strong>。顺序表（循环）时空 O(1)；链表头删尾加也 O(1)。但若还要"随机访问第 k 个"，则顺序表胜出。
+→ 结论：<strong>没有唯一答案，要看操作组合</strong>——这正是 408 最爱考的"根据需求选结构"。</p>
+<hr />
+<h2 id="d3">D3　栈、队列（★ 循环队列大题，本章是重点）</h2>
+<h3 id="31-stack">3.1 栈（Stack）</h3>
+<p><strong>定义</strong>：只允许<strong>在一端（栈顶 top）</strong>进行插入/删除的线性表。
+- 运算：<strong>push</strong>（入栈=栈顶↑）、<strong>pop</strong>（出栈=栈顶↓）、<strong>peek</strong>（读栈顶）、判空、判满。
+- 特性：<strong>后进先出 LIFO</strong>。</p>
+<p><strong>顺序栈</strong>（数组实现）：<code>data[MaxSize] + top</code>（top 指向栈顶元素）。判空 <code>top==-1</code>；判满 <code>top==MaxSize-1</code>。
+- 进栈：<code>data[++top]=x</code>；出栈：<code>x=data[top--]</code>。</p>
+<p><strong>链式栈</strong>（链表实现）：表头作为栈顶（头插/头删），进出都 O(1)，不会满。</p>
+<p><strong>栈的典型应用（必背）</strong>：
+1. <strong>递归调用栈</strong>（保存每层返回地址/实参/局部变量/现场）。→ 本项目 C 函数递归、FreeRTOS 任务栈都是这个概念（见计组"调用栈"）。
+2. <strong>表达式求值</strong>：
+   - <strong>后缀表达式（逆波兰）</strong>求值：遇到操作数压栈，遇到运算符弹出两个操作数计算再压回。
+   - <strong>中缀 → 后缀</strong>：用运算符栈，规则是"优先级高者先输出、括号处理括号"，需手动模拟（大题会考，多练）。
+3. <strong>括号匹配</strong>：遇左括号压栈，遇右括号弹栈配对，最后栈空则匹配。
+4. <strong>迷宫/回溯/深度优先遍历</strong>：靠栈记住"退路"。
+5. <strong>进制转换</strong>（除基取余，余数先进后出）：用栈正好。</p>
+<p><strong>本项目落点</strong>：FreeRTOS 每个任务对应一块<strong>任务栈</strong>（<code>uxTaskGetStackHighWaterMark</code> 看的栈水位就是看栈还剩下多少）——栈满（HWM 极低）= 递归/函数调用过深会溢出，正是之前录音 16k 崩溃的嫌疑点之一。</p>
+<h3 id="32-queue">3.2 队列（Queue）</h3>
+<p><strong>定义</strong>：只允许<strong>队尾入、队头出</strong>的线性表。特性 <strong>FIFO 先进先出</strong>。
+运算：<strong>enqueue</strong>（入队）、<strong>dequeue</strong>（出队）、判空、判满。</p>
+<p><strong>为什么必须用"环形（循环）队列"</strong>：若线性地用数组 <code>front</code>在前、<code>rear</code>在后，出队后 front 前移造成前段空位无法复用，空间浪费严重（"假溢出"）。解决办法是用<strong>取模回绕</strong>构成循环队列。</p>
+<h3 id="33">★3.3 循环队列（重点，计算题必考）</h3>
+<p>设在数组 <code>data[MaxSize]</code> 中，用 <code>front</code>（队头）、<code>rear</code>（队尾）两个指针，按<strong>牺牲一个存储单元</strong>方式判满（这是最常考的实现）：</p>
+<ul>
+<li>初始化空：<code>front = rear = 0</code>。</li>
+<li>入队（在队尾）：<code>data[rear]=x; rear = (rear+1) % MaxSize;</code></li>
+<li>出队（在队头）：<code>x = data[front]; front = (front+1) % MaxSize;</code></li>
+<li><strong>判空</strong>：<code>front == rear</code>。</li>
+<li><strong>判满</strong>：<code>(rear+1) % MaxSize == front</code>。</li>
+<li><strong>元素个数</strong>：<code>(rear - front + MaxSize) % MaxSize</code>。（务必理解：尾减头，取模保证非负。）</li>
+<li>队列最大容量：<code>MaxSize - 1</code>（因为要空一格来区分空和满）。</li>
+</ul>
+<p><strong>为什么空一个格</strong>：若不用空一格，则空态和满态都是 <code>front==rear</code>，无法区分 → 于是"牺牲一格"或者"加一个 size 计数器/flag"。考试用"牺牲一格"最普遍。</p>
+<p><strong>三个"推导"要亲自动一次（别只背公式）：</strong>
+1. <strong>循环的本质</strong>：数组是线性的，把 <code>data[MaxSize-1]</code> 的下一个想象成 <code>data[0]</code>，即下标 <code>i = (i+1) % MaxSize</code> 循环回绕。<strong>取模 <code>%</code> 是把线性数组"卷成环"的那一步</strong>——本项目代码里每个 <code>% EVT_N</code> 都是这个意思。
+2. <strong>判满为什么 <code>(R+1)%Max==F</code></strong>：满的时候尾指针"隔一格紧贴"头指针（front 指向首个元素，rear 指向最后一个空位后的占位格）。因为空了一格，Rear 下一步 +1 就等于 Front。队满时实际存了 <code>MaxSize-1</code> 个元素。
+3. <strong>元素个数公式的直觉</strong>：若 F≤R（没绕环），个数=R-F；若 R&lt;F（绕环一次），个数=R-F+MaxSize。两者合并就是 <code>(R-F+MaxSize)%MaxSize</code>。</p>
+<p><strong>变体（408 很爱出）——用"单独计数器 size"判空满</strong>：
+- 判别不靠牺牲格子，而是维护 <code>size</code>（当前元素个数）。
+- 判空：<code>size==0</code>；判满：<code>size==MaxSize</code>；个数直接 = <code>size</code>。→ <strong>这种情况下容量就是 MaxSize（不再 -1）</strong>，元素个数也不用绕环公式。<strong>做题先看题干是"牺牲一格"还是"size 标志"</strong>，别套错公式。</p>
+<p><strong>⚠️ 经典易错辨析</strong>：
+- 队头 <code>front</code> 指向的是<strong>第一个元素</strong>还是<strong>第一个元素的前一个位置</strong>，不同教材定义不同。408 通常默认<strong>front 指向队头元素、rear 指向队尾元素的下一个空位</strong>。题目若给 <code>front=2, rear=5, MaxSize=8</code> 则元素个数 = (5-2)%8 = 3。<strong>看清题干对 front/rear 语义的定义</strong>再代公式，比死背公式更重要。</p>
+<p><strong>本项目真实代码（study_recorder.c 的事件队列）</strong>：</p>
+<pre><code class="language-c">#define EVT_N 8
+// 入队：覆盖最旧（若满则最旧的被顶掉）
+s_evt[s_evt_w] = e;
+s_evt_w = (s_evt_w + 1) % EVT_N;
+if (s_evt_w == s_evt_r) s_evt_r = (s_evt_r + 1) % EVT_N;  // 满了丢掉最旧，生产者不阻塞
+// 出队：判空
+if (s_evt_r == s_evt_w) return (无事件);
+e = s_evt[s_evt_r]; s_evt_r = (s_evt_r + 1) % EVT_N;
+</code></pre>
+<p>这就是一个"<strong>满则覆盖最旧（丢弃）</strong>"的循环队列变体：判空仍是 <code>front==rear</code>；不同的是它不是"满则阻塞/报错"，而是<strong>丢最旧一条</strong>，保证生产者永不阻塞（适合事件通知场景，丢旧事件比丢新事件可接受）。
+（对比：标准循环队列"满则阻塞"，适合有界缓冲生产者-消费者——那是 OS 章节的信号量队列。这里只是数据结构层面。）</p>
+<p><strong>一道推敲题（循环队列取模）</strong>：<code>MaxSize=5</code>，已知 <code>front=3, rear=1</code>，问元素个数、是否满、还能入队几个？
+<strong>解析</strong>：个数 = (1-3+5)%5 = 3。判满：<code>(1+1)%5=2 ≠ 3</code> → 未满。还能入队：<code>MaxSize-1 - 个数 = 4-3 = 1</code> 个（再入 1 个到 rear=2，此时 <code>(2+1)%5=3=front</code> 满）。→ 训练"绕环后也能算"。</p>
+<h3 id="34-deque">3.4 双端队列（Deque）、优先队列</h3>
+<ul>
+<li><strong>双端队列</strong>：两端都能插入/删除的线性表（两侧都开放）。</li>
+<li>输入受限双端队列：只允许一端入队。</li>
+<li>输出受限双端队列：只允许一端出队。</li>
+<li><strong>优先队列</strong>：出队优先取"优先级最大/最小"的元素，通常用<strong>堆</strong>实现（见 D5 堆）。本项目 FreeRTOS 的"定时器/就绪"就带优先级；"哪条录音到点先提醒"可用优先队列。</li>
+</ul>
+<h3 id="35">3.5 易错点</h3>
+<ol>
+<li><strong>循环队列元素个数公式</strong>：<code>(R-F+Max)%Max</code>，不是 <code>R-F</code>。</li>
+<li><strong>判空与判满不要搞混</strong>：判空 <code>F==R</code>；判满 <code>(R+1)%Max==F</code>。</li>
+<li>栈与队列都<strong>不能随机存取</strong>中间元素，只能靠弹/出。</li>
+<li><strong>看清"牺牲一格"还是"加 size 标志"</strong>，二者容量/公式不同（前者容量 Max-1，后者就是 Max）。</li>
+<li>若题目用"front 指向队头前一个位置"的定义，判满/个数公式的写法要相应调整——<strong>先定义指针语义再套公式</strong>。</li>
+</ol>
+<hr />
+<h2 id="d3_1">D3 练习题</h2>
+<p><strong>Q1</strong>（循环队列经典）：队列容量 m=5（数组5格，牺牲一格判满）。当前 <code>front=3, rear=4</code>。（i）队内元素数？（ii）还能入队几个？
+<strong>解析</strong>：
+- 元素数 = <code>(R-F+m)%m = (4-3+5)%5 = 1</code>。
+- 判满条件 <code>(R+1)%m==F</code>，即 <code>(4+1)%5=0 ≠ 3</code> → 不满，可继续入。
+- 还能入队的最多个数：从满的条件反推。队列最多容 <code>m-1=4</code> 个元素（牺牲一格），现有1个，还能入 <code>4-1=3</code> 个。验证：入3个后 <code>R=(4+3)%5=2</code>，元素数=(2-3+5)%5=4 = 满；再入 <code>(R+1)%5=3==F</code> 判满，正好。
+<strong>要点</strong>：先算个数公式，再用"容量=m-1"算还能装几个。</p>
+<p><strong>Q2</strong>（栈混洗/structure）：若入栈序列为 1,2,3，下面哪些是可能的出栈序列？
+- (a) 3,2,1  ✔ 压1压2压3，出3出2出1。
+- (b) 1,3,2  ✔ 压1出1，压2压3出3出2。
+- (c) 3,1,2  ✘ 要出3必须先把1,2,3全压入，此时栈顶是2，先出的应是2，出不了1。
+<strong>解析</strong>：模拟"能出括号里的当前栈顶就不出"。判定的通用法：<strong>任意时刻栈顶元素必须是下一个要出的元素，否则无法出</strong>。真题常考"给定入栈序和出栈序判断是否合法"。</p>
+<p><strong>Q3</strong>：用栈实现中缀 <code>a+b*c</code> 转后缀并求值步骤简述。
+<strong>解析</strong>：
+- 扫到 <code>a</code>→输出；<code>+</code> 入运算符栈；<code>b</code>→输出；<code>*</code>：和栈顶 <code>+</code> 比，<code>*</code> 优先级高于 <code>+</code>，入栈；<code>c</code>→输出；结束把栈里 <code>*,+</code> 依次弹出 → <strong>后缀 <code>abc*+</code></strong>。
+- 求值：<code>abc*+</code> → a 压栈，b 压栈，c 压栈，遇 <code>*</code> 弹 b,c 算 b<em>c，把结果压回，遇 <code>+</code> 弹 a 和 (b</em>c) 算 a+(b<em>c)。 → 和后缀等价。
+</em><em>要点</em><em>：中缀转后缀的优先级比较是要点：</em><em>栈顶运算符优先级 &gt;= 当前运算符时，弹出栈顶</em>*，当前运算符才入栈；左括号特例。</p>
+<hr />
+<h2 id="d4-bf-kmp">D4　串（模式匹配：BF 与 KMP）</h2>
+<h3 id="41">4.1 串的基本概念</h3>
+<ul>
+<li>串是<strong>字符</strong>组成的线性表（受到限制的线性表）。逻辑上同线性表，但基本操作常以"子串"为单位。</li>
+<li>概念：<strong>子串</strong>（连续的一段）、<strong>前缀/后缀</strong>、<strong>主串</strong>、<strong>模式串</strong>。</li>
+<li>概念区分：子串必须是<strong>连续</strong>的；"子序列"可以不连续（考研爱出这个坑）。</li>
+</ul>
+<h3 id="42">4.2 串的存储</h3>
+<ul>
+<li>顺序存储（定长数组 + length）、链式存储。</li>
+<li>注意 C 风格以 <code>\0</code> 结尾，length 指有效字符数（不含 <code>\0</code>）。</li>
+</ul>
+<h3 id="43">4.3 ★模式匹配</h3>
+<p>设主串长 n，模式串长 m。</p>
+<p><strong>BF 算法（朴素/暴力）</strong>：
+- 从主串每个位置开始与模式串逐一比较，一旦失配，主串指针回退到"起始+1"，模式串回到 0，重新比。
+- 平均 <strong>O(n+m)</strong>，最坏 <strong>O(n·m)</strong>（如主串全 <code>aaaa...a</code>，模式 <code>aa...aab</code>，每个起点都几乎比到底）。
+- 缺点：主串指针<strong>反复回退</strong>，很多已比较过的字符被重复比较。</p>
+<p><strong>KMP 算法（重点，背 next 计算）</strong>：
+- 思想：利用<strong>模式串自身的"最长相等前后缀"</strong>，失配时<strong>主串指针不回退</strong>，只让模式串右移。
+- 设 next[j]：当 <code>P[j]</code> 失配时，模式串跳到 <code>P[next[j]]</code> 继续比。
+- next 数组定义（两种版本，考纲常用"next[1]=0"这种 1-based 写法）：
+  - <code>next[j] = P[0..j-1]</code> 的<strong>最长相等前缀后缀的长度</strong>（即前缀长度，符号上 next[j]=k 表示前面有 k 个字符是相等的真的前后缀）。
+  - 约定 <code>next[1]=0</code>（第1个字符失配则整体后移1格），<code>next[j]</code> 一般从 0 开始就是首字符。
+  - 另有 <code>nextval</code> 改进版：消除"失配后跳到的字符和原字符相同"的无效跳转。
+- <strong>KMP 时间复杂度：O(m) 求 next + O(n) 匹配 = O(n+m)</strong>。比 BF 好的在于主串不回溯。</p>
+<p>（注：next 数组的求出算法需手推模拟，408 结合"给出模式串求 next"出题，务必练 3-5 个实例。）</p>
+<h3 id="44">4.4 本项目落点</h3>
+<ul>
+<li>配网表单解析 <code>parse_form</code>：按 <code>&amp;</code> 拆分 <code>ssid=...&amp;pass=...</code>、按 <code>=</code> 再拆——就是<strong>按分隔符找子串</strong>的串处理。</li>
+<li>文件名按 <code>R%07u</code> 解析还原录音序号——正则/字符串到数字的转换。</li>
+</ul>
+<hr />
+<h2 id="d4">D4 练习题</h2>
+<p><strong>Q1</strong>（KMP 求 next）：主串 S="abaabc"，模式串 P="abaabc"。求 next 数组（1-based，next[1]=0）。
+<strong>解析</strong>：
+- next[1]=0。
+- next[2]：看 P[1..1]="a"，前缀后缀相等的最长长度=0 → next[2]=1。（2号前"a"没有相等真前后缀，按约定 next=1）
+- next[3]：P[1..2]="ab"，最长相等前后缀=0 → next[3]=1。
+- next[4]：P[1..3]="aba"，最长相等前后缀="a"（长度1）→ next[4]=2。
+- next[5]：P[1..4]="abaa"，最长相等前后缀="a"（长度1）→ next[5]=2。
+- next[6]：P[1..5]="abaab"，最长相等前后缀="ab"（长度2）→ next[6]=3。
+所以 next = [0,1,1,2,2,3]。
+<strong>要点</strong>：问你"失配在第 j 位时模式串右移到哪再比"→ 看 <code>P[0..j-1]</code> 最长相等前后缀长度。
+<strong>Q2</strong>：KMP 相比 BF 最大的改进点是？
+<strong>解析</strong>：<strong>主串指针不回退</strong>（BF 每次失配都回退）。带来的收益：匹配过程稳定在 O(n)，不会因"重复比较"退化到 O(n·m)。<strong>这题是概念送分</strong>。</p>
+<p>（KMP 的 next 推导在考试里常要求"算到第几个失配后主串跳到哪"，对照定义一步步推即可，重点是"前后缀要相等且最长"。）</p>
+<hr />
+<h2 id="d5">D5　树与二叉树（第二大重点，记忆量最大）</h2>
+<h3 id="51">5.1 树的基本概念</h3>
+<ul>
+<li>树 = 有且只有一个根结点的 <strong>层次结构</strong>（一对多）。</li>
+<li><strong>度</strong>：结点拥有的子树个数。树的度 = 所有结点度的最大值。</li>
+<li><strong>分支结点/内部结点</strong>（度&gt;0）、<strong>叶子/终端结点</strong>（度=0）。</li>
+<li>二叉树是<strong>度≤2</strong> 且"每个结点的子树有左右之分"（有序）的树。</li>
+<li><strong>路径长度</strong>：两结点之间边的条数；<strong>树的路径长度/带权路径长度</strong>见哈夫曼。</li>
+</ul>
+<h3 id="52">5.2 ★二叉树的重要性质（必背五条 + 每题都要能推）</h3>
+<p>设二叉树含 n 个结点，度为 0/1/2 的结点数为 n₀/n₁/n₂：
+1. <strong><code>n₀ = n₂ + 1</code></strong>（叶子数 = 度为2结点数 + 1）。
+   - <strong>推导</strong>：边数 = n-1（n 个结点 n-1 条边）；又边数 = 0·n₀ + 1·n₁ + 2·n₂ = n₁ + 2n₂。故 n-1 = n₁+2n₂，而 n = n₀+n₁+n₂，消去得 n₀ = n₂+1。<strong>必须会推，选择题常考</strong>。
+2. 第 k 层上<strong>最多 <code>2^(k-1)</code></strong> 个结点（k≥1）。
+3. 深度为 k 的<strong>满二叉树</strong>最多结点数：<code>2^k - 1</code>。
+4. <strong>完全二叉树</strong>（只有最下两层可以不满，且最下层从左到右连续）：n 个结点的完全二叉树深度 = <code>⌊log₂n⌋ + 1</code>。
+5. 完全二叉树顺序编号（从 1 开始）：编号 i 的结点，<strong>左孩子 2i、右孩子 2i+1、双亲 ⌊i/2⌋</strong>。
+   - 这是"数组存堆、数组存完全二叉树"的数学基础（本项目优先级队列若用数组实现就靠它）。</p>
+<p><strong>满二叉树</strong>：每一层都满（第 k 层有 2^(k-1) 个）的二叉树。</p>
+<p><strong>每一条的"深层理解 + 进制来源"（背性质才能推）</strong>：
+- <strong>性质 1 是最常考选择题</strong>。记住结论"叶子比二度结点多 1"，同时会反推：给你 n 和 n₂，立刻能写 n₀=n₂+1、n₁=n−n₀−n₂。<strong>完全二叉树里 n₁ 只可能是 0 或 1</strong>（因为完全二叉树至多一个一度结点）。
+- <strong>性质 2/3 一起记</strong>：每层最多 2^(k−1)，满二叉 k 层共 <code>1+2+...+2^(k−1) = 2^k−1</code>（等比求和）。
+- <strong>性质 4 用于"已知结点数求树高"</strong>：<code>深度 = ⌊log₂n⌋ + 1</code>。例：n=15 → ⌊log₂15⌋=3 → 深 4；n=16 → ⌊log₂16⌋=4 → 深 5。（判断"完全二叉但非满"时要 +1。）
+- <strong>性质 5 是顺序存储的根基</strong>：堆的下沉/上浮全靠 <code>2i / 2i+1 / ⌊i/2⌋</code> 在数组下标间跳转。<strong>注意编号从 1 开始</strong>；若数组下标从 0 开始，则孩子是 <code>2i+1 / 2i+2</code>、父亲 <code>⌊(i−1)/2⌋</code>——408 两种下标都可能给，<strong>先看题干编号从 0 还是 1</strong>。</p>
+<p><strong>层次/深度计算题（必练）</strong>：
+- 例 A：一棵<strong>完全二叉树</strong>共 767 个结点，问叶子 n₀、度 1 结点数、树高。
+  <strong>解</strong>：树高 = ⌊log₂767⌋+1 = 9+1 = 10。n = n₀+n₁+n₂ = 767，又 n₀=n₂+1 → n₁ = 767 − 2n₂ − 1。完全二叉树 n₁∈{0,1}：768 是偶数 → n₁ 只能为 1（若 n₁=0 则 767=2n₂+1 → n₂=383，但这样 2n₂+1=767，n₁=0，须检查叶层…合并推最稳）。直接记结论：<strong>结点数 n 为奇数时 n₁=0，偶数时 n₁=1</strong>（因为 n = 2n₂ + n₁ + 1，n−1 奇偶决定 n₁）。767 为奇数 → n₁=0，n₂=(767−1)/2=383，n₀=384。
+- 例 B：某二叉树的先序与中序或中序与后序能唯一确定，但<strong>先序+后序不能唯一确定</strong>（除非不含单子树结点）。→ 常考"由遍历序列建树"的确定性问题。</p>
+<h3 id="53">5.3 二叉树的存储</h3>
+<ul>
+<li><strong>顺序存储</strong>（数组）：适合完全二叉树（可用公式找孩子/父亲）；对一般二叉树浪费空间（很多空位）。</li>
+<li><strong>链式存储</strong>（常用）：<code>LNode { data; LChild; RChild }</code>（二叉链表）；再加 parent 即三叉链表（便于向上找父）。</li>
+</ul>
+<h3 id="54">5.4 二叉树的遍历（必背 + 会写递归/掌握非递归用栈/队列）</h3>
+<p>四种顺序：
+- <strong>先序（前序）</strong>：根 → 左 → 右
+- <strong>中序</strong>：左 → 根 → 右
+- <strong>后序</strong>：左 → 右 → 根
+- <strong>层序</strong>：按层从上到下、每层从左到右（用<strong>队列</strong>实现 BFS）。</p>
+<p><strong>由遍历序列确定树</strong>（高频考点）：
+- 已知<strong>先序 + 中序</strong> → 唯一确定二叉树：先序第一个是根，用根把中序分成左/右子树，递归。
+- 已知<strong>后序 + 中序</strong> → 同理（后序最后一个是根）。
+- 已知<strong>先序 + 后序</strong> → <strong>不能唯一确定</strong>（只能确定根，无法区分左右子树）——这是常考陷阱。</p>
+<p><strong>"已知先序+中序恢复树"是必须能手推的</strong>。树的特点就是递归结构，用递归恢复。</p>
+<h3 id="55">5.5 线索二叉树（线索化）</h3>
+<ul>
+<li>用结点里<strong>空的左/右指针</strong>存中序（或先/后序）的<strong>前驱/后继</strong>，用标志位 <code>LTag/RTag</code> 区分"是指孩子还是线索"。</li>
+<li>意义：让<strong>中序遍历不用栈/递归</strong>，直接从线索找后继，O(1) 找前驱/后继。</li>
+<li>考点：区分线索的 LTag（0 左孩子/null？1 前驱）、在中序线索树上找前驱后继。</li>
+</ul>
+<h3 id="56-bst">5.6 二叉排序树 BST（二叉查找树）</h3>
+<ul>
+<li>性质：<strong>左子树所有 &lt; 根 &lt; 右子树所有</strong>。中序遍历 BST = <strong>递增有序序列</strong>。</li>
+<li>查找：从根往下走，平均 <strong>O(logn)</strong>；最坏退化为<strong>斜树（链表）→ O(n)</strong>。</li>
+<li>插入：总是插入为叶子（不改变树其余部分）。</li>
+<li>删除（三种情况，必背）：
+  1) 删叶子：直接删。
+  2) 只有一个孩子：把孩子顶上来。
+  3) 两个孩子：用其<strong>中序前驱（左子树最大）或中序后继（右子树最小）</strong>替换被删结点，再删那个前驱/后继（它最多一个孩子）。</li>
+<li><strong>ASL（平均查找长度）</strong>：成功和不成功都考。</li>
+</ul>
+<h3 id="57-avl">5.7 平衡二叉树 AVL</h3>
+<ul>
+<li>定义：任一结点<strong>左右子树高度差的绝对值 ≤1</strong>，且都满足（递归）。</li>
+<li>平衡因子 BF = 左子树高度 - 右子树高度，取值 -1/0/1。</li>
+<li>插入导致失衡时<strong>旋转</strong>调整（四个情况）：</li>
+<li><strong>LL</strong>（左左，在左孩子的左子树插入）→ 右单旋。</li>
+<li><strong>RR</strong>（右右）→ 左单旋。</li>
+<li><strong>LR</strong>（左右）→ 先左旋成 LL 再右单旋。</li>
+<li><strong>RL</strong>（右左）→ 先右旋成 RR 再左单旋。</li>
+<li>AVL 的高度：含 n 个结点的 AVL 树最大深度约为 <strong>1.44·log₂(n+2)</strong>（比 n 小得多）→ 保证查找 <strong>O(logn)</strong> 最坏也成立。</li>
+<li>考点：插入后<strong>从低往上找第一个失衡结点</strong>调整——<strong>调整的对象是"离插入点最近的失衡结点"这个子树</strong>，旋转后整体重新平衡。</li>
+</ul>
+<h3 id="58-wpl">5.8 哈夫曼树 / 哈夫曼编码（★ WPL 计算 + 构造）</h3>
+<ul>
+<li><strong>哈夫曼树（最优二叉树）</strong>：给定一组叶子权值，构造成<strong>带权路径长度 WPL 最小</strong>的二叉树。</li>
+<li>WPL（带权路径长度）= Σ（叶子的<strong>权值 × 到根的路径长度 = 深度</strong>）。</li>
+<li><strong>构造算法（背步骤）</strong>：将 n 个权值看成 n 棵只有根的二叉树；选<strong>权值最小的两棵</strong>合并成一棵（新根权值和），反复直到剩一棵。</li>
+<li><strong>每次合并选最小两个</strong> → 这是"贪心"思想。</li>
+<li><strong>哈夫曼编码（前缀码）</strong>：左 0 右 1，只有叶子上有对应字符（<strong>没有字符在另一字符的祖先位置</strong>，所以是<strong>无歧义的前缀编码</strong>）。频率高的字符编码短、频率低的编码长 → 总长度最短。</li>
+<li>性质（考点）：<strong>n 个叶子的哈夫曼树共有 2n-1 个结点</strong>（因为哈尔曼树无度为1的结点）。</li>
+<li>本项目联系：FRC 变长编码帧的"自描述"思想 = "高频给短码、低频给长码"（和信息论的前缀码一致）。</li>
+</ul>
+<h3 id="59-heap">5.9 堆（Heap，优先队列的实现）</h3>
+<ul>
+<li><strong>堆</strong> = 完全二叉树 + 每个结点 ≥（大根堆）或 ≤（小根堆）其孩子。</li>
+<li>存储：用<strong>顺序存储（数组）</strong>，用完全二叉树编号公式 <code>孩子=2i,2i+1,父=⌊i/2⌋</code>。</li>
+<li>关键操作：</li>
+<li><strong>建堆</strong>（从最后一个非叶结点 <code>⌊n/2⌋</code> 开始往上做"向下调整"）：<strong>O(n)</strong>（一次向下 O(logn)，从 n/2 个位置做，总量 O(n)）。</li>
+<li><strong>插入</strong>：先在末尾放新元素然后"向上调整" → <strong>O(logn)</strong>。</li>
+<li><strong>删除堆顶</strong>：用最后一个元素顶上，再"向下调整" → <strong>O(logn)</strong>。</li>
+<li>用途：<strong>优先队列</strong>、<strong>堆排序</strong>（见 D8）。</li>
+<li>大根堆 vs 小根堆的<strong>向下调整（sift down）</strong>要会手写（排排序大题）。</li>
+</ul>
+<h3 id="510">5.10 树的应用（本项目直接对应）</h3>
+<ul>
+<li>本项目"科目→子类→任务" = <strong>一棵多级树</strong>（根是"全部任务"，中间是分类，叶子是具体任务）。</li>
+<li>"找下一个到点提醒" = 在这棵树上做遍历，本质是<strong>先序/层序遍历 + 按时间排序</strong>（可用优先队列 = 堆）。</li>
+</ul>
+<hr />
+<h2 id="d5_1">D5 练习题</h2>
+<p><strong>Q1</strong>：某二叉树有 n₀=10 个叶子，n₁=5 个度为1的结点，求结点总数。
+<strong>解析</strong>：由 n₀=n₂+1 → n₂ = n₀-1 = 9。总数 = n₀+n₁+n₂ = 10+5+9 = <strong>24</strong>。
+（直接套性质①，送分。但注意不是所有题都给 n₁，可能给你"总边数"让你推。）</p>
+<p><strong>Q2</strong>（先序+中序恢复）：先序 <code>ABDECF</code>，中序 <code>DBEAFC</code>，恢复二叉树并写后序。
+<strong>解析</strong>：
+- 先序首位 <code>A</code> = 根。中序里 A 把左右分开：左子树中序 <code>DBE</code>、右子树 <code>FC</code>。
+- 左子树：先序（A后面的）<code>BDECF</code> 中根 <code>B</code>，中序 <code>DBE</code> 里 B 的左边 <code>D</code>、右边 <code>E</code> → B 左孩子 D、右孩子 E。
+- 右子树：<code>CF</code>：先序 <code>CF</code>，根 <code>C</code>，中序 <code>FC</code> 里 C 右边有 <code>F</code> → C 右孩子 F。
+- 后序 = 左-右-根 = <code>DEBFCA</code>。</p>
+<p><strong>Q3</strong>（堆验证 + 建堆）：给序列 <code>{9,5,8,2,3}</code> 建成大根堆。
+<strong>解析</strong>：数组下标 1~5，初始 <code>9,5,8,2,3</code>。最后一个非叶 = ⌊5/2⌋=2 → 对下标2元素5做向下调整：5 的孩子 2,3(对应2和3号) 中较大的3号=3；5&gt;3需交换→ 5 和 3 换？但 5 的左孩子是2（下标4），右孩子3（下标5）。取孩子中较大者：左孩2、右孩3，较大是3（值3）但 5 与 3 比不用换（5&gt;3）。再看下标1的9，9&gt;8&gt;所有，无需换。结果仍是 <code>9,5,8,2,3</code>。
+<strong>要点</strong>：向下调整是"沿较大孩子的路径下潜"，建堆从 ⌊n/2⌋ 往前做。多练一次"5,2,9,8,3"这类非堆序列的建堆过程。</p>
+<p><strong>Q4</strong>（WPL）：字符 A,B,C,D 频次 7,5,2,4，构造哈夫曼树并求 WPL 与每个编码。
+<strong>解析</strong>：权值 {7,5,2,4}。
+- 取最小的 2,4 → 合并为6 → 剩 {7,5,6}。
+- 取最小的 5,6 → 合并为11 → 剩 {7,11}。
+- 合并 7,11 → 18（根）。
+- WPL = 7×1（A 深度1）+（B 5）×2（若B挂11下深度2）+（2 和4 深度3）= 7·1 + 5·2 + 2·3 + 4·3 = 7+10+6+12 = <strong>35</strong>。
+（注意树形一不同 WPL 可能不同，但所有哈夫曼树 WPL 都最小且相等。）
+<strong>Q5</strong>（哈夫曼结点数）：用 n=4 片叶子构造哈夫曼树，共多少个结点？
+<strong>解析</strong>：无度为1，结点总数 = 2n-1 = 2×4-1 = <strong>7</strong>。记住"2n-1"这个送分公式。</p>
+<hr />
+<h2 id="d6">D6　图</h2>
+<h3 id="61">6.1 图的基本概念</h3>
+<ul>
+<li><strong>图</strong> = 顶点集 V + 边集 E。</li>
+<li><strong>无向图 / 有向图</strong>；<strong>度</strong>（无向图中顶点的度=关联边数；有向图分<strong>入度/出度</strong>）。</li>
+<li>完全图：无向 n 个顶点 完全图边数 <code>n(n-1)/2</code>；有向完全图 <code>n(n-1)</code>。</li>
+<li>连通/强连通、生成树、连通分量。</li>
+<li>带权图（网）、稀疏图（|E| &lt;&lt; |V|²）/稠密图。</li>
+</ul>
+<h3 id="62">6.2 图的存储（★ 必会）</h3>
+<ul>
+<li><strong>邻接矩阵</strong>：<code>A[i][j]</code> = 1（或权值）表示存在边(i,j)。<strong>空间 O(n²)</strong>，适合<strong>稠密图</strong>；判断"是否存在边 i→j"是 O(1)。无向图的邻接矩阵<strong>对称</strong>（可存一半省空间）。</li>
+<li><strong>邻接表</strong>：每个顶点一个链表（或 vector）存其邻接点。<strong>空间 O(n+e)</strong>，适合<strong>稀疏图</strong>；求某顶点的出边快。</li>
+<li>关系：Dijkstra 用邻接矩阵实现较直观；稀疏图上用邻接表省空间。</li>
+</ul>
+<h3 id="63">6.3 图的遍历（必背）</h3>
+<ul>
+<li><strong>深度优先 DFS</strong>：用<strong>栈（显式或递归）</strong>，从一个顶点出发尽可能深地走，无路可走时回溯。</li>
+<li><strong>广度优先 BFS</strong>：用<strong>队列</strong>，一层层扩展（先访问所有邻接点，再访问邻接点的邻接点）。</li>
+<li>两者都需要 visited 数组防止重复访问。</li>
+<li><strong>连通分量</strong>：一次 DFS/BFS 能到达的顶点集合。非连通图需要多次遍历，次数=连通分量数。</li>
+<li>本项目落点：WiFi 配网的<strong>边界/可达设备发现</strong>、任务图的拓扑关系都可用 BFS/DFS；录音文件依赖关系可用有向无环图(DAG)建模。</li>
+</ul>
+<h3 id="64-mst">6.4 最小生成树 MST（★ 计算题）</h3>
+<ul>
+<li>生成树：n 个顶点的连通图，取其 n-1 条边构成的不含环的连通子图。<strong>生成树有 n-1 条边</strong>。</li>
+<li><strong>Prim 算法</strong>（初始选一个顶点逐步"并入最小边"）：适合稠密图，O(n²)。</li>
+<li><strong>Kruskal 算法</strong>（按权从小到大地选不会成环的边，连同并查集判环）：适合稀疏图，O(eg·loge)。</li>
+<li>两种算法得到的<strong>权值和都最小</strong>（Prim 从点出发、Kruskal 从边出发），但具体树形可能不同。</li>
+<li>考点：<strong>会手算</strong>给定图/Prim/Kruskal 的选边顺序。</li>
+</ul>
+<h3 id="65">6.5 最短路径（★ 必考计算）</h3>
+<ul>
+<li><strong>Dijkstra（单源、非负权）</strong>：从源点出发，每次选"当前未定中距离最小"的顶点加入，并松弛其邻接边。</li>
+<li>每次选最小 → 可用优先队列（堆）优化。</li>
+<li>时间：朴素 O(n²)；堆优化 O((n+e)logn)。</li>
+<li><strong>注意：Dijkstra 只适用于非负权</strong>。</li>
+<li><strong>Floyd（多源、可带负权，不含负环）</strong>：动态规划，三重循环，O(n³)；dp[k][i][j] 表示经过 {0..k} 中点为中转的 i→j 最短路。</li>
+<li>试卷常让你<strong>手推 Dijkstra 表</strong>（一次一格地填"到各顶点的当前最短路 + 前驱"）。</li>
+</ul>
+<h3 id="66">6.6 拓扑排序与关键路径（● 结合项目"任务依赖"）</h3>
+<ul>
+<li><strong>拓扑排序（AOV 网）</strong>：有向无环图，输出一种"每顶点都在其所有前驱之后"的次序。</li>
+<li>方法：找<strong>入度0</strong>的顶点点<strong>输出并删除其所有出边</strong>（入度减1），反复。</li>
+<li>若无法完全输出（还剩顶点）说明<strong>有环</strong>。</li>
+<li>用<strong>队列/栈</strong>维护当前入度为0的顶点。时间 O(n+e)。</li>
+<li><strong>关键路径（AOE 网）</strong>：带权有向无环图，顶点&lt;-&gt;事件、边&lt;-&gt;活动。</li>
+<li>求<strong>最早发生时间 ve</strong>（从源点正向，取 max）、<strong>最迟发生时间 vl</strong>（从汇点反向，取 min）。</li>
+<li><strong>关键活动</strong> = vl-ve = 0 的活动；关键路径上的活动之和最长，决定工程总工期。</li>
+<li><strong>项目对应</strong>：录音任务流水线（采集→编码→写盘→可回放）的依赖可用 AOE；哪步最慢（关键），优化它就缩短总耗时——正是"录音编码慢则录长会溢出"的关键路径思想。</li>
+</ul>
+<h3 id="67">6.7 易错点</h3>
+<ul>
+<li>Dijkstra 不能处理负权边；Floyd 不能处理负权回路。</li>
+<li>拓扑排序结果<strong>不唯一</strong>（有多个入度0可选时选哪个不同，结果不同）。</li>
+<li>生成树一定有 <strong>n-1</strong> 条边，这是判别的核心。</li>
+</ul>
+<hr />
+<h2 id="d6_1">D6 练习题</h2>
+<p><strong>Q1</strong>：6 个顶点的无向图，至少几条边可能不连通？
+<strong>解析</strong>：最节约但不连通：5 个顶点成完全图 <code>C(5,2)=10</code> 条边 + 1 个孤立顶点 0 条边总和 10 条仍不连通。再加 1 条把孤立连起来 → 11 条必连通。所以<strong>最多 10 条边仍不连通</strong>；不连通的边数最大值 = <code>C(n-1,2)=10</code>。<strong>要点：背公式 C(n-1,2) 是一个 n 顶图仍可不连通的最大边数。</strong>
+<strong>Q2</strong>（最小生成树手推）：给图求 Prim 选边顺序（略图，方法如下）。
+按"从某顶点开始，每次并入与已选集合相连的<strong>最小权</strong>边"填空，Kruskal 则按全图边权从小到大选且用并查集判环。
+<strong>要点</strong>：真题给具体图蹲你手推，配合表格每轮更新"当前 min 距离"即可。手敲 2-3 遍最稳妥。</p>
+<p><strong>Q3</strong>（Dijkstra 性质）：为什么 Dijkstra 只能用于非负权？
+<strong>解析</strong>：Dijkstra 采用"贪心"：每次认为"当前到某顶点距离已永久确定（不再更新）"。若存在<strong>负权边</strong>，某顶点的距离可能在之后通过负权边<strong>再变小</strong>，破坏了"已是最终值"的假设，结果错误。→ 负权必须用 Bellman-Ford / Floyd。</p>
+<hr />
+<h2 id="d7">D7　查找（★ 哈希是重灾区）</h2>
+<h3 id="71">7.1 顺序查找</h3>
+<ul>
+<li>逐个比较，从头到尾。成功平均查找长度 ASL = <strong>(n+1)/2</strong>，失败 = n+1。</li>
+<li>时间 O(n)。适合顺序表（可加哨兵减少分支判断）。</li>
+</ul>
+<h3 id="72-asl">7.2 二分查找（★ 必须会手写与算 ASL）</h3>
+<ul>
+<li>前提：<strong>顺序存储且有序</strong>。</li>
+<li>每次取 <code>mid = ⌊(low+high)/2⌋</code>；<code>key==A[mid]</code> 命中；<code>key&lt;A[mid]</code> 高=mid-1；否则低=mid+1。</li>
+<li><strong>ASL 成功</strong> ≈ <code>log₂(n+1)-1</code>（即折半查找的判定树是一棵平衡树）。判定树的<strong>树高 = ⌊log₂n⌋+1</strong>，这就是最多比较次数。</li>
+<li>复杂度 O(logn)。<strong>不适用于链表</strong>（无法 O(1) 随机访问中间）。</li>
+<li>考点：画折半查找<strong>判定树</strong>，数某次查找的比较次数、ASL。</li>
+</ul>
+<h3 id="73-b">7.3 二叉排序树 / 平衡树 / B 树 / 散列</h3>
+<ul>
+<li>BST：平均 O(logn)，最坏 O(n)（退化为链）；AVL 保证 O(logn)。</li>
+<li><strong>B 树 / B+ 树</strong>（大索引常考）：</li>
+<li><strong>m 阶 B 树</strong>：每个结点最多 m 个孩子、最多 m-1 个关键字；所有<strong>叶子（失败的查找结点）在同一层</strong>，即所有路径等长。</li>
+<li><strong>B+ 树</strong>：数据只存在<strong>叶子</strong>，且叶子之间有链指针相连（适合范围查找）；非叶结点只存索引。</li>
+<li>考点：B 树的高度、每个结点关键字数与孩子的对应关系（<strong>叶子层所有失败结点同层</strong>是 B 树的本质）。</li>
+<li>本项目：SPIFFS 的块位示图、NVS 键值查找本质可看作"索引/散列"，理解理论即可。</li>
+</ul>
+<h3 id="74">7.4 ★散列（哈希）——分值最高，务必多练</h3>
+<p><strong>散列函数 H(key)</strong>：常用
+- <strong>除留余数法</strong>：<code>H(key) = key % p</code>，p 常取<strong>质数</strong>（且接近表长）以减少冲突。
+- 数字分析法、平方取中法、折叠法等（了解）。</p>
+<p><strong>冲突处理</strong>：
+- <strong>开放定址法</strong>（冲突后在表内找空位）：
+  - <strong>线性探测</strong>：<code>Hi = (H(key)+i) % m</code>，依次探测 <code>+1,+2,...</code>。缺点:<strong>堆积</strong>（连成一片导致二次冲突）。
+  - <strong>平方探测</strong>：<code>Hi = (H(key)+i²) % m</code>（二次探测），减少堆积，但<strong>不一定探测完所有格子</strong>（表长须取特殊形态）。
+  - <strong>再散列/伪随机</strong>等。（开放定址法删除时不能真删，只能"标记删除"，否则会断掉探测链——这是常考的小细节。）
+- <strong>链地址法（拉链法）</strong>：同义词（散列到同一格）挂在同一个<strong>链表</strong>里。不产生堆积，删除容易。<strong>本项目 NVS 的键-值可类比为链地址散列表</strong>。</p>
+<p><strong>装填因子</strong> α = 表中元素数 / 表长。
+- 冲突越多越难找；<strong>ASL 随 α 增大而增大</strong>。<strong>线性探测 ASL 成功 ≈ ½(1+1/(1−α))，失败 ≈ ½(1+1/(1−α)²)</strong>（选填偶尔直接用公式，了解原理即可）。</p>
+<p><strong>ASL 计算（必考，务必手算到底）</strong>：
+- <strong>查找成功 ASL</strong>：每个关键字"定位次数"求和 / 关键字个数。（定位次数：第一次就命中=1，探测第几次命中就计几次——<strong>冲突越多定位次数越大</strong>）
+- <strong>查找失败 ASL</strong>：对每个散列地址（0..m-1），从该地址出发<strong>到第一个空位(含该空位本身)+1 需要探测的次数</strong>总和 / m。（失败要看"空位在哪停"。<strong>注意：失败 ASL 平均除以的是表长 m，而不是关键字个数 n</strong>——408 常挖这个坑。）
+- <strong>做题模板</strong>：先画一张 0..m-1 的格子表，把关键字经各探测放到对应格子；再把"每个关键字各自命中时的探测次数"列出来求和得成功 ASL；再对每个散列地址算"到空位探测几步"求和除以 m 得失败 ASL。</p>
+<blockquote>
+<p><strong>两个最容易错的点</strong>：
+1. <strong>成功平均除以 n（关键字个数），失败平均除以 m（表长）</strong>。
+2. <strong>构造成功 ASL 时，"探测次数"从 1 开始记</strong>（第一个空位即命中算 1 次）；构造失败 ASL 时，走到第一个空位的那次也要算一次探测，且这个空位之后的格子不再探测。</p>
+</blockquote>
+<p><strong>书本经典题（自己完整推一遍，把上表填满）</strong>：</p>
+<blockquote>
+<p>表长 13，<code>H(key)=key%13</code>，线性探测，依次插 <code>{12, 25, 38, 51, 25, 77, 90, 5}</code>…（练习时改数据反复做）。最后验证：
+- 成功 ASL = 所有关键字命中探测次数之和 ÷ 关键字个数；
+- 失败 ASL = 每个散列地址走到首个空位的探测数之和 ÷ 13。
+一定要<strong>落笔画格子 + 数次数</strong>，这是哈希题拿满分的唯一办法。**</p>
+</blockquote>
+<p><strong>排序项目中"哈希就是按名字找录音"</strong>：录音文件名 <code>R0000001.FRC</code> 若做成目录，查找就是"精确匹配键→值"；把文件名 % 表长即可 O(1) 近似定位——正是散列思想。理解它对理解 NVS 命名空间键值也有帮助。</p>
+<hr />
+<h2 id="d7_1">D7 练习题</h2>
+<p><strong>Q1</strong>（哈希 ASL 成功+失败）：表长 13，散列函数 <code>H(key)=key%13</code>，依次插入 <code>{19,14,23,1,68,20,84,27,55,11,10,79}</code>（冲突用<strong>线性探测</strong>）。求查找成功与失败的 ASL。
+<strong>解析（先铺表）</strong>：19%13=6；14%13=1；23%13=10；1%13=1 → 冲突，探测 2，放2；68%13=3；20%13=7；84%13=6 → 探测7(20)占、8 放8；27%13=1 → 探测2(1)占、3(68)占、4 放4；55%13=3 → 探测4占、5 放5；11%13=11；10%13=10 → 探测11占、12 放12；79%13=1 → 探测2,3,4,5,6,7,8? 依次 2,3,4,5,6(19),7(20),8(84),9 放9。
+表填充结果：下标0空,1:14,2:1,3:68,4:27,5:55,6:19,7:20,8:84,9:79,10:23,11:11,12:10。
+- <strong>成功 ASL</strong>：每个元素的探测次数：14(1)、1(2)、23(1)、68(1)、20(1)、84(2)、27(4)、55(2)、11(1)、10(3)、79(9)。求和=1+2+1+1+1+2+4+2+1+3+9 = 27 → ASL成功 = 27/12 = 2.25。
+- <strong>失败 ASL</strong>：对每个散列地址0~12，从该地址探测到第一个空位。下标0空 → 0 号失败查1次；1号(14)→1,2(1),3(68),4(27),5(55),6(19),7(20),8(84),9(79),10(23),11(11),12(10),再13%13=0 空 → 探测 14 次。依次算……（本题较绕，锤炼"失败看空位"的算法即可）。
+<strong>要点</strong>：<strong>成功看"每个元素定位几次"；失败看"从某地址到空位探测几次"</strong>。这两种 ASL 是高频，务必会分。</p>
+<p><strong>Q2</strong>（二分）、：在有序数组 1..100 中查找 60 至少比较几次能找到？
+<strong>解析</strong>：mid=(1..100)→50&lt;60 → low=51; mid=(51..100)=75&gt;60 → high=74; mid=(51..74)=62&gt;60 → 51..61; mid=(51..61)=56&lt;60 →57..61; mid=59&lt;60 → 60; 可见约 6 次左右。公式：判定树高度 ⌊log₂100⌋+1=7 → 最多7次。<strong>背"⌊log₂n⌋+1"为最大比较次数</strong>。</p>
+<p><strong>Q3</strong>（散列缺点）：α=1 表示什么？会怎样？
+<strong>解析</strong>：α=1 表已满（元素数=表长）。线性探测充满时查找几乎遍历整表；链地址法离 0.7 以上性能也变差。<strong>散列表应留空位、α 别接近 1</strong>，这是为什么常设"负载因子警戒线"且扩容。</p>
+<hr />
+<h2 id="d8">D8　排序（★ 复杂度与稳定性必背 + 手推堆排/快排）</h2>
+<h3 id="81">8.1 八大排序总表（必须背熟）</h3>
+<table>
+<thead>
+<tr>
+<th>排序</th>
+<th>平均</th>
+<th>最好</th>
+<th>最坏</th>
+<th>空间</th>
+<th>稳定</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>直接插入</td>
+<td>O(n²)</td>
+<td><strong>O(n)</strong></td>
+<td>O(n²)</td>
+<td>O(1)</td>
+<td><strong>✔稳定</strong></td>
+</tr>
+<tr>
+<td>希尔(Shell)</td>
+<td>O(n^1.3~²)</td>
+<td>—</td>
+<td>O(n²)</td>
+<td>O(1)</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>冒泡</td>
+<td>O(n²)</td>
+<td>O(n)</td>
+<td>O(n²)</td>
+<td>O(1)</td>
+<td><strong>✔稳定</strong></td>
+</tr>
+<tr>
+<td>快速</td>
+<td><strong>O(nlogn)</strong></td>
+<td>O(nlogn)</td>
+<td><strong>O(n²)</strong></td>
+<td>O(logn)~n</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>简单选择</td>
+<td>O(n²)</td>
+<td>O(n²)</td>
+<td>O(n²)</td>
+<td>O(1)</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>堆排序</td>
+<td><strong>O(nlogn)</strong></td>
+<td>O(nlogn)</td>
+<td>O(nlogn)</td>
+<td><strong>O(1)</strong></td>
+<td>✘</td>
+</tr>
+<tr>
+<td>归并</td>
+<td><strong>O(nlogn)</strong></td>
+<td>O(nlogn)</td>
+<td>O(nlogn)</td>
+<td><strong>O(n)</strong></td>
+<td><strong>✔稳定</strong></td>
+</tr>
+<tr>
+<td>基数</td>
+<td>O(d(n+r))</td>
+<td>同</td>
+<td>同</td>
+<td>O(r)</td>
+<td><strong>✔稳定</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>稳定性记忆口诀</strong>：<strong>稳定的：冒泡、直接插入、归并、基数</strong>（"冒插归基"稳）；<strong>不稳定的：快排、简单选择、堆、希尔</strong>（"快选堆希尔"不稳）。</p>
+<blockquote>
+<p>底层原因（理解记忆，别死背）：
+- 直接插入、冒泡、归并：比较时"= 不交换"即可保持相对次序 → 稳定。
+- 快排、希尔、堆、简单选择：会<strong>跨越式交换/移动</strong>，容易把相等的两个调换顺序 → 不稳定。
+- 简单选择：选择最小的跟前面交换，可能跳过与它等值的元素 → 不稳定。</p>
+</blockquote>
+<p><strong>每个格子怎么记（这一段背下来就拿满"复杂度"小题）</strong>：
+- <strong>平均 O(nlogn) 且比较的分治三兄弟：快排、归并、堆</strong>。三个中只有<strong>归并稳定 + 要 O(n) 空间</strong>；快排<strong>最坏退 O(n²)+空间 O(logn)~n</strong>；<strong>堆永远最坏 O(nlogn)+O(1) 空间</strong>（最稳的时间复杂度，但常数大、不稳定）。
+- <strong>O(n²) 的四个：直接插入、冒泡、简单选择、希尔</strong>（希尔平均略好于 O(n²)）。
+- <strong>"好排"O(n) 的只有两个</strong>：直接插入、冒泡（<strong>已基本有序时</strong>）。为什么：插入/冒泡一趟发现没交换即可停，做原地 O(n)，适合"近乎有序"数据。<strong>简单选择对有序也无能为力（永远固定比较次数 O(n²)，但交换少）</strong>。
+- <strong>空间 O(1) 的原地排序</strong>：除归并（O(n) 辅组）、基数（O(r)）、快排（递归栈 O(logn)~n）外全 O(1)。</p>
+<p><strong>拿来即用的"最××"问答（选择题常考精确说法）</strong>：
+- <strong>最坏也是最好</strong>（时间恒定 O(nlogn)）：<strong>堆排序、归并</strong>（快排最坏会塌到 O(n²)，故不算）。
+- <strong>比较次数不受初始顺序影响</strong>：简单选择（永远 n(n-1)/2）、堆、归并大致也是。
+- <strong>交换次数最少</strong>：简单选择（最多 n-1）；<strong>交换(移动)次数最多</strong>：直接插入/冒泡/快排某情况。
+- <strong>最适合"总体有序，仅少量乱序"</strong>：直接插入（O(n)）。<strong>适合顺序存储也适合链表</strong>：归并（链表归并空间可 O(1)）；快排/堆排依赖随机访问，不太适链表。
+- <strong>n 很大、随机，要求最优市场</strong>：堆排或归并（保证 O(nlogn)）；<strong>快排常数小，工程常选</strong>（快速加随机/中值基准规避最坏）。</p>
+<p><strong>一趟也常考（明白"一趟"=一次划分或一趟冒泡，别混淆）</strong>：
+- 快排"一趟"＝<strong>一次划分</strong>（选 pivot 放好位置，左右分完）。
+- 冒泡/简单选择/堆"一趟"＝一轮比较交换。
+- 归并"一趟"＝把相邻子表两两合一轮。</p>
+<p><strong>空间复杂度</strong>：
+- 快排递归栈：平均/最好 O(logn)，最坏退化成 O(n)（每次都 1 vs n-1）。
+- 归并：需要额外 O(n) 辅助数组（也是它唯一缺点）。
+- 其余多数 O(1)。</p>
+<h3 id="82">8.2 各算法灵魂（理解才有底气）</h3>
+<ul>
+<li><strong>直接插入</strong>：把每个新元素插入前面已有序的子序列的正确位置。最好（已有序）O(n)，平均/最坏 O(n²)。</li>
+<li><strong>冒泡</strong>：相邻比较交换，一趟把最大（或最小）冒到最后。最好（已有序）O(n)（一趟发现问题即可停）。</li>
+<li><strong>希尔</strong>：<strong>直接插入的改进</strong>，先按增量分组做插入，增量递减到 1。不稳定。</li>
+<li><strong>简单选择</strong>：每趟选最小放到最前。比较次数固定 O(n²)，但<strong>交换次数少</strong>（最多 n-1 次交换）——适合"交换代价高"场景（如大对象）。</li>
+<li><strong>快速排序</strong>：选 pivot（基准），一趟把序列分成"小于基准"和"大于基准"两边（partition），递归。<strong>平均 O(nlogn) 最快，但最坏（每次基准是最大/最小）O(n²)</strong>；空间 O(logn)。不稳定。</li>
+<li><strong>划分类(Position)的核心手写：双指针 low/high，基准先用 arr[low] 占位，交替从右找小、从左找大填洞</strong>。</li>
+<li><strong>堆排序</strong>：建大根堆 → 把堆顶（最大）与末尾交换，堆规模减1，重新向下调整。<strong>原地、O(nlogn)、O(1) 空间、不稳定</strong>。恰好结合 D5 的堆知识。</li>
+<li><strong>归并</strong>：合并两个有序表（二路归并），分治递归；需 O(n) 辅助数组；稳定。</li>
+<li><strong>基数排序</strong>：按位（个/十/百）用"计数/桶"进行<strong>分配-收集</strong>，适合位数少的整数/字符串；时间 O(d(n+r))，d 为位数，r 为基数（如10进制 r=10）；稳定。</li>
+</ul>
+<h3 id="83">8.3 排序是否需要"比较"（概念）：</h3>
+<ul>
+<li>基于比较的排序（除基数外）<strong>下界是 Ω(nlogn)</strong>——快排/归并/堆的最优也就 O(nlogn)，不可能低于它（这是"比较排序下界"，408 选择/简答考点）。</li>
+<li>基数排序不基于关键字比较（用分配-收集），可突破 O(nlogn)（但依赖 r 和 d）。</li>
+</ul>
+<h3 id="84">8.4 项目落点</h3>
+<ul>
+<li>录音文件名单：<code>R0000001.FRC...R0000123.FRC</code>，因为<strong>7 位补零</strong>，所以<strong>字典序 = 数值序</strong>，可直接用插入/归并对 dirent 排序。</li>
+<li>这正是工程技巧：<strong>命名规范直接变成排序键</strong>。如果不补零，"10" 的字典序在 "9" 前面 → 排序就错了——这就是"字典序 vs 数值序"的坑，也是"如何设计排序键"的考点。</li>
+</ul>
+<hr />
+<h2 id="d8_1">D8 练习题</h2>
+<p><strong>Q1</strong>（稳定性）：序列含重复值 <code>3,2a,3,1</code>（2a 表示第一个2），直接插入排序后 2a 和第二个 2 相对位置如何？
+<strong>解析</strong>：直接插入稳定，相等的元素 <code>3</code> 在插入时放到已出现的同值后面，因此 <strong>2a 保持在第二个 2 前面</strong>，相对次序不变。→ 稳定。
+<strong>Q2</strong>（快排复杂度）：对逆序数组 <code>n,n-1,...,1</code> 用"选第一个作基准"的快排，共约多少次比较？空间？
+<strong>解析</strong>：快排对已逆序（且基准取首）的序列，每次划分极不平衡（1 个 vs n-1 个），递归深度 n，比较总数 ≈ n(n-1)/2 = <strong>O(n²)</strong>，递归栈空间 <strong>O(n)</strong>。→ 务必背"快排最坏在基准取到极值时发生，O(n²)"。
+<strong>Q3</strong>（堆排手推）：用大根堆对 <code>{5,2,9,8,3}</code> 排序，第 1 趟交换并调整后数组变成？
+<strong>解析</strong>：先建大根堆（自己练），堆顶 9 与末尾交换 → <code>{3,8,5,2 |9}</code>（已放好9），对 <code>{3,8,5,2}</code> 重新向下调整 → 8 是最大的上浮 → <code>{8,3,5,2,9}</code> 第一趟完成。"堆顶换到最后 + 缩小堆 + 向下调整"三步是堆排的每一趟。
+<strong>要点</strong>：凡考堆排，必须<strong>能把建堆、交换、向下调整写全</strong>。这是最容易手滑的排序。</p>
+<hr />
+<h2 id="_4">【数据结构部分小结】（背这一页）</h2>
+<ul>
+<li><strong>复杂度</strong>：O(1)&lt;O(logn)&lt;O(n)&lt;O(nlogn)&lt;O(n²)。循环 ×2 是 log，双层循环看结构。</li>
+<li><strong>线性表</strong>：顺序表随机 O(1) 插删 O(n)；链表相反。</li>
+<li><strong>循环队列</strong>：判空 <code>F==R</code>、判满 <code>(R+1)%M==F</code>、个数 <code>(R-F+M)%M</code>，容量 M-1。</li>
+<li><strong>树的必背</strong>：n₀=n₂+1；深度 k 满 2^k-1；完全树编号 2i/2i+1/⌊i/2⌋；哈夫曼 2n-1 结点；AVL 旋转 LL/RR/LR/RL。</li>
+<li><strong>图</strong>：DFS 用栈、BFS 用队列；Prim 点、Kruskal 边；Dijkstra 非负权；完全图边数 C(n,2)。</li>
+<li><strong>哈希</strong>：α=元素/表长；成功 ASL 看定位次数、失败 ASL 看空位；冲突 线性/平方/链地址。</li>
+<li><strong>排序</strong>：稳定=冒插归基；堆排/快排细节手推；比较排序下界 Ω(nlogn)。</li>
+</ul>
+<hr />
+<h1 id="_5">第二大部分　计算机组成原理（★考得最细、分值最重，务必花最多时间）</h1>
+<blockquote>
+<p>计组是 408 中"知识最碎、最能算"的一科，也是最依赖"把每个细节讲清楚"的一科。袁春风教材强调一条主线：
+<strong>程序怎么从 C 语言变成 CPU 能执行的机器码 / 指令，再被 CPU"取指→译码→执行"。</strong>
+只要这条主线你每一步都知道"发生了什么、数据在哪、为什么"，这一科就赢了大半。下面按顺序深讲，并把每个抽象概念落到这台 ESP32-C3(RISC-V 内核) 录音设备上。</p>
+</blockquote>
+<hr />
+<h2 id="c1-1">C1　计算机系统概述：层次结构、性能指标（袁 §1）</h2>
+<h3 id="11_1">1.1 计算机系统的层次（由顶到底，抽象逐层下降）</h3>
+<pre><code>用户的意图（要&quot;录一段 10 秒的 16kHz 音频&quot;）
+   │
+ 应用软件层：录音 App / UI（study_rec_ui.c）
+   │
+ 操作系统层：FreeRTOS（任务调度、文件系统 SPIFFS、驱动）
+   │
+ 汇编/机器指令层：RISC-V RV32I 指令集（ESP32-C3 内核）
+   │
+ 微体系结构层：数据通路 + 控制器（取指→译码→执行）
+   │
+ 逻辑/物理层：晶体管、存储器、I/O 电路
+</code></pre>
+<p><strong>要点</strong>：上层通过"<strong>接口/命令</strong>"调用下层，下层向下提供底层能力，"<strong>机器字长、地址空间</strong>"等由最底层决定。计组主要研究<strong>从"机器指令"往下</strong>的部分，而上限到"编译/汇编把高级语言变成机器指令"。</p>
+<h3 id="12">1.2 计算机的性能指标（必背公式）</h3>
+<ul>
+<li><strong>机器字长</strong>：一次运算能处理的二进制数据位数（本项目 CPU=32 位，即 RISC-V RV32）。</li>
+<li><strong>主频</strong>：CPU 时钟频率 f（Hz）。主频越高不一定越快（吞吐还看每指令周期数）。</li>
+<li><strong>CPI（每条指令时钟周期数，Cycles Per Instruction）</strong>：执行一条指令平均需要的时钟周期数。</li>
+<li><strong>CPU 时间 = 指令条数 × CPI × 时钟周期</strong>（时钟周期 = 1/主频）。
+  <code>CPU执行时间 = 指令数 × CPI × 1/f</code>
+  （这是"性能计算"的总公式，任何性能题都从它展开。）</li>
+<li><strong>IPS / 吞吐量</strong>：每秒执行指令数 = 主频/CPI。</li>
+<li>运算速度常标 MIPS（每秒百万条指令）= 主频/(CPI×10⁶)。</li>
+<li><strong>MFLOPS / FLOPS</strong>：每秒百万浮点操作——衡量浮点性能，本项目无 FPU，浮点靠软模拟，很慢，所以用 Q 格式定点（见 C2）。</li>
+</ul>
+<p><strong>本项目落点</strong>：ESP32-C3 主频最高 160MHz，32 位 RISC-V。Speex 编码是<strong>整数/定点</strong>运算，改为浮点版则每条浮点指令要软件模拟 → CPI 暴增、性能下降，这正是"16k 用定点 WB 才能扛住"的原因之一。</p>
+<h3 id="13-c-bin">1.3 从 C 语言到 bin 的完整旅程（★本项目最应深讲的一段，考纲多次以它为背景）</h3>
+<p>我们要回答："<code>int16_t pcm[320];</code> 这样的 C 代码，最终怎么变成烧进 Flash 的一串 0/1？CPU 又怎么把它取出来执行？"</p>
+<p>完整 ⑦ 步：</p>
+<pre><code>① 预处理  (.i)    #include #define #if 等文本层面的展开与过滤
+② 编译    (.s)    把 C 变成汇编，做语法分析、中间表示、寄存器分配、指令选择
+③ 汇编    (.o)    汇编器把汇编变成机器码，同时生成符号表 + 重定位表
+④ 链接    (.elf)  多个 .o 合并段、符号解析、重定位 → 可执行 ELF
+⑤ 格式转换        去掉调试信息/ELF 头 → app.bin（裸机器码镜像）
+⑥ 烧录            用 ESP 烧录工具按分区地址写进 SPI Flash（factory@0x10000）
+⑦ 装载执行        bootloader 跳转到入口 → CPU 取指→译码→执行
+</code></pre>
+<p><strong>每步细讲"产物是什么、干了什么"</strong>：</p>
+<p><strong>① 预处理</strong>：把 <code>#include &lt;speex/speex.h&gt;</code> 的头文件<strong>逐字粘贴</strong>进源文件；<code>#define FIXED_POINT 1</code> 在全文做<strong>宏替换</strong>；<code>#if / #ifdef</code> 按条件<strong>保留/删除</strong>代码段。产物是 <code>.i</code> 文件（还是纯文本，仍是人可读的高级语言）。<strong>不做任何语法/类型检查</strong>。</p>
+<p><strong>② 编译</strong>：前端做<strong>词法→语法→语义分析</strong>形成抽象语法树（AST），中端会生成中间表示（IR）并做优化（公共子表达式删除、循环展开、寄存器分配、指令选择、<strong>调度</strong>减少冒险）。后端把 IR 翻译成<strong>汇编指令</strong>。产物 <code>.s</code>。这里是"高级语言 → 机器语义"的关键分水岭：
+- <code>arr[i]</code> → 用<strong>基址寄存器 + 偏移寻址</strong>（见 C4 寻址方式）；
+- <code>for</code> 循环 → 用<strong>条件分支 beq + 跳转 jal</strong>；
+- 函数调用 → 用 <code>jal</code>/<code>jr</code> + <strong>调用栈（栈指针 sp 下降压入返回地址、实参、局部变量）</strong>。</p>
+<p><strong>③ 汇编</strong>：汇编器逐条把汇编指令翻译成<strong>机器码</strong>（一条指令一张 32 位位的"编码表"），输出 <code>.o</code>（目标文件，即 ELF 的一类）。同时生成两块关键元数据：
+- <strong>符号表（symbol table）</strong>：记录本目标文件里定义/引用的每个全局符号（函数名、全局变量名）及其在当前 <code>.o</code> 内的"偏移/未定地址"。
+- <strong>重定位表（relocation table）</strong>：记录"哪些位置引用了外部符号，但地址还没定，等链接时回填"。<strong>为什么必需</strong>：比如 <code>study_recorder.c</code> 里调用了 <code>printf</code>，但要到把所有 <code>.o</code> 拼起来之后才知道 printf 在最终内存的哪个地址。所以编译阶段先在该函数的调用位置填 0，并登记一条重定位记录"此处 + 引用 printf"。</p>
+<p><strong>④ 链接</strong>：链接器把<strong>多个 .o 的各个段按段合并</strong>（所有 <code>.text</code> 合并成一个大 <code>.text</code>，<code>.data</code> 合并成 <code>.data</code>），做<strong>符号解析</strong>（每个引用的符号在最终 ELF 中的地址确定下来），再<strong>重定位</strong>（把每处引用回填成最终绝对地址）。产物 <code>.elf</code>（Executable and Linkable Format，含程序头、节头表、符号表）。<strong>地址在这一步真正确定</strong>。
+- 静态链接 vs 动态链接：静态＝链接时就把用到的库代码拷进 ELF（嵌入式全都这样，因为内存小、无热更新需求）；动态＝运行时才加载 <code>.so</code>（PC 上常见）。</p>
+<p><strong>⑤ 格式转换</strong>：嵌入式没有操作系统"从磁盘加载 ELF"的过程，而是把 ELF 里<strong>程序段的二进制内容</strong>抽出来，去掉 ELF 文件头/调试信息，做成一段"<strong>从固定地址开始、可直接执行的裸镜像</strong>" <code>app.bin</code>。用 <code>esptool</code>/<code>objcopy --binary</code> 完成。</p>
+<p><strong>⑥ 烧录</strong>：把 app.bin 按<strong>分区表</strong>写到 SPI Flash 的指定偏移（本项目 <code>factory</code> 分区在 <code>0x10000</code>，即从 64KB 处开始，留出 bootloader 和分区表）。烧录就是"把 bin 的每个字节写到对应 Flash 地址"。</p>
+<p><strong>⑦ 装载与执行</strong>：上电后 <strong>bootloader</strong>（ROM 里的一段引导代码）先运行，初始化最小系统，跳转到 <code>0x10000</code> 处的应用入口。CPU 从此开始<strong>循环取指（IF）→ 译码（ID）→ 执行（EX）→ 访存（MEM）→写回（WB）</strong>，一条条执行。<strong>装载＝把 ELF/镜像映射到 CPU 可访问的地址空间并跳进去</strong>。</p>
+<h3 id="14-flash-ram">1.4 段的细节与"代码在 Flash、变量在 RAM"（必懂）</h3>
+<ul>
+<li><code>.text</code>：可执行机器码，出厂只读（本项目放 Flash 只读窗，可经 MMU 只读映射到 <code>0x42000000</code> 区域执行）。</li>
+<li><code>.rodata</code>：只读常量（如 Speex 量化码本 <code>gc_quant_bound[16]</code> 等表格），也放 Flash，CPU 直接读，不占宝贵的 SRAM。</li>
+<li><code>.data</code>：<strong>已初始化</strong>的全局/静态变量，初值存在 Flash 里的拷贝，启动时由 <code>crt0</code> 拷到 RAM 的对应地址。</li>
+<li><code>.bss</code>：<strong>未初始化/零初始化</strong>的全局变量（C 里未赋值或 <code>=0</code>），标准是"程序运行时才在 RAM 里清零"，<strong>不占 bin 文件空间</strong>（因为全是 0，没必要存初值）。→ 大量 <code>static int ... = 0</code> 数组放在 .bss，bss 大了 bin 不一定大，但会占运行时 RAM。</li>
+</ul>
+<p><strong>项目落点</strong>：之前聊天里的"空闲堆约 33KB、最大连续块约 16KB"、任务栈等，全是<strong>运行时 RAM（SRAM 里的堆/栈）</strong>；而<strong>录音 16k 崩溃</strong>是因为 Speex WB 编码器初始化要分配较大堆、又要 16KB 任务栈——这两块在 SRAM 里<strong>不能连续命中</strong>或直接不足，导致分配失败/堆损坏 → 触发"异常/PANIC"。这正是下面 C3 存储、C5 中断、OS 内存三章的活案例。</p>
+<h3 id="15-16k">1.5 链接优化：函数级裁剪（结合本项目 16k 内存紧张）</h3>
+<p>用编译选项 <code>-ffunction-sections -fdata-sections</code> 让<strong>每个函数/常量单独放进一个独立的节</strong>，链接时 <code>--gc-sections</code> 把<strong>从未被引用的节直接丢弃</strong>。本设备就是这么做的：把 Speex 里没有被用到的码本/模式裁掉，压缩 Flash 与 RAM 占用——这就是"内存不够时靠裁剪未用代码腾空间"的工程手段，和 OS 的"内存换出"是两回事（这是编译期裁剪）。</p>
+<hr />
+<h2 id="c1">C1 练习题</h2>
+<p><strong>Q1</strong>（性能公式）：某 CPU 指令总数为 5×10⁸，平均 CPI=2，主频 500MHz，求 CPU 执行时间。
+<strong>解析</strong>：CPU 时间 = 指令数 × CPI / 主频 = 5×10⁸ × 2 / (500×10⁶) = 10⁹/5×10⁸ = <strong>2 s</strong>。（套"指令数×CPI×时钟周期"公式即可。）</p>
+<p><strong>Q2</strong>：同一程序，CPU1 主频 3000MHz、CPI=3；CPU2 2000MHz、CPI=2，谁快？
+<strong>解析</strong>：CPU 时间 = 指令数×CPI/f。设指令数 N：CPU1 时间 = N·3/3G = N/G；CPU2 = N·2/2G = N/G → <strong>一样快</strong>。（提示：主频高不一定快，要综合 CPI。这是 408 常设陷阱。）</p>
+<p><strong>Q3</strong>（概念）为什么嵌入式用静态链接？
+<strong>解析</strong>：嵌入式无独立操作系统动态加载/共享库机制、内存小、免去运行时符号解析开销与安全风险；程序加载＝把固定地址的镜像直接执行。→ 静态链接。</p>
+<hr />
+<h2 id="c2-23">C2　数据的表示与运算（对应袁 §2/§3，选择里算分之王）</h2>
+<blockquote>
+<p>这章你必须<strong>把每个数制转换、每个机器数定义、每次溢出判断、每道 IEEE754 都算到手酸</strong>。</p>
+</blockquote>
+<h3 id="21">2.1 数制与真值/机器数</h3>
+<ul>
+<li><strong>真值</strong>：带正负号的真实数值（人类视角），如 <code>-101</code>（二进制真值）、<code>+7</code>。</li>
+<li><strong>机器数</strong>：把符号也数字化，一个数的符号用 1 位（0 正 1 负）连在数值前。真值在机器里用原码/反码/补码/移码四种"机器数"来表示。</li>
+<li><strong>进制转换（必须滚瓜烂熟）</strong>：二进制↔十六进制（每 4 位二进制对 1 位十六进制）；十进制→二进制"除 2 取余"；二进制→十进制"按权展开"。</li>
+</ul>
+<h3 id="22-n-1-n1">2.2 原码 / 反码 / 补码 / 移码（n 位有效数值，1 位符号，总 n+1 位）</h3>
+<p>设共 N 位（含符号，假设 N=8）：</p>
+<table>
+<thead>
+<tr>
+<th>码制</th>
+<th>正数表示</th>
+<th>负数表示</th>
+<th>数值范围</th>
+<th>0 的表示</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>原码</td>
+<td>0符号+真值</td>
+<td>1符号+真值</td>
+<td>-(2⁷-1)~+(2⁷-1)，即 -127~127</td>
+<td>+0=00000000，-0=10000000（两种）</td>
+</tr>
+<tr>
+<td>反码</td>
+<td>同原码</td>
+<td>符号不变，数值各位取反</td>
+<td>-127~127</td>
+<td>+0=00000000，-0=11111111（两种）</td>
+</tr>
+<tr>
+<td>补码</td>
+<td>同原码</td>
+<td><strong>反码+1</strong>（符号不变）</td>
+<td><strong>-128~127</strong>（多负数一方）</td>
+<td>00000000（<strong>唯一</strong>）</td>
+</tr>
+<tr>
+<td>移码</td>
+<td>补码符号位取反</td>
+<td>补码符号位取反</td>
+<td>同补码（用于阶码）</td>
+<td>10000000</td>
+</tr>
+</tbody>
+</table>
+<p><strong>必会的三件事</strong>：
+1. <strong>[-x]补 = [x]补 按位取反 + 1</strong>（包括符号位），即"求补"。
+2. <strong>补码范围不对称</strong>：负数比正数多一个，最小负数是 <code>-2⁷=-128</code>（10000000），最大的正数 127。<strong>为什么</strong>：0 只占一个编码，省出来的那个编码留给了 -128。
+3. <strong>符号扩展</strong>：从 8 位扩展到 16 位，正数高位补 0、负数（补码）高位<strong>补 1</strong>（保持数值不变）。</p>
+<p><strong>为什么计算机用补码（必考/常考）</strong>：
+- ① <strong>减法变加法</strong>：<code>A-B = A+(-B)补</code>，CPU 只需加法器（节省一堆减法电路）。
+- ② <strong>0 唯一</strong>（原码/反码有两个 0，补码只有 0000...0），消除歧义。
+- ③ 补码加法的<strong>进位规则与"无符号数"一致</strong>，省控制逻辑。
+- ④ 补码表示范围比原码/反码多表示一个负数（-2ⁿ），充分利用编码空间。</p>
+<h3 id="23_1">2.3 ★补码运算与溢出判断（选择/大题高频）</h3>
+<p><strong>① 补码加法的本质（先把"为什么"想通）</strong></p>
+<p>补码减法变加法：<code>A − B = A + [-B]补</code>。所以 CPU 只有加法器也能做减法，核心操作就是 <code>X + Y</code>（其中 Y 可能是减数的补码）。做加法时<strong>最高位（符号位）与数值位同样参与进位</strong>，符号位的进位（进位到机器字之外的那一位）被<strong>丢弃</strong>，结果仍按补码解释。</p>
+<p><strong>② 溢出（Overflow）定义（必须先分清概念）</strong></p>
+<p><strong>真值溢出 ≠ 进位丢弃</strong>。补码加法中，符号位产生的"进位 1"丢在机器字外是<strong>正常现象</strong>（比如 <code>-1 + 1 = 0</code>，<code>[-1]补+[1]补 = 1111..1 + 0000..1 = 1 0000..0</code>，那个进位 1 被丢弃，结果 0 正确）。<strong>溢出指的是：运算结果超出该码制能表示的数值范围，真值已经非正常</strong>（例如两个正数加出负数、两个负数加出正数）。这两者不能混，是 408 最爱埋的坑。</p>
+<blockquote>
+<p>一句话：<strong>进位丢弃是常态，溢出是结果坏了</strong>。只有当"结果的符号"已经不再是正确真值应有的符号时，才是溢出。</p>
+</blockquote>
+<p><strong>③ 什么时候才可能溢出（先判这步，省一半时间）</strong></p>
+<ul>
+<li><strong>同号相加</strong> 可能溢出（正+正可能超过最大值，负+负可能低于最小值）。</li>
+<li><strong>异号相加</strong> 一定不溢出（结果夹在两者之间）。</li>
+<li>减法看成加法：<code>A − B</code> 溢出等价于 <code>A + [-B]补</code> 溢出，即<strong>同号相减不溢出</strong>（正-正当 A&gt;B…实际判"符号是否异常改变"最稳）。</li>
+</ul>
+<p><strong>④ 三种等价判据（任选，考熟一种即可）</strong></p>
+<ol>
+<li><strong>符号位判据（最直观）</strong>：两操作数<strong>同号</strong>，且<strong>结果的符号与操作数相反</strong> → 溢出。</li>
+<li><strong>进位判据</strong>：<strong>符号位进位 <code>C_s</code> 与最高数值位进位 <code>C_n</code> 是否相同</strong>。不同 → 溢出；相同 → 不溢出。（用异或：<code>溢出 = C_s ⊕ C_n</code>，这是硬件加法的实际判据，加法器里就一个异或门。多练几道建立直觉。）</li>
+<li><strong>双符号位（变形补码）判据</strong>：将操作数扩展成两位符号位 S₂S₁ 参与运算，结果：
+   - <code>00</code> → 正，无溢出；<code>11</code> → 负，无溢出；
+   - <code>01</code> → <strong>正溢出</strong>（上溢）；<code>10</code> → <strong>负溢出</strong>（下溢）。
+   即"两位符号位不同 ⇒ 溢出"。写入寄存器时只留一位。</li>
+</ol>
+<p><strong>⑤ 三个口诀（背死）</strong>
+- 同号相加、结果反号 ⇔ 溢出。
+- 符号位进位 ⊕ 数值最高位进位 = 1 ⇔ 溢出。
+- 双符号位 01/10 ⇔ 溢出，00/11 无溢出。</p>
+<p><strong>本项目落点</strong>：PCM 采样是 <code>int16_t</code> 补码，范围 <code>[-32768, 32767]</code>。静音=0（<code>0x0000</code>），最大正幅=32767（<code>0x7FFF</code>），-1=<code>0xFFFF</code>。加减法（如直流偏移消除 <code>x − mean</code>）都是补码运算——溢出会夹出爆音/削波，所以音频处理里<strong>必须先做饱和（clamp）再写入缓冲</strong>（<code>if (v &gt; 32767) v = 32767; if (v &lt; -32768) v = -32768;</code>），这正是"防止补码溢出"的工程实现。Speex 定点滤波器（乘累加 MAC）尤其容易溢出，常用右移/限幅来防。</p>
+<p><strong>⑥ 课堂式例题（补码+溢出，务必每道手算一遍）</strong></p>
+<ul>
+<li>
+<p>例 A：8 位补码求 <code>-13 − 15</code>。
+  <code>[-13]补 = −13 = 11110011</code>；<code>[-15]补 = 11110001</code>。做 <code>A + [-B?]</code>… 这里实际是 <code>(-13) + (-15)</code>：<code>11110011 + 11110001 = 1 11100100</code>，进位丢 1，结果 <code>11100100</code> = <strong>−28</strong>。两负数相加得负数，符号位进位 1、数值最高位进位 1（<code>C_s=1, C_n=1</code> 相同）→ 不溢出。正确。</p>
+</li>
+<li>
+<p>例 B：8 位补码 <code>100 + 100</code>，判断是否溢出。
+  <code>[100]补=01100100</code>；<code>01100100 + 01100100 = 11001000</code>。两个正数相加，结果符号位是 1（负数）→ 违反"正+正得正"→ <strong>溢出</strong>。用进位判据：<code>C_s=0, C_n=1</code> 不同 ⇒ 溢出。真值应为 200，超过 8 位补码最大值 127。√</p>
+</li>
+<li>
+<p>例 C：8 位补码 <code>120 + 8</code>。
+  <code>01111000 + 00001000 = 10000000</code> = 补码 <strong>−128</strong>。正+正得负 ⇒ <strong>溢出</strong>。（注意结果 <code>10000000</code> 正好是 −128——这里容易误判，符号位由 0 变 1 就是溢出信号。）</p>
+</li>
+<li>
+<p>例 D：8 位补码 <code>(−1) + (−3)</code>。
+  <code>11111111 + 11111101 = 1 11111100</code> 丢进位 → <code>11111100</code> = <strong>−4</strong>。两负相加得负，不溢出（<code>C_s=1, C_n=1</code>）。</p>
+</li>
+<li>
+<p>例 E：判断 <code>0x40 + 0x40</code>（都是 +64）是否溢出——见上类，正+正出负 ⇒ 溢出。</p>
+</li>
+</ul>
+<p><strong>⑦ 考研常见命题角度</strong>（心里有数，见到不慌）
+- 给两个八位十六进制补码，问相加是否溢出、结果真值多少（注意可能丢弃进位）。
+- 用"进位判据"或"双符号位"判什么硬件信号反映溢出（电路题）。
+- 把饱和/夹取与溢出结合（如本项目 DSP 场景）。
+- 符号扩展后相加是否仍溢出（扩展不影响数值，溢出判定方法不变）。</p>
+<h3 id="24-q">2.4 定点数与 Q 格式（本项目核心，一定要懂）</h3>
+<ul>
+<li><strong>定点数</strong>：小数点的位置在数中是<strong>固定的</strong>。若无浮点单元（FPU），就把一个小数 <code>x</code> 放大 <code>2^Q</code> 倍存成一个<strong>整数</strong> <code>X = round(x·2^Q)</code>，这里的 Q 叫"小数位数"，称为 <strong>Q 格式</strong>。</li>
+<li>运算时按整数做，最后右移 Q 位还原成小数。</li>
+<li>例：Q15 表示 <code>x=0.5</code> → <code>X = 0.5×2^15 = 16384</code>；<code>x=-0.25</code> → <code>-0.25×32768=-8192</code>。</li>
+<li><strong>Q 运算规则（必记）</strong>：</li>
+<li><strong>加/减</strong>：同 Q 直接加减（都在整数域），无 Q 变化。</li>
+<li><strong>乘</strong>：Q15 × Q15 → 结果是 Q30，需要再<strong>右移 15</strong> 得到 Q15，并注意<strong>可能溢出</strong>（两个最大数相乘超范围），用饱和防止。</li>
+<li><strong>除</strong>：要先左移再除，避免精度损失。</li>
+<li><strong>为什么 Speex 用 <code>FIXED_POINT</code></strong>：ESP32-C3 无 FPU，浮点运算是软件模拟、非常慢、还很占栈/栈；改用整数 Q 格式后，LPC/CELP 的预测、量化、滤波全变成整数乘加与移位，快且省。量化码本 <code>gc_quant_bound[16]</code> 里的"边界值"就是用定点编码的表格（QD 表 / 量化表）。</li>
+</ul>
+<h3 id="25-ieee-754">2.5 IEEE 754 浮点（★背诵 + 手算）</h3>
+<p>单精度 float（32 位）布局：</p>
+<pre><code>| 1 位符号 S | 8 位阶码 E(偏移 127) | 23 位尾数 fraction(f) |
+</code></pre>
+<p>规格化数的值：</p>
+<pre><code>值 = (-1)^S × (1.f)₂ × 2^(E-127)，其中 (1.f)₂ 的隐含 1 不存储
+</code></pre>
+<p><strong>关键规则</strong>：
+- <strong>阶码用"移码"</strong>：真阶码 = 存储阶码 E − 127（偏置量是 127）。
+- <strong>隐含位 1</strong>：规格化数尾数总是 <code>1.f</code>，这个"1"不存，白赚 1 位精度。
+- <strong>特殊值</strong>（务必背）：
+  - 阶码全 1（E=255）、尾数全 0 → <strong>±∞</strong>（用于除以 0）；
+  - 阶码全 1、尾数非 0 → <strong>NaN</strong>（非法结果：0÷0、∞−∞、负开根）；
+  - 阶码全 0（E=0）→ <strong>非规格化数</strong> <code>(0.f)₂ × 2^(-126)</code>，或 <strong>±0</strong>（尾数全 0）。
+- 最大值/最小规格化：最大规格化尾数 <code>1.111...1</code>，阶码 254−127=127 → <code>≈3.4×10³⁸</code>；最小规格化正数 <code>1.0×2^(-126)</code>。
+- 双精度 double（64 位）：1 符号 + 11 阶码（偏移 1023）+ 52 尾数。</p>
+<p><strong>本项目落点</strong>：若把 Speex 换用浮点版，那么录音的每次滤波/量化都会走到 IEEE754，本来要命中这套公式；因无硬件浮点，改成 Q 格式定点后，反而"绕开了"浮点，用整数完成——两种都建立在"数的二进制表示"之上。理解 IEEE754 会让你看懂为什么定点更省。</p>
+<h3 id="26">2.6 校验码（选做，但常考）</h3>
+<ul>
+<li><strong>奇偶校验</strong>：在原数据后<strong>补 1 位</strong>，使整个码字中 '1' 的个数为奇数（奇校验）或偶数（偶校验）。只能<strong>检错（检测奇数位错），不能纠错，且偶数位错检测不到</strong>。最简单。</li>
+<li><strong>海明码（Hamming）</strong>：能<strong>纠正 1 位错</strong>（并发现 2 位错）。冗余校验位个数 r 满足 <strong><code>2^r ≥ n+k+1</code></strong>（k 是数据位，n=k+r 总位数）；校验位放在 <strong>2 的幂位置</strong>（1,2,4,8...），每个校验位负责一组"其二进制编号中该位为 1"的信息位。纠错靠各校验位算出 <strong>海明位置（出错位编号）</strong>。工作量大，考上要会手排。</li>
+<li><strong>CRC（循环冗余校验）</strong>：把数据看作多项式，除以一个<strong>生成多项式</strong>，把<strong>余数</strong>作为 CRC 校验位附在末尾。接收端同样除，余数为 0 则无错。<strong>能检测多位错、可按生成多项式纠错</strong>。是计网里以太网 FCS 用的校验法（见 N3）。<strong>要会多项式除法（模 2 除）</strong>。</li>
+<li><strong>本项目落点</strong>：SPIFFS 页 CRC、NVS 的校验、WiFi 帧的 FCS 都是"用校验码保证 FLASH/网络数据不出错"的工程落地；文件"损坏/FLASH 位翻转"靠它发现并重读/报错。</li>
+</ul>
+<hr />
+<h2 id="c2">C2 练习题</h2>
+<p><strong>Q1</strong>（求补码）：求 8 位补码表示 <code>-45</code>。
+<strong>解析</strong>：45(十进制) = <code>00101101</code>(8 位原码)。取反 = <code>11010010</code>，+1 = <code>11010011</code>。所以 <code>[-45]补 = 11010011</code>。<strong>反码+1 是唯一要背的求补法。</strong>
+<strong>Q2</strong>（溢出判断）：用 8 位补码算 <code>10011011 + 01100101</code>，判断是否溢出？
+<strong>解析</strong>：<code>10011011</code> = -101（负），<code>01100101</code> = +101（正）。<strong>异号相加不可能溢出</strong>（结果-101~+101之间）。真值 = -101+101 = 0，正确，不溢出。
+（若用"进位法"：加出来符号位进位 1、次高位进位 0 →不同→误判？其实这种"1+0"进位的组合对<strong>异号</strong>相加是正常。所以大原则先判"同号才可能溢出"。）
+<strong>要点</strong>：<strong>先看符号</strong>，异号相加永不溢出；只有同号相加且结果符号改变才是溢出。
+<strong>Q3</strong>（IEEE754）：把 <code>6.75</code> 转成单精度 float 的十六进制。
+<strong>解析</strong>：6.75 = <code>110.11₂</code> = 规格化 <code>1.1011 × 2^2</code>。符号 S=0。真阶码=2 → 存储阶码 = 2+127 = 129 = <code>10000001</code>。尾数 <code>f = 1011</code>（隐含头 1 不存），后补 0 到 23 位：<code>101100...0</code>。
+拼位：<code>0 | 10000001 | 1011000 0000 0000 0000 0000</code> = <strong>0x40D80000</strong>。
+<strong>易错</strong>：符号、阶码偏置 127、隐含 1——三个都要对。
+<strong>Q4</strong>（Q 格式）：Q15 表示，计算 <code>0.5 × (-0.25)</code>。
+<strong>解析</strong>：X1=0.5×32768=16384；X2=-0.25×32768=-8192。相乘 = 16384×(-8192) = -134217728（Q30）。右移 15 → -4096，还原 -4096/32768 = <strong>-0.125</strong>。（中间是 Q30，记得右移回 Q15。）
+<strong>Q5</strong>（CRC，计组/计网都考）：生成多项式 <code>G(x)=x³+x+1</code>（即 <code>1011</code>），数据 <code>1100</code>，求 CRC 校验码。
+<strong>解析</strong>：校验位数 = 生成多项式位数−1 = 3。数据左移 3 位补 0 → <code>1100000</code>。模 2 除法：
+<code>1100000 ÷ 1011</code>：1100 xor 1011 = 0111；下移一位 01110，首 1 → xor 1011 =<code>0101</code>；下移 01010，首 0 → 01010；下移 10100，xor 1011 = 0001...重复到末。余数 R=具体算得某 3 位（此例为 <code>010</code>）。最终发送码字 = 数据 + 余数 = <code>1100010</code>。
+<strong>套路</strong>：数据片 → 左移 r 位 → 模2除生成多项式 → 取余数 → 拼在尾部。<strong>模 2 除法＝异或且不借位</strong>，多练几次。</p>
+<hr />
+<h2 id="c3-6">C3　存储系统（对应袁 §6，★计算重地）</h2>
+<h3 id="31">3.1 存储系统的层次与局部性（背概念）</h3>
+<p><strong>层次</strong>：寄存器 → Cache（SRAM）→ 主存（DRAM）→ 外存（Flash/磁盘）。
+- 越上越快、越贵、越小；越下越慢、越便宜、越大。
+- <strong>为什么分这么多层</strong>：兼顾"速度接近最快 + 容量接近最大 + 单价比最低"——用每层各取所长。</p>
+<p><strong>局部性原理（必须背，Cache 存在的前提）</strong>：
+- <strong>时间局部性</strong>：刚访问过的数据/指令在<strong>很快</strong>还会被访问（循环、栈顶变量）。
+- <strong>空间局部性</strong>：刚访问过的地址<strong>附近</strong>的区域很快会被访问（顺序取指令、顺序读 PCM 缓冲）。
+- -&gt; 程序顺序执行指令、循环重复执行同段 → Cache 能命中；本项目"循环读同一码本、顺序读取每个 PCM 样本"都是局部性的活例。</p>
+<h3 id="32-sram-dram-flash">3.2 SRAM / DRAM / Flash（记忆 + 特性）</h3>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>SRAM（静态）</th>
+<th>DRAM（动态）</th>
+<th>Flash（闪存）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>存储原理</td>
+<td>6 晶体管锁存</td>
+<td>1 晶体管 + 电容电荷</td>
+<td>浮栅晶体管存电荷</td>
+</tr>
+<tr>
+<td>速度</td>
+<td>最快</td>
+<td>中</td>
+<td>慢（读尚可，写更慢）</td>
+</tr>
+<tr>
+<td>易失性</td>
+<td>易失（掉电丢失）</td>
+<td>易失（还要<strong>周期性刷新</strong>）</td>
+<td><strong>非易失</strong></td>
+</tr>
+<tr>
+<td>用途</td>
+<td>CPU Cache、小容量高速内存</td>
+<td>大容量主存</td>
+<td>本项目外存（SPI Flash）</td>
+</tr>
+<tr>
+<td>写入特点</td>
+<td>可改写</td>
+<td>可改写</td>
+<td><strong>写前先擦、按块擦、按页写</strong>，有擦写寿命</td>
+</tr>
+</tbody>
+</table>
+<p>要点：
+- <strong>DRAM 靠电容存电荷</strong>，会漏电，要定时<strong>刷新（refresh）</strong>，这就是"动态"和"比 SRAM 慢/复杂"的原因。
+- <strong>Flash 非易失</strong>适合存固件/录音文件；但<strong>写前必须先擦、擦以块为单位、擦写有限寿命</strong> → 文件系统要做<strong>磨损均衡</strong>（本项目 SPIFFS 的分层/均衡）。
+- <strong>本项目存这些</strong>：<code>.text/常量</code> 放 Flash（非易失，只读执行）；全局变量/堆/栈放 SRAM（Δ 主存易失，掉电清零）。</p>
+<h3 id="33_1">3.3 主存与"按字节寻址"、「地址空间」「分区（本项目直接实践）」</h3>
+<ul>
+<li><strong>按字节寻址</strong>：每一个字节一个唯一地址。(用字寻址则每个 4 字节单元一个地址，地址少 2 位。)</li>
+<li><strong>地址位数 ↔ 可寻址容量</strong>：n 位地址可寻址 <code>2^n</code> 个单元（如 32 位地址空间 4GB）。</li>
+<li><strong>本项目 SPI Flash 分区</strong>就是<strong>固定地址分区</strong>（也是一种"主存分区"的映射）：
+  <code>nvs           @0x00009000    (配置/射频校准)
+  factory       @0x00010000    (应用 bin，约 3MB)
+  voicepack     @0x0035A000    (语音包/声音资源)
+  recordings    @0x003D2000    (录音文件区，约 3.05MB)
+  recovery      @0x00700000    (恢复)</code>
+  换算：<code>容量 = 结束地址 − 起始地址</code>；<code>换算 16↔10 进制</code>要到张口就来（如 <code>0x10000=64KB</code>，<code>0x003D2000=3D2000₁₆=4006144≈3.05MB</code>）。
+  这段就是要你对"地址是用字节量化、地址区间=长度"有直觉。</li>
+</ul>
+<h3 id="34-cache">3.4 ★Cache 与地址映射（计算大头，务必会算）</h3>
+<p><strong>主存地址划分</strong>（Cache 结构下的视图）：</p>
+<pre><code>高──────────────────────────低
+Tag(标记) | Index(组/行索引) | BlockOffset(块内偏移)
+</code></pre>
+<p>设：块大小 = <code>2^b</code> 字节（b=块内偏移位数），Cache 共 C 行，每组 N 行（组相联的"路数"），组数 S = C/N。</p>
+<p><strong>三种映射（必背 + 会算位数）</strong>：</p>
+<ol>
+<li><strong>直接映射</strong>（每组 1 行，N=1）：
+   - <code>行号 = 主存块号 mod C</code>（就一行能放）。
+   - Index 位数 = log₂C。
+   - <strong>缺点</strong>：多个需要映到同一行的主存块互相"踢"，命中率低、抖动明显。</li>
+<li><strong>全相联</strong>（只有 1 组，S=1）：
+   - 任意主存块可放任意一行，只需 <strong>Tag</strong> 全比较；<strong>Index=0</strong>。
+   - 好处命中率高；坏处<strong>比较电路昂贵、Tag 很大</strong>。</li>
+<li><strong>组相联</strong>（折中，N 路每组）：
+   - <code>组号 = 主存块号 mod S</code>，组内 N 行任放。
+   - Index 位数 = log₂S。
+   - 组相联合 N=直接全S=组数 → N=C 即全相联。所以<strong>直接映射 = 1 路组相联、全相联 = 全路（N=C）组相联</strong>，三者是同一家族。</li>
+</ol>
+<p><strong>位数计算（必背公式）</strong>：</p>
+<pre><code>主存地址 A 位
+块内偏移位数 b = log₂(块大小字节数)
+行/组索引位数 s = log₂(行数 C 或 组数 S)
+Tag 位数      = A − b − s
+</code></pre>
+<p><strong>Cache 总容量（含标志位，常考）</strong>：</p>
+<pre><code>Cache总存储位数 = 有效位(1) + Tag 位数 + 数据位(块大小×8 位)  × 行数 C
+</code></pre>
+<p>（每一行都要额外存"有效位"和"Tag"，这些不计入"数据容量"但是要花的硬件。）</p>
+<p><strong>例题(cache 容量/位数)</strong>：主存 64MB（地址 26 位），字块大小 4B，Cache 8KB 直接映射。
+- b = log₂4 = 2 位。
+- 行数 C = 8KB/4B = 2048 行 → s = log₂2048 = 11 位。
+- Tag = 26 − 2 − 11 = <strong>13 位</strong>。
+- 主存块数 = 64MB/4B = <code>2²⁶/2² = 2²⁴</code>；每 2¹¹ 块共享一行。
+- Cache 总容量（不含 Tag/有效位的数据容量）= 8KB；含 Tag/有效位 = 2048×(1+13+32) 位 = 2048×46 位 = 94,208 位 ≈ 11.76KB。</p>
+<p><strong>命中率 / AMAT（平均访存时间，必背）</strong>：</p>
+<pre><code>AMAT = 命中率 × 命中时间 + 未命中率 × (命中时间 + 未命中代价)
+            = 命中时间 + 未命中率 × 未命中代价
+</code></pre>
+<p>（后一个写法把"命中时间"提出去更常用：<code>AMAT = t_hit + (1−h)·t_miss_penalty</code>。考"命中/失效访问次数"也常出现——把访问串一条条判命中数就得到命中率 h。）</p>
+<p><strong>AMAT 应用题（手算一遍建立直觉）</strong>：已知 Cache 命中时间 1 个时钟周期，未命中代价（从主存取一块）需 <strong>50 个时钟周期</strong>，命中率 h=95%，求 AMAT。</p>
+<pre><code>AMAT = t_hit + (1−h)×miss_penalty = 1 + 0.05×50 = 1 + 2.5 = 3.5 周期
+</code></pre>
+<p><strong>对比（必考的"成也 Cache 败也 Cache"）</strong>：如果命中率掉到 90%：<code>AMAT = 1 + 0.10×50 = 6 周期</code>。命中率只降 5%，AMAT 快翻倍 → 说明<strong>未命中代价巨大</strong>，所以设计核心是<strong>提高命中率</strong>（加大 Cache、选好替换策略）。</p>
+<p><strong>主存带宽/缺失率计算角度</strong>：题目常给"CPU 每 1000 条指令产生 X 次访存、Cache 缺失率 Y%"，问"因 Cache 引起的平均额外延迟"或"缺失导致 CPI 增加多少"。统一套路：</p>
+<pre><code>CPI_new = CPI_base + 缺失次数/指令 × 缺失惩罚
+        = CPI_base + (访存次数/指令 × 缺失率) × miss_penalty
+</code></pre>
+<p>例：CPI_base=1.5，每指令 1.5 次访存，缺失率 2%，缺失惩罚 100 周期 → <code>CPI = 1.5 + (1.5×0.02)×100 = 1.5 + 3 = 4.5</code>。这个"引申 CPI"题型 408 反复考，务必背公式。</p>
+<h3 id="35_1">3.5 替换算法与写策略</h3>
+<ul>
+<li><strong>替换</strong>：Cache 满需要腾一行给新块时，换出哪个？</li>
+<li><strong>LRU（最近最久未用）</strong>：换出"最久没有用过的"。（命中率高，需记录访问最近度）</li>
+<li>FIFO：先入先出（实现简单、可能<strong>抖动</strong>，即某块刚被换出又立刻要用）。</li>
+<li>随机替换。</li>
+<li><strong>OPT/LFU（最优）</strong>：理论下界，实际不可实现，做对照。</li>
+<li>直接映射不用替换（映射唯一）；组相联在组内选。</li>
+<li><strong>名真题型：给访问串 + 2 路组相联 + LRU 替换，问命中率。</strong> 一张草稿画"列=访问序列，行=每组两个位置，被命中打钩"即可不遗漏。若没蓄命中会硬伤。</li>
+<li><strong>写策略</strong>：</li>
+<li><strong>写直达（Write Through）</strong>：Cache 命中时<strong>同时写主存</strong>（可加写缓冲区），实现简单、主存与 Cache 总一致，但每次写都要（最终）等主存慢速。</li>
+<li><strong>写回（Write Back）</strong>：只写 Cache，置<strong>脏位（dirty）</strong>，直到该行被换出时才把整块写回主存。快，但要"脏位 + 换出时写回"，且主存可能暂不一致。</li>
+<li><strong>写不命中</strong>：</li>
+<li><strong>写分配（Write Allocate）</strong>：先把主存块取进 Cache，再在 Cache 里写（配合写回用）。</li>
+<li><strong>非写分配（Non-Write Allocate，写绕过）</strong>：不取块，直接写主存（配合写直达用）。</li>
+<li>口诀：<strong>"写回配写分配，写直达配非写分配"</strong> 是常见搭配。</li>
+<li><strong>多核缓存一致性（进阶概念，408 选择偶尔出现）</strong>：写直达天然易维护一致；写回需要<strong>窥探（snooping）/监听协议（如 MESI）</strong>跟踪各核 Cache 的行状态（Modified/Exclusive/Shared/Invalid）。本项目单核，无此问题，但题目会考你"为什么写回需要一致性协议"。</li>
+<li><strong>本项目落点</strong>：CPU 访问 Flash 里的代码/常量走只读 Cache（通常 read-only 指令 Cache）；数据写（变量、堆栈）放 SRAM 不经过 Flash Cache——理解"哪些读写走 Cache"即可。整个 C3 的换算在 408 是<strong>大题必考</strong>，务必多算。</li>
+</ul>
+<p><strong>Cache 一题全通（综合练，覆盖映射/位数/命中率/AMI 全部）</strong>：</p>
+<blockquote>
+<p>某机字长 32 位，主存按字节编址，共 <strong>16MB</strong>，Cache <strong>8KB</strong>，<strong>4 路组相联</strong>，块大小 <strong>16B</strong>。</p>
+<p>① 地址总位数 A？
+<code>A = log₂16MB = log₂2²⁴ = 24 位</code>。</p>
+<p>② 块内偏移 b？
+<code>b = log₂16 = 4 位</code>。</p>
+<p>③ 组数 S？索引位数 s？
+行数 C = 8KB/16B = 512 行；4 路 → 组数 S = 512/4 = 128 → <code>s = log₂128 = 7 位</code>。</p>
+<p>④ Tag 位数 t？
+<code>t = A − s − b = 24 − 7 − 4 = 13 位</code>。</p>
+<p>⑤ 每组的"行复用关系"：主存共有多少块？每几块映射到同一组？
+主存块数 = 16MB/16B = <code>2²⁴/2⁴ = 2²⁰</code>；映射到同一组的主存块 = 主存块数/组数 = <code>2²⁰/2⁷ = 2¹³</code>（正好等于 Tag 组合数 2¹³，自洽）。这就是"同一组里放 Tag 不同的块"，靠 Tag 区分。</p>
+<p>⑥ 含标志位时 Cache 总容量？
+每行 = 有效位 1 + Tag 13 + 数据 16×8=128（位）= 142 bit；×512 行 = <strong>72,704 bit ≈ 9.08 KB</strong>。</p>
+</blockquote>
+<h3 id="36-tlb-408">3.6 虚拟存储器（★页表 / TLB / 缺页，408 大题）</h3>
+<ul>
+<li><strong>虚拟地址 → 物理地址</strong>：
+  <code>虚拟地址 = 虚页号 VPN | 页内偏移 delta
+  物理地址 = 物理页框号 PPN  | delta    (页内偏移不变)</code></li>
+<li><strong>页表</strong>：一张表，页表项索引 = 虚页号，页表项内容含<strong>有效位、物理页框号、修改位(脏)、访问位</strong>等。CPU 用 VPN 查页表得到 PPN。</li>
+<li><strong>快表 TLB</strong>：因为页表在主存里，每次访问都要"查页表"多一次访存——用 <strong>Cache 缓存最近用过的页表项（TLB，Translation‑Lookaside Buffer）</strong>。TLB 命中免查主存页表 → 一次地址转换 O(1)。</li>
+<li><strong>流程</strong>：虚拟地址 → TLB 命中？→ 是：直接得 PPN；否：查主存页表 → 页表项有效？→ 是：得 PPN 并（可以的话）回填 TLB；否：<strong>缺页中断</strong> → OS 从磁盘/Flash 调页装入 → 更新页表/TLB → 重新执行。</li>
+<li>注意几个点：</li>
+<li><strong>只有部分程序真正在内存</strong>，其余在磁盘（或本项目这种嵌入式就是<strong>固定在 Flash</strong>）。</li>
+<li><strong>页表项格式</strong>：有效位(P)、修改位(D)、访问位(A)是关键。</li>
+<li><strong>TLB 未命中 ≠ 缺页</strong>，是两回事：TLB 未命中可以查页表（慢但可能命中）；页表项无效才是缺页（要去外存读页）。</li>
+</ul>
+<p><strong>本项目落点</strong>：ESP32-C3 <strong>没有完整 MMU</strong>（无虚拟内存/分页换入），但它用"Flash 的固定地址可映射/只读窗（如 <code>0x42000000</code>）"这种<strong>固定地址转换</strong>做过对照物。理解页表/TLB 后你就明白了"地址转换是硬件 + 页表协作"。</p>
+<hr />
+<h2 id="c3">C3 练习题</h2>
+<p><strong>Q1</strong>（Cache 位数）：主存 4GB（32 位地址），块大小 64B，Cache 大小 32KB <strong>2 路组相联</strong>，求 Tag、组号(Index)、块内偏移位数，及总共多少组。
+<strong>解析</strong>：b = log₂64 = 6。Cache 行数 C = 32KB/64B = 512 行；2 路 → 组数 S = 512/2 = 256 → s = log₂256 = <strong>8 位</strong>。Tag = 32 − 6 − 8 = <strong>18 位</strong>。组数 = 256。
+（这是 408 最典型：先算行数、再按路数求组数、再减。<strong>Tag=A−b−s</strong> 是唯一公式。）
+<strong>Q2</strong>（写回/脏位）：写回 Cache 中的数据，什么时候才写回主存？
+<strong>解析</strong>：命中时只写 Cache 并置脏位；当该行被换出（或其他原因淘汰）且<strong>脏位=1</strong> 时，才把整块写回主存。若脏位=0（没改过）则直接丢弃。→ <strong>写回 = 换出才写、靠脏位</strong>(并配合修改位)。
+<strong>Q3</strong>（AMAT）：命中 95%，命中时间 1 周期，未命中须到主存多花 100 周期（代价 100），AMAT？
+<strong>解析</strong>：AMAT = 0.95×1 + 0.05×(1+100) = 0.95 + 5.05 = <strong>6 周期</strong>。（或写成 <code>1 + 0.05×100 = 6</code>。）
+<strong>Q4</strong>（页表计算）：虚拟地址 32 位，页大小 4KB，页表项 4B，一级页表需要多大？
+<strong>解析</strong>：页内偏移 = log₂4K = 12 位 → VPN = 32−12 = 20 位 → 页面数 = 2²⁰。页表大小 = 2²⁰ × 4B = 4MB。<strong>一级页表太大 → 要二级/多级页表</strong>（这是多级页表存在的动机）。
+（多级页表只让"用得着的"页表页在内存。例：两级页表可把常驻部分裁到很小。）</p>
+<hr />
+<h2 id="c4-4">C4　指令系统（对应袁 §4，指令编码是亮点）</h2>
+<h3 id="41-riscv-rv32-6-r-i">4.1 指令格式（RISC‑V RV32 有 6 种基本格式，重点 R 与 I）</h3>
+<p>每条 RV32 指令固定 <strong>32 位</strong>。常用：
+- <strong>R 型</strong>（寄存器-寄存器运算，<code>add/sub/and/or</code> 等）：
+  <code>31    25 24     20 19    15 14     12 11     7 6     0
+  funct7 |  rs2    |  rs1    |  funct3  |  rd     |  opcode
+  7 位    |  5 位   |  5 位   |  3 位    |  5 位   |  7 位</code>
+- <strong>I 型</strong>（立即数运算/加载 <code>addi/lw</code> 等）：
+  <code>imm[11:0] | rs1 | funct3 | rd | opcode
+  12 位     | 5 位|  3 位  | 5 位| 7 位</code>
+- RISC-V 的<strong>低 7 位 opcode</strong>决定"这是哪一类指令"；funct3/funct7 进一步区分同类型具体运算（如 <code>add</code>=funct7 0000000+funct3 000，<code>sub</code>=funct7 0100000+funct3 000）。</p>
+<p><strong>为什么研考拼指令编码</strong>：因为考题常给你 <code>addi x9,x9,−2</code> 让你写出 32 位机器码，考你对<strong>字段划分 + 补码立即数 + 十六进制拼合</strong>的熟练度。</p>
+<h3 id="42-8">4.2 寻址方式（背 8 种 + 各举一例）</h3>
+<ol>
+<li><strong>立即寻址</strong>：操作数就在指令里（<code>addi s1, s1, 1</code>）。</li>
+<li><strong>寄存器直接寻址</strong>：操作数在寄存器里（<code>add a0, a1, a2</code>）。</li>
+<li><strong>隐含寻址</strong>：操作数隐含在特定寄存器（如累加器 ACC），指令不显式写。</li>
+<li><strong>直接寻址</strong>：指令给出内存操作数的<strong>主存地址</strong>（跳转/<code>jal</code> 目标）。</li>
+<li><strong>间接寻址</strong>/寄存器间接：指令给的是"地址的地址"（<code>lw a0, (a1)</code> 从 a1 指向的内存取）。RISC‑V 的 load/store 用"寄存器 + 偏移"。</li>
+<li><strong>基址寻址 / 基址+偏移</strong>：有效地址 = 基址寄存器 + 指令位移。<strong>本项目 <code>buf[i]</code> 访问 = 数组基址 s0 + i×2 的偏移</strong>就是实打实的基址寻址。</li>
+<li><strong>相对寻址</strong>：<code>PC + 指令中的偏移</code>（<code>beq</code>/<code>blt</code> 都属于 PC 相对）。循环、if 全靠它。</li>
+<li><strong>堆栈寻址</strong>：操作数从<strong>栈顶</strong>取得，隐含用<code>sp</code>/栈指针（<code>push/pop</code> 对应 OS 调用栈）。</li>
+</ol>
+<blockquote>
+<p>记忆：实体是"立即 / 寄存器 / 内存 / 栈"，配合"直接/间接/基址/相对"定位。</p>
+</blockquote>
+<h3 id="43_1">4.3 分支与跳转的范围</h3>
+<ul>
+<li><code>beq</code>（Branch if Equal，SB 型）：偏移量 13 位（有符号，实际 imm[12:1]），故可跳 <strong>±2¹² 半字=±4KB 左右</strong>（相对 PC）。<strong>短跳</strong>。</li>
+<li><strong>长跳转</strong>：<code>auipc + jalr</code> 用高 20 位 + 低 12 位拼接出完整的 32 位目标地址，可跳到任意地址。本项目大函数分散在 Flash 里时，编译器会自动生成这种"构造全 32 位目标 + 间接跳"的序列。</li>
+<li><code>jal</code>（Jump And Link，J 型）：无条件跳转并保存返回地址到 rd（函数调用连返回）。<code>jalr</code> 用寄存器计算目标（函数返回 <code>jr ra</code> 就是 <code>jalr x0, 0(ra)</code>）。</li>
+</ul>
+<hr />
+<h2 id="c4-408">C4 练习题（指令编码，408 风格）</h2>
+<p><strong>Q1</strong>：把 <code>addi x9, x9, -2</code> 编码为 32 位 RISC‑V 机器码（RV32I）。已知 <code>addi</code>: opcode=<code>0010011</code>, funct3=<code>000</code>, I 型。
+<strong>解析（分步）</strong>：
+- I 型字段：<code>[imm[11:0]] [rs1] [funct3] [rd] [opcode]</code>
+- rd = rs1 = x9 = 01001₂
+- imm = −2 的 12 位补码 = <code>111111111110₂</code>
+- 拼接（从高位到低位）：<code>111111111110 01001 000 01001 0010011</code>
+- = 十六进制 <code>0xFFF48493</code>。验证：<code>(0xFFF&lt;&lt;20)|(9&lt;&lt;15)|(0&lt;&lt;12)|(9&lt;&lt;7)|0x13 = 0xFFF00000|0x48000|0x480|0x13 = 0xFFF48493</code> ✔
+- <strong>小端存储</strong>：内存字节序为 <code>93 84 F4 FF</code>。
+<strong>要点</strong>：即时位负数必须写成<strong>12 位补码</strong>，字段顺序按格式表，最终逐字段拼位移。这个题是"计组指令编码"的标准题型。</p>
+<p><strong>Q2</strong>：<code>beq x1, x2, label</code>（SB 型）跳跃范围为什么有限？
+<strong>解析</strong>：SB 型只给 13 位有符号立即数（乘以 2 → ±4KB 左右半字），意味着<strong>分支只能在当前指令附近（PC 相对小范围）跳</strong>；超出就需 <code>auipc+jalr</code>。→ 回答"有限范围＝因为指令里偏移位数少"。</p>
+<p><strong>Q3</strong>：为什么 CPU 上电从固定地址（本项目 bootloader → 0x10000）开始执行？
+<strong>解析</strong>：CPU 复位时 PC 被硬件置为<strong>固定入口地址</strong>，该地址处放的就是 bootloader，再跳转到应用入口。这叫<strong>复位向量/中断向量</strong>的最简单形式（见 C5）。</p>
+<hr />
+<h2 id="c5-5">C5　中央处理器（对应袁 §5，★流水线与中断是大题）</h2>
+<h3 id="51_1">5.1 数据通路：五阶段取指执行模型</h3>
+<p>一条指令完整走：</p>
+<pre><code>IF 取指   → 从 PC 指向的（指令）存储器取 32 位指令，PC ← PC+4
+ID 译码   → 拆出 opcode/funct/寄存器号，读寄存器，产生控制信号，算立即数
+EX 执行   → ALU 做运算 / 算访存地址（load/store 用“基址+偏移”）
+MEM 访存  → load 从存储器读、store 写存储器（本项目访问 SRAM 数据）
+WB 写回   → 把 ALU 结果或 load 到的数据写回目的寄存器
+</code></pre>
+<ul>
+<li>时钟周期：一条指令通常跨越多个周期（非流水线时 CPI&gt;1）。</li>
+<li><strong>控制器</strong>根据 opcode+funct 输出<strong>控制信号</strong>：选哪两个寄存器、ALU 做什么、是否访存、是否写回使能——这就是"译码驱动执行"。</li>
+</ul>
+<h3 id="52-vs">5.2 硬布线 vs 微程序（选择高频）</h3>
+<ul>
+<li><strong>硬布线控制</strong>：控制信号由<strong>组合逻辑电路</strong>直接产生。特点：快、但改设计要改电路。RISC-V/RISC 多用。</li>
+<li><strong>微程序控制</strong>：把一条指令对应的控制信号序列<strong>先存进一块"控制存储器(ROM)"</strong>，执行时逐条读出微指令执行。特点：灵活、易改（改微程序即可），但<strong>慢一档</strong>，CISC 多用。</li>
+<li>记忆：<strong>硬布线=硬件真电路、微程序=查表执行微指令</strong>。</li>
+<li>ESP32-C3 是 RISC‑V（RISC），控制相对硬布线。</li>
+</ul>
+<h3 id="53_1">5.3 ★指令流水线（计算 + 冒险）</h3>
+<p><strong>流水线思想</strong>：五段彼此独立，像工厂流水线，<strong>每周期都有一条新指令进入</strong>，理想吞吐 = 1 条/周期，理想 <strong>CPI=1</strong>。</p>
+<p><strong>为什么流水线能提速而不用改时钟周期</strong>：把一条指令的耗时拆成 5 段，各段用<strong>独立的硬件</strong>（寄存器堆、ALU、存储器）同时开工。流水线<strong>不缩短单条指令的延迟</strong>（反而稍增——要加流水段寄存器），它提升的是<strong>吞吐（througput）</strong>。这是常考辨析：<strong>流水线提升吞吐率，不降低单条延迟</strong>；且流水线深度受限于各段中"最慢段"的延迟（时钟周期 = 最慢段 + 寄存器开销）。</p>
+<p><strong>n 条指令总周期</strong>（理想、无冒险）：</p>
+<pre><code>T = 5 + (n−1)   （第一条 5 周期灌满流水，之后每周期完成一条）
+</code></pre>
+<p><strong>吞吐率</strong> = n/T（条/周期）；吞吐趋向 1 条/周期。
+<strong>加速比</strong>（相对非流水单周期执行）：非流水 n 条需 5n 周期，流水需 5+(n−1) → 加速比 ≈ 5（n 越大越接近段数）。</p>
+<p><strong>三种冒险（必背三类 + 各举解法 + 影响）</strong>：
+1. <strong>结构冒险（资源冲突）</strong>：同一硬件同一周期被两条指令同时用。例：单端口指令存储器，取指和取数据同周期就撞。→ 解决：<strong>插气泡（stall）</strong>，或<strong>分离指令存储器与数据存储器</strong>（本项目指令取 Read-Only 区、数据在 SRAM，天然分离）。
+2. <strong>数据冒险（RAW，读写依赖）</strong>：后指令要用上一条<strong>还没写回</strong>的结果。
+   - 例：<code>add x5,x1,x2</code> 下一条 <code>sub x6,x5,x3</code>——x5 还没写回。
+   - 分类：<strong>RAW（真依赖）</strong>、WAR（写后读）、WAW（写后写）；五段流水无乱序时主要处理 RAW。
+   - 解决：<strong>转发/旁路（forwarding/ bypass）</strong>——把 ALU 的输出直接接回到 ALU 输入，不必等 WB；有些 RAW（如 <strong>load 后立刻用</strong>，因为数据要等 MEM 段才到）<strong>插 stall（nop，气泡）</strong>。
+   - <strong>名真题：load–use 数据冒险</strong>。<code>lw x1,0(x2)</code> 后紧跟 <code>add x3,x1,x4</code>：即使有转发，load 的数据要到 MEM 段末才可用，必须<strong>插入 1 个气泡</strong>。会考"需要插几条 nop / 用转发可消除几条"。
+   - 本项目 Speex 是密集算术，编译器会<strong>重排指令 + 利用转发</strong>减少气泡（这是优化代码性能的关键）。
+3. <strong>控制冒险（分支冒险）</strong>：分支指令还没算出跳哪，(也许)已经取错了下一条指令。
+   - 影响：每遇到分支若猜错,要<strong>清空已进入流水线的错误指令</strong>（冲掉）→ 浪费若干周期（称为分支惩罚 branch penalty）。
+   - 解决：<strong>分支预测</strong>（预测跳/不跳，错了再冲掉；本项目 RISC-V 有简单静态/动态预测）、<strong>延迟槽（delay slot）</strong>、以及取指段就启动分支判断。
+   - 注：无条件跳转（<code>jal</code>）不依赖运算结果，控制冒险简单；难的是<strong>条件分支</strong>（依赖 ALU 结果）。</p>
+<p><strong>例题（流水线周期）</strong>：5 段流水，1000 条指令无冒险，总周期与吞吐。
+<strong>解析</strong>：T = 5+(1000−1) = <strong>1004 周期</strong>；吞吐 = 1000/1004 ≈ 0.996 条/周期。</p>
+<p><strong>进阶例题（计入冒险的 CPI）</strong>：5 段流水，其中 20% 是分支指令，每次分支猜错清空 2 条指令（即平均每分支多花 2 周期），其余无冒隐。求含冒险时的近似 CPI 与吞吐。
+<strong>解析</strong>：理想 CPI=1；因分支每条额外平均 <code>0.2×2 = 0.4</code> 周期 → <strong>平均 CPI ≈ 1.4</strong>；吞吐 ≈ 1/1.4 ≈ 0.71 条/周期。→ 记住套路：<code>CPI = 1 + Σ(各类冒险频率 × 该类冒险惩罚)</code>。</p>
+<h3 id="54_1">5.4 异常与中断（★必背流程，本机整流/闪退都在讲）</h3>
+<p><strong>中断 与 异常 的区别（选择常考）</strong>：
+- <strong>中断（interrupt）</strong>：<strong>由外部 I/O 设备或定时器</strong>异步触发（本项目：按键 ADC、定时器、DMA 完成、WiFi）。
+- <strong>异常（exception）</strong>：<strong>由 CPU 内部、指令执行引起</strong>，又分：
+  - <strong>故障（fault）</strong>：可恢复，如<strong>缺页</strong>（页表项无效，处理完重新执行当前指令）。
+  - <strong>自陷（trap）</strong>：<strong>主动触发</strong>，如系统调用 <code>ecall</code>、调试断点。处理完接着执行下一条。
+  - <strong>终止（abort）</strong>：<strong>不可恢复的致命错误</strong>，如除零、非法地址 → 本机表现为 <code>ESP_RST_PANIC</code> 复位重启。</p>
+<p><strong>中断处理流程（大题必背 8 步）</strong>：</p>
+<pre><code>0) 当前指令执行完（不损失状态）
+1) 关中断（防止嵌套/再被打断）
+2) 保存现场：把 PC、PSW(程序状态字)、相关寄存器压栈
+3) 识别中断/查中断向量表 → 得到 ISR 入口（RISC-V 用 mepc 记被打断的 PC）
+4) 进入中断服务例程 ISR 执行（要尽量短）
+5) 恢复现场：弹栈恢复 PC、PSW、寄存器
+6) 开中断
+7) 返回被打断程序继续执行（RISC-V 用 mret）
+</code></pre>
+<ul>
+<li><strong>多级中断/优先级</strong>：高优先级中断可<strong>抢占/嵌套</strong>低优先级；判断优先级可用硬件链式查询或向量表。</li>
+<li><strong>本项目按键</strong>：定时器<strong>周期中断</strong>读 ADC（ISR 极短）→ 再放到任务作判定 → 更新 UI。这就是最基层的<strong>中断驱动 I/O</strong>。</li>
+<li><strong>16k 闪退的异常本质</strong>：非法内存访问/堆损坏触发 CPU 异常（abort）→ OC 恢复 → <code>ESP_RST_PANIC</code>，这就是"异常/终止 → 系统恢复"的注册表对应关系。</li>
+</ul>
+<h3 id="55_1">5.5 中断向量表、上下文切换</h3>
+<ul>
+<li><strong>中断向量表（IVT）</strong>：一张"中断源 → ISR 首地址"的表，按中断号查。</li>
+<li>RISC-V 用 <code>mtvec</code> 指向异常入口；<code>mepc</code> 保存被中断的 PC；<code>mcause</code> 保存原因。这些是实现"保存现场/恢复现场"的硬件基础。</li>
+</ul>
+<hr />
+<h2 id="c5">C5 练习题</h2>
+<p><strong>Q1</strong>（流水线计算）：5 段流水执行 100 条指令（无冒险），需要多少周期？
+<strong>解析</strong>：T = 5+(100−1) = <strong>104</strong>。（背公式 T=5+(n−1)。）
+<strong>Q2</strong>（冒险判断）：下面两条指令是否会有数据冒险？如何解决？</p>
+<pre><code>add x5, x1, x2
+sub x6, x5, x3
+</code></pre>
+<p><strong>解析</strong>：sub 需要 x5，而 x5 是上一条刚算的、尚未写回 → <strong>RAW 数据冒险</strong>。用 <strong>数据转发（forwarding）</strong>：把 <code>add</code> 在 EX 阶段算出的 x5 直接旁路接给 <code>sub</code> 的输入，不用等 WB。→ 典型转发场景。
+<strong>Q3</strong>（异常区分）：缺页中断 and 系统调用分别属于哪种异常？处理后在哪继续？
+<strong>解析</strong>：缺页 = <strong>故障(fault)</strong>，处理完<strong>重新执行该指令</strong>（OS 调好页后重做）；系统调用 <code>ecall</code> = <strong>自陷(trap)</strong>，处理完执行<strong>下一条指令</strong>。（这个"故障重执行、自陷执行下一条"是高频区分点。）
+<strong>Q4</strong>（为什么 ISR 要短）：中断服务应尽量短，为什么？
+<strong>解析</strong>：因为长 ISR 会长时间<strong>关中断/一次占用 CPU</strong>，影响其他中断与实时任务响应；通常把<strong>耗时处理放到"下半部/任务线程"</strong>（本项目把按键判决放任务线程就是这个思想）。→ 兼顾<strong>实时性</strong>与<strong>响应速度</strong>。</p>
+<hr />
+<h2 id="c6-io-7dma">C6　总线与 I/O（对应袁 §7，★DMA 重点）</h2>
+<h3 id="61_1">6.1 总线基础</h3>
+<ul>
+<li><strong>总线</strong>：连接 CPU、主存、I/O 的一组共享传输线（地址线、数据线、控制线）。</li>
+<li><strong>性能</strong>：<strong>总线带宽 = 总线位宽 × 时钟频率</strong>（换算成字节要 ÷8）。</li>
+<li>例：SPI 50MHz×8bit = 400Mbps = 50MB/s；I2S 音频 16 位×2 声道，用 BCLK/LRCK 同步。</li>
+<li><strong>总线层次</strong>：片内总线(CPU内部)、系统总线(CPU↔主存/北桥)、外设总线(I2C/SPI/UART/GPIO)。</li>
+<li><strong>总线事务</strong>：请求 → 仲裁 → 传输 → 结束/释放。多外设分时共用 SPI，靠<strong>片选(CS)</strong> 仲裁谁占用。</li>
+<li><strong>仲裁</strong>：</li>
+<li><strong>集中式</strong>：由总线控制器统一判优（链式查询：设备串成一串、靠优先级；计数器定时；独立请求：每个设备有自己的请求线）。</li>
+<li><strong>分布式</strong>：各设备自己协商（如以太网的 CSMA/CD、I²C 的仲裁）。</li>
+<li><strong>串行 vs 并行</strong>：I2C/SPI/UART 串行、一次一位；并口并行多根线。本项目 I2S 是串行但带字时钟同步。</li>
+</ul>
+<h3 id="62-io">6.2 I/O 的三种控制方式（★对照表必背）</h3>
+<table>
+<thead>
+<tr>
+<th>控制方式</th>
+<th>CPU 参与度</th>
+<th>特点</th>
+<th>本项目对应</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>程序查询(轮询)</td>
+<td>忙等，CPU 全程查状态</td>
+<td>简单、最慢、占 CPU</td>
+<td>单次 ADC 读取（低频可）</td>
+</tr>
+<tr>
+<td>中断驱动</td>
+<td>只有就绪才响应</td>
+<td>提高利用率、不忙等</td>
+<td>定时器中断采样 ADC</td>
+</tr>
+<tr>
+<td><strong>DMA</strong></td>
+<td>只在开头给配置、结束 CPU 只受"完成中断"</td>
+<td>数据由硬件<strong>DMA 控制器</strong>直接在外设↔主存间搬</td>
+<td><strong>I2S 音频收发 DMA</strong>（<code>dma_desc_num=6, dma_frame_num=240</code>）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>DMA 工作流程（必背）</strong>：
+1. CPU 为该传输在 DMA 控制器里配置：<strong>源地址、目标地址、传输长度、方向</strong>。
+2. CPU 发"启动"命令后<strong>不再管</strong>。
+3. DMA 控制器每准备好一批数据，就<strong>申请总线（仲裁拿到总线）</strong>，在外设与主存间<strong>成块搬运</strong>（不经过 CPU 寄存器）。
+4. 整块传完后<strong>发一个"完成中断"</strong>通知 CPU。
+→ 因此录音时 CPU 只在一头一尾参与，中间时间还能跑 UI、WiFi、编码——这是"能持续录音而系统不卡"的关键。</p>
+<p><strong>什么是"数据不经过 CPU"</strong>：DMA 传输是在<strong>外设和主存之间</strong>直接搬（CPU 只读首尾），数据流不经过 CPU 的寄存器/ALU → 解放 CPU 大量访存时间。</p>
+<h3 id="63_1">6.3 缓冲与通道</h3>
+<ul>
+<li><strong>缓冲(Buffering)</strong>：用一段中间存储缓解外设与 CPU/主存的速度差、减少每个字节的中断次数。本项目：I2S DMA 环缓冲、SPIFFS 页缓冲、HTTP chunk 缓冲。</li>
+<li><strong>通道(IOP)</strong>：更进一步用一台<strong>小型处理器（I/O 处理机）</strong>来管理多台设备，CPU 更省。本项目无独立通道，用 DMA 即够。</li>
+</ul>
+<hr />
+<h2 id="c6">C6 练习题</h2>
+<p><strong>Q1</strong>（总线带宽）：32 位总线、50MHz，带宽多少 MB/s？
+<strong>解析</strong>：带宽 = 32bit × 50MHz /8 = 2000Mbps/8 = <strong>250 MB/s</strong>。</p>
+<p><strong>Q2</strong>（三种 I/O）：为什么放音乐时用 DMA 而不是程序查询？
+<strong>解析</strong>：程序查询要 CPU 每字节或每小段忙等、沿途检查状态，几乎占满 CPU；DMA 由硬件自动搬运，CPU 只在两端参与 → 放音乐同时能跑 UI/WiFi。→ DMA 专治"高速、大量、持续"的 I/O。</p>
+<p><strong>Q3</strong>（DMA 与 CPU 关系）：DMA 传输中 CPU 忙吗？
+<strong>解析</strong>：不直接搬数据、基本空闲（可执行别的任务）；只在<strong>传输前给配置、传输结束被完成中断</strong>打扰。但它仍要与 DMA 控制器<strong>共享总线/仲裁</strong>，传输会短暂占用总线。</p>
+<hr />
+<h2 id="_6">[第二部分小结：计组的"一根主线 + 七个计算"（背）]</h2>
+<p><strong>这根主线</strong>：C → 编译/汇编/链接 → bin → 装载 → CPU 取指→译码→执行，全部嵌在 C1/C2/C4/C5。
+<strong>七个必算</strong>：
+1. 性能：<code>CPU 时间=指令数×CPI×时钟周期</code>。
+2. 补码：取反+1；符号扩展。
+3. 溢出：同号相加改变符号 → 溢出（进位法/双符号位）。
+4. 定点 Q：±按整数、乘后右移回原 Q。
+5. IEEE754：<code>(−1)^S × 1.f × 2^(E−127)</code>，阶码偏置 127。
+6. Cache：<code>Tag=A−b−s</code>、容量含 Tag、AMAT。
+7. 流水：<code>T=5+(n−1)</code>、三种冒险与解法（转发/分支预测）、中断 8 步。</p>
+<hr />
+<h1 id="pv">第三大部分　操作系统（管"资源"，计算与 PV 是大头）</h1>
+<blockquote>
+<p>操作系统研究"多个程序怎么<strong>公平且高效</strong>地共享一台机器"。408 中重视<strong>计算（调度、页面置换、死锁判定）</strong>与<strong>算法设计（PV 操作）</strong>。
+本项目跑的是 FreeRTOS（一个真正的实时操作系统），所以 OS 的所有概念在这台设备里都有真实实现：任务=线程、信号量、事件队列、文件系统 SPIFFS、NVS。</p>
+</blockquote>
+<hr />
+<h2 id="o1-os">O1　OS 概述与运行环境</h2>
+<h3 id="11-os">1.1 OS 的功能与特征（背）</h3>
+<ul>
+<li><strong>五大功能</strong>：处理器（进程/线程）管理、存储器管理、文件管理、设备管理、网络与联网。</li>
+<li><strong>四大特征</strong>：<strong>并发、共享、虚拟、异步</strong>（必背）。</li>
+<li>并发：多个进程同时存在、交替执行（本项目多任务：UI / 录音 / WiFi 并发）。</li>
+<li>共享：资源可被多进程同时/互斥共享。</li>
+<li>虚拟：把物理资源抽象成逻辑上的更多（虚拟内存、虚拟设备）。</li>
+<li>异步：进程执行速度不定、推进无严格时序。</li>
+</ul>
+<h3 id="12_1">1.2 内核态 / 用户态（特权级）</h3>
+<ul>
+<li>CPU 有<strong>特权指令</strong>（改内存映射、关中断、调 I/O、切换进程），只能<strong>内核态</strong>执行。</li>
+<li><strong>用户态</strong>：普通程序只能执行用户指令，想用特权功能要<strong>陷入内核</strong>。</li>
+<li>RISC-V 有三种模式：<strong>U 用户、S 监督、M 机器</strong>。本项目 ESP32-C3 通常只跑裸机/FreeRTOS，应用多位于特权更高的模式，但<strong>概念上仍分用户/内核</strong>。</li>
+<li>好处：隔离、保护操作系统不被应用程序破坏。</li>
+</ul>
+<h3 id="13-system-call">1.3 系统调用（system call）</h3>
+<ul>
+<li>应用程序不能直接访问硬件，必须通过<strong>系统调用</strong>接口请 OS 帮忙。</li>
+<li>实现机制：用户程序执行 <code>ecall</code>（陷阱指令）→ CPU 切内核态 → OS 查系统调用号 → 执行服务 → 返回用户态。</li>
+<li>本项目 <code>fwrite</code>（SPIFFS 文件写）、<code>socket</code>/<code>connect</code>（LwIP TCP）、<code>sleep</code> 最后都落到 OS 提供的服务 = 系统调用。</li>
+<li><strong>库函数 vs 系统调用</strong>：<code>fprintf</code> 是库函数，底层可能调用 <code>write</code> 系统调用；库函数不一定要进内核。</li>
+</ul>
+<h3 id="14-os">1.4 中断在 OS 中的地位（与计组衔接）</h3>
+<ul>
+<li>OS 的调度、I/O 完成、时钟节拍<strong>全靠中断</strong>驱动。</li>
+<li>本项目 FreeRTOS：<code>esp_timer</code> 产生时钟节拍 → 中断/tick 触发调度器 → 每个任务按时间片运行。这就是"中断是 OS 的心脏"的体现。</li>
+</ul>
+<hr />
+<h2 id="o1">O1 练习题</h2>
+<p><strong>Q1</strong>：下列哪项必须在内核态执行？(a) 读用户内存 (b) 关中断 (c) 取一个算术 (d) 读寄存器
+<strong>解析</strong>：(b) 关中断是<strong>特权指令</strong>，只能内核态；其余用户态即可。→ 记"对硬件特权资源的操作用特权指令、必在内核态"。
+<strong>Q2</strong>：为何系统调用比普通函数调用慢？
+<strong>解析</strong>：系统调用要<strong>切换用户态→内核态</strong>、保存/恢复更多现场（用户上下文、内核栈），还要查系统调用号并经过权限检查 → 开销比一次普通函数调用大得多。</p>
+<hr />
+<h2 id="o2">O2　进程与线程（★调度、同步、死锁是全年重点）</h2>
+<h3 id="21-pcb">2.1 进程、线程、PCB</h3>
+<ul>
+<li><strong>进程</strong>：<strong>资源分配的基本单位</strong> + <strong>调度的基本单位</strong>（现代 OS 常把"调度"交线程）。</li>
+<li><strong>线程</strong>：进程内的一个<strong>独立执行流</strong>，是<strong>处理机（调度）的最小单位</strong>；同一进程的线程<strong>共享</strong>地址空间与资源，切换开销比进程小。</li>
+<li><strong>本项目 FreeRTOS 任务 = 线程</strong>：每个任务有独立栈、优先级、状态；任务间用信号量/队列通信。</li>
+</ul>
+<p><strong>进程控制块 PCB（Process Control Block）</strong>：进程的"户口本"，OS 管理进程都用它，含：
+- 进程标识（ID、祖先）；
+- <strong>CPU 现场</strong>（PC、寄存器镜像、栈指针）——切换时保存/恢复；
+- 调度信息（优先级、状态、已用时间）；
+- 内存信息（代码/数据/栈所在地址）；
+- 资源和文件信息；
+- 与进程状态、优先级相关的排队指针。</p>
+<p><strong>本项目对应</strong>：FreeRTOS 的任务 = <code>TCB(任务控制块) + 私有栈 + 优先级 + 状态</code>。<code>uxTaskGetStackHighWaterMark()</code> 看的就是这个任务的"现场移动够不够"（栈余量）。</p>
+<h3 id="22">2.2 进程的状态与转换（三态/五态）</h3>
+<p><strong>三态模型</strong>：</p>
+<pre><code>就绪(Ready) ──调度→ 运行(Running) ──时间片到/被抢占→ 就绪
+运行 ──等待事件→ 阻塞(Blocked) ──事件到达→ 就绪
+</code></pre>
+<ul>
+<li><strong>就绪</strong>：可被调度但没有 CPU。</li>
+<li><strong>运行</strong>：正占用 CPU。</li>
+<li><strong>阻塞/等待</strong>：等某个事件，即使有 CPU 也不能执行。</li>
+</ul>
+<p><strong>五态</strong>：加了<strong>新建</strong>（创建中）与<strong>终止</strong>（退出但还没回收）。
+- 转换要点：<strong>"运行→阻塞"只能等事件</strong>；"阻塞→就绪"由事件唤醒；<strong>不是任何两个状态都能互转</strong>（如"就绪→阻塞"不可能，因为就绪说明能运行不会等 CPU）。</p>
+<p><strong>本项目落点</strong>：录音任务在"运行/就绪/阻塞（等 USB/帧就绪、等文件写完成、等事件）"切换；UI 任务阻塞等 <code>poll_evt</code> 事件返回，就是"运行→阻塞→就绪"的过程。<strong>状态机是 408 常考"画状态转换图 + 谁触发"</strong>。</p>
+<h3 id="23-context-switch">2.3 上下文切换（context switch）</h3>
+<ul>
+<li>从一个进程切到另一个：保存当前进程的<strong>现场（PC、寄存器、栈指针、PSW）</strong>到其 PCB → 恢复目标进程的<strong>现场</strong>。</li>
+<li>上下文切换有<strong>开销</strong>（纯账，无计算产出）——这就是调度频率、时间片大小的权衡依据。任务太多、切换太频繁会浪费。</li>
+</ul>
+<h3 id="24">2.4 ★处理机调度（调度算法 + 会算平均周转/等待）</h3>
+<p><strong>一批指标（背）</strong>：
+- <strong>周转时间</strong> = 完成时间 − 到达时间 = 等待 + 运行（含阻塞）。
+- <strong>带权周转</strong> = 周转 / 运行时间。
+- <strong>平均周转 / 平均等待</strong>：求和取平均。
+- <strong>响应时间</strong>：从提交到首次得到 CPU 的时间（交互式重要）。</p>
+<p><strong>三种层面</strong>：
+- 高级（作业）、中级（进程换入换出）、低级（进程内任务调度——本项目 FreeRTOS 调度器）。</p>
+<p><strong>经典算法（必背 + 会算）</strong>：</p>
+<ol>
+<li><strong>FCFS 先来先服务</strong>：按到达顺序调度，<strong>对大作业友好?</strong>（不对）——大作业先到则后面的短作业全等，<strong>平均等待较大</strong>。非抢占、公平。</li>
+<li><strong>SJF 短作业优先</strong>（非抢占）：谁运行最短先调度。<strong>平均等待最短</strong>（理论上最优，用于对比）。
+   - 抢占版 <strong>SRTB/SJF 抢占</strong>：新到达的更短任务可抢占当前。</li>
+<li><strong>优先级调度</strong>：优先级高的先。可抢占或非抢占。<strong>低优先级可能饥饿</strong>。</li>
+<li><strong>RR 时间片轮转</strong>：按时间片轮换，每个就绪进程一次时间片。时间片太大→退化成 FCFS；太小→切换开销太大。<strong>响应性好</strong>。</li>
+<li><strong>多级反馈队列（MLFQ）</strong>：多个队列，优先级从高到低、时间片从短到长；高队列未用完时间片仍没做完→降级到下一队列。兼顾响应与长作业不饿死。<strong>综合派，408 重点</strong>。</li>
+</ol>
+<p><strong>调度示例（SJF 计算）</strong>：
+- 到达 0，运行 8/4/1/9 → SJF 非抢占顺序 = 1(先) → 4 → 8 → 9（因为全 0 时刻到达，运行最短先）。
+- 完成时刻：1、1+4=5、5+8=13、13+9=22。
+- 等待时间：P3=0、P2=1、P1=5、P4=13 → 平均 = (0+1+5+13)/4 = 19/4 = 4.75。
+- 若 FCFS（按 8,4,1,9）：完成 8,12,13,22；等待 0,8,12,13=33/4=8.25。→ SJF 更优，验证"最短作业平均等待最小"。</p>
+<p><strong>本项目落点</strong>：FreeRTOS 用<strong>优先级抢占 + 时间片轮转</strong>：录音/编码任务设较高优先级，UI 较低；事件处理适配实时性。多级反馈的思想在"优先级高先于低 + 不饿死低优先级任务"里也能体现。</p>
+<h3 id="25-pv">2.5 同步与互斥（★PV 操作，大题）</h3>
+<p><strong>临界资源 / 临界区</strong>：一次只允许一个进程使用的资源（打印机、共享变量），访问它的代码段叫<strong>临界区</strong>。
+- <strong>四个"进入临界区"满足的条件 / 三大原则</strong>（背：<strong>互斥、让权等待、有界等待（不饥饿）、空闲让进</strong>）。</p>
+<p><strong>软件/硬件方法</strong>：
+- 关中断 / Test-and-Set（TAS）/ Swap 等硬件指令实现互斥。
+- <strong>信号量（Semaphore）</strong>：整型变量 + 等待队列 + PV 操作。</p>
+<p><strong>信号量 PV（P=V 是荷兰文）</strong>：
+- <strong>P（wait / 申请）</strong>：<code>value--; 若 value&lt;0 则 阻塞入队</code>。
+- <strong>V（signal / 释放）</strong>：<code>value++; 若 value≤0 则 唤醒队首</code>。
+- <strong>二元信号量</strong>（value 0/1）等价于<strong>互斥锁</strong>：P 拿到就进临界区，V 释放。
+- <strong>计数信号量</strong>：允许多个线程同时用（value 表示可用资源数），本项目典型：</p>
+<p><strong>本项目真实同步对象（背这种映射）</strong>：
+- <code>bsp_lvgl_lock(timeout)</code>：GUI 用的是<strong>互斥量 MUTEX</strong>，还带<strong>优先级继承</strong>（防优先级倒置——低优先级任务持锁时高优先级任务等锁，低优先级先持锁完成、避免系统卡死）。
+- 录音事件的环形队列：有界<strong>生产者-消费者</strong>队列，生产者（录音任务）入队、消费者（UI 任务）出队。
+- 文件写互斥：多个任务都不阻塞地写同一个 FRC 文件 → 用锁串行化。</p>
+<p><strong>经典同步问题（必背伪码，408 大题）</strong>：</p>
+<p><strong>(1) 生产者-消费者</strong>（有 K 个槽缓冲）：</p>
+<pre><code>empty = K（空槽数），full = 0（满槽数），mutex = 1（保护内层互斥）
+生产者：P(empty); P(mutex); 放入; V(mutex); V(full);
+消费者：P(full);  P(mutex); 取出; V(mutex); V(empty);
+</code></pre>
+<ul>
+<li>为什么里面还要 mutex：<code>empty/full</code> 只保证"有空间/有货"，但"放/取"本身是<strong>读改写</strong>，两个进程同时改缓冲区会乱；mutex 把"放/取"串行化。<strong>这四行是必默写的黄金模板。</strong></li>
+</ul>
+<p><strong>(2) 读者-写者</strong>：
+- 读者优先：多个读者可同时读，写者必须等没有读者；读者用 <code>reader_count</code> 维护，第一个读者 P(互斥写)，最后一个读者 V(互斥写)。
+- 写者优先 / 不饥饿：要处理队列避免读者无限占住。</p>
+<p><strong>(3) 哲学家进餐</strong>：
+- 每位哲学家需要<strong>两把叉子</strong>才能吃。直接"拿左叉→拿右叉"会<strong>死锁</strong>（5 人各拿一把左叉互等）。
+- 解决：① 规定一次最多只能有 4 人同时取餐（= 限制同时 4 人竞争）；② 奇偶编号，奇数先左后右、偶数先右后左；③ 谁拿不到就放下。左手拿不到右手叉的约束破坏"循环等待/持有等待"。
+- <strong>关键对比（很容易考）</strong>：哲学家进餐的最终目标其实是"<strong>让所有人都能吃完</strong>"（无死锁、无饥饿），不追求"两个人同时吃"，所以<strong>数学上"同时有 5 人竞争"的进餐标准是死锁</strong>；去掉一个席位或限制 4 人即破坏循环等待。</p>
+<p><strong>读者-写者（RW，读多写少场景的经典，背伪码骨架）</strong>：</p>
+<pre><code>写者互斥信号量 rw = 1，读者计数信号量 mutex = 1，读者计数 count = 0
+读者：P(mutex); count++; if(count==1) P(rw); V(mutex);  // 第一个读者锁写
+      读...
+      P(mutex); count--; if(count==0) V(rw); V(mutex);  // 最后一个读者放写
+写者：P(rw); 写; V(rw);
+</code></pre>
+<ul>
+<li><strong>读写公平题（408 常问）</strong>：上面是"<strong>读者优先</strong>"——写者可能被不断到达的读者无限饿死。加"<strong>信号量 w</strong>（写者排队）"或用"读写都排队"的队列可做到<strong>写者优先/公平</strong>。会考你"如何改成写者优先"。</li>
+</ul>
+<p><strong>生产者-消费者题型变体（务必会推）</strong>：
+- 单生产者单消费者 + 有界缓冲：就是上面的 3 信号量模板。
+- 多生产者多消费者：P(empty) 在多生产者之间也要互斥（其实 empty 本身自带互斥保证，但"放"加 mutex）。
+- 每题先识别哪几个是"计数约束"（empty/full）、哪几个是"互斥"（mutex），再按"先资源约束、后互斥"的顺序写 P，V 相反序。<strong>P 顺序错会死锁（如先 mutex 再 empty 且缓冲区空时两个生产者各持 mutex 等 empty）</strong>——这是 408 设陷阱点。</p>
+<p><strong>PV 为什么难但必考</strong>：因为它不是"背模板算数"，而是"<strong>用信号量表达约束</strong>"。408 大题常让你补 PV、判死锁、分析是否可以如何改进。<strong>工程落点</strong>：本项目每个"两个任务都要碰的东西"（GUI、文件、事件队列）都是一个临界区的化生，你没有显式写信号量也能看出来"为什么必须锁"。</p>
+<p><strong>一道课上推敲（信号量初值）</strong>：若两个进程都要"打印后再发消息"，用二元信号量把 <code>print()</code> 串行化，且"打印完成"前另一方不能发——按上面的"先给计数/资源、后互斥"写即可，注意信号量初值决定"先到者是否被挡"。</p>
+<h3 id="26_1">2.6 死锁（★判断与避免可计算）</h3>
+<p><strong>死锁四必要条件（都存在才可能死锁）</strong>：
+1. <strong>互斥</strong>：资源一次仅一任务能用。
+2. <strong>占有并等待（持有并请求）</strong>：已持有一个资源，又申请别的。
+3. <strong>不可剥夺</strong>：已占资源不能强抢。
+4. <strong>循环等待</strong>：存在一个"互相等着对方资源"的环。</p>
+<p><strong>破坏方法（每个必要条件的反着来）</strong>：
+- 破坏"持有并等待"：一次性申请全部资源。
+- 破坏"不可剥夺"：允许在申请失败时释放已持资源。
+- 破坏"循环等待"：给资源编号，只能按序申请（单调）。
+- 互斥在有些资源（如打印机）上不能破坏。</p>
+<p><strong>死锁避免：银行家算法（★必须会手算）</strong>
+- 每次分配前<strong>试探</strong>，看是否仍存在<strong>安全序列</strong>，存在才分配。
+- 数据结构：<code>Max</code>（每进程最大需求）、<code>Allocation</code>（已分配）、<code>Need=Max−Allocation</code>、<code>Available</code>（当前可用）。
+- 安全判定：找 <code>Need[j] ≤ Available</code> 的进程，模拟分配并回收其所有资源（<code>Available += Allocation[j]</code>），循环，能全部推进则安全。
+- <strong>银行家算法手算演示（务必自己推一遍）</strong>：</p>
+<blockquote>
+<p>系统三类资源 A/B/C，<code>Available = (3,3,2)</code>；四个进程：
+P0: Allocation=(0,1,0), Max=(7,5,3) → Need=(7,4,3)
+P1: Allocation=(2,0,0), Max=(3,2,2) → Need=(1,2,2)
+P2: Allocation=(3,0,2), Max=(9,0,2) → Need=(6,0,0)
+P3: Allocation=(2,1,1), Max=(2,2,2) → Need=(0,1,1)
+P4: Allocation=(0,0,2), Max=(4,3,3) → Need=(4,3,1)</p>
+<p>问当前是否安全、找安全序列。
+<strong>解</strong>：初始 Available=(3,3,2)。找 Need≤Available 的：P1(1,2,2)✓、P3(0,1,1)✓、P4(4,3,1)✗、P0✗、P2✗。挑 P3：回收 → Available=(3,3,2)+(2,1,1)=(5,4,3)。再 P1 → (7,4,3)。再 P4 → (7,4,5)。再 P0 → (7,5,5)。再 P2 → (10,5,7)。→ <strong>安全,序列如 P3,P1,P4,P0,P2</strong>（不唯一）。
+<strong>变体陷阱</strong>：如果在资源紧张时把 <code>Available</code> 换成分配请求后状态再判,答案会骤变——<strong>先请求改变状态,再对该新状态运行安全算法</strong>。</p>
+</blockquote>
+<p><strong>死锁检测与解除</strong>：
+- <strong>资源分配图</strong>：进程结点 + 资源结点，申请/分配作有向边。<strong>图中存在环 = 死锁</strong>（结合必要条件判断是否真是死锁）。
+- 解除：剥夺资源、撤销进程、回滚。
+- <strong>判定细节</strong>：资源分配图中，若每个资源类型只有一个实例,成环等价死锁；若一个资源类型有多个实例,还要用"<strong>简化分配图</strong>"（把能完成的进程边去掉）——能全部简化则不死锁。</p>
+<p><strong>本项目落点</strong>：嵌入式里极简资源（内存、外设、文件锁）。若"录音任务占文件锁不放、WiFi 任务又要同一文件锁"，就会死锁/阻塞 → 所以本项目用了<strong>带超时的锁（timeout）</strong>，等不到就报错而不是无限挂起——这就是"<strong>死锁避免靠超时 + 不无限等待</strong>"的工程化。</p>
+<hr />
+<h2 id="o2_1">O2 练习题</h2>
+<p><strong>Q1</strong>（SJF/FCFS）：四个进程到达均为 0，服务时间 8,4,1,9，分别算 SJF 与 FCFS 平均等待时间。
+<strong>解析</strong>：见上—— SJF 顺序 1,4,8,9，完成 1,5,13,22，等待 0,1,5,13=<strong>4.75</strong>；FCFS 顺序 8,4,1,9，完成 8,12,13,22，等待 0,8,12,13=<strong>8.25</strong>。→ 最短作业平均等待最小；长作业在 FCFS+LBF 后会被拖累→为什么引入抢占/分级。
+<strong>Q2</strong>（银行家）：见上表。判断系统是否安全（需写安全序列）。
+<strong>解析</strong>：</p>
+<pre><code>P1: Need[1,2,2] ≤ Avail[3,3,2] → 可完成，回收 → Avail=[5,3,2]
+P3: Need[0,1,1] ≤ [5,3,2] → 可完成 → Avail=[7,4,3]
+P0: Need[7,4,3] ≤ [7,4,3] → 可完成 → Avail=[7,5,3]  (P0 Alloc [0,1,0]→7? 0+0？注意Allocation是列向量)
+        准确：完成 P1 回收其 Alloc[2,0,0] → 以后逐步累积。
+P4 → P2 ：一路可推进。
+</code></pre>
+<p>→ 存在安全序列（如 <code>P1,P3,P0,P4,P2</code>）→ <strong>安全</strong>。<strong>手算套路：每次找 <code>Need≤Available</code> 的进程，把其已分配全回收，更新 Available</strong>。
+<strong>Q3</strong>（死锁判据）：哲学家 5 人拿叉子，每人先左叉，会死锁吗？
+<strong>解析</strong>：每人持一把左叉、都等右叉→<strong>循环等待</strong>成立→死锁。已通过"限制同时 4 人取餐"破坏"循环等待/持有并等待"解决。→ 判死锁看<strong>四个必要条件</strong>。
+<strong>Q4</strong>（临界区原则）：进入临界区要满足四条件中的"有界等待"指什么？
+<strong>解析</strong>：一个进程提出进入请求后，<strong>不能无限期等</strong>（必须在有限时间内进入）——防止饥饿。有界等待 ⇔ 不让任一进程饿死。</p>
+<hr />
+<h2 id="o3">O3　内存管理（★分页、页面置换计算是大题）</h2>
+<h3 id="31_1">3.1 连续分配</h3>
+<ul>
+<li><strong>固定分区</strong>：内存预先切成固定大小的区，每区装一个进程。简单但<strong>内部碎片</strong>多、利用率差。</li>
+<li><strong>动态（可变）分区</strong>：按需分配，有<strong>外部碎片</strong>（小块碎缝没法用）。</li>
+<li><strong>动态分区分配算法</strong>：</li>
+<li>首次适配（first fit）：从头找<strong>第一个够大的空块</strong>。快。</li>
+<li>最佳适配（best fit）：选<strong>最小够用</strong>空块。碎片少但慢、产生小碎片。</li>
+<li>最坏适配（worst fit）：<strong>最大空块</strong>。减少小碎片。</li>
+<li>循环首次适配。</li>
+<li><strong>碎片/紧凑（compaction）</strong>：把分散的小块合并成大块，代价是搬移进程。</li>
+</ul>
+<p><strong>本项目落点</strong>：ESP 堆就是<strong>动态堆分配 + 外部碎片</strong>——它没有分页，用的就是"连续分配策略"。之前的"空闲堆约 33KB、最大连续块 16KB"正是<strong>外部碎片</strong>的活例子：总空闲还有 33KB，但最大连续块只有 16KB，大对象（如 16KB 任务栈）分配不出来，就"rec error/崩"。<strong>OS 章节的"碎片"在这台设备上真实出现。</strong></p>
+<h3 id="32">3.2 页式存储（★必会换算）</h3>
+<p><strong>思路</strong>：把逻辑地址空间和物理内存都<strong>切成同样大小的页</strong>。进程的"页"可放在<strong>不连续的物理页框（块）</strong>里——解决外部碎片。</p>
+<ul>
+<li><strong>逻辑地址 = 页号 P | 页内偏移 W</strong>，其中页大小 = <code>2^w</code> → 页内偏移占 w 位。</li>
+<li><strong>物理地址 = 页框号 F | 页内偏移 W</strong>（页内偏移在逻辑/物理里相同）。</li>
+<li><strong>页表</strong>：页号→页框号的映射（一个页表项：有效位 + 页框号 + 修改位/访问位）。</li>
+<li>换算：物理地址 = 块号×页大小 + 页内偏移。</li>
+</ul>
+<p><strong>例题</strong>：页大小 4KB（0x1000），逻辑地址 0x3E24，页表第 3 项映射块 9。
+- 页号 = 0x3E24 &gt;&gt; 12 = 3（因为 0x3E24 高 12 位是页号），页内偏移 = 0xE24（低 12 位）。
+- 块 9×0x1000 = 0x9000；物理 = 0x9000 + 0xE24 = <strong>0x9E24</strong>。
+<strong>步骤套路：页号找块、块号拼页内偏移。每次读题都先定 w（页大小取 log₂），再分字段。</strong></p>
+<p><strong>为什么分页能消除外部碎片但引入"页表占用 + 查表开销"</strong>：页表本身要存、内存访问两次（先查页表再取数据），所以有 TLB/快表加速（见 O3.5）。</p>
+<h3 id="33_2">3.3 分段 / 段页式</h3>
+<ul>
+<li><strong>分段</strong>：按<strong>逻辑模块</strong>（代码段/数据段/栈）划分，大小可变；<strong>段表项 = 段号 →（段基址、段长）</strong>。逻辑地址 = 段号 | 段内偏移。好处：好共享、好保护、好动态增长（段可独立扩展）；缺点：有内部（段内页对齐问题）+ 外部碎片、段长可变难管理。</li>
+<li><strong>段页式</strong>：先分段、再分页（两段映射），兼顾"分享/保护"与"无外部碎片"。两套表：段表 + 页表。</li>
+</ul>
+<p>解题要点：<strong>分清"地址由谁拆"</strong>：
+- 页式：逻辑 = 页号 | 偏移（拆物理也对齐）。
+- 段式：逻辑 = 段号 | 偏移，物理不一定连续（按段表基址+偏移）。
+- 段页式：段号 → 页表 → 页框。</p>
+<h3 id="34">3.4 ★页面置换算法（★计算大题）</h3>
+<p>当内存页框不足、要调入新页时，换出哪一页？</p>
+<ul>
+<li><strong>OPT 最优（理论下界）</strong>：换出"未来最长时间不再访问"的页。<strong>实际不可知</strong>（未来),只做对照。手算用它做"下界"，看算法离最优差多少。</li>
+<li><strong>FIFO</strong>：换出最早调入的页。实现简单，但有 <strong>Belady 异常</strong>（页框变多，缺页反而变多）。</li>
+<li><strong>LRU（最近最久未用）</strong>：换出"最久没被访问"的页。命中率高，但需要硬件计数器/链表维护访问最近度（开销大）。<strong>手算时盯"上次访问顺序"——谁最久没被碰就换谁</strong>。</li>
+<li><strong>简单 CLOCK / 改进 CLOCK</strong>：近似 LRU——用"访问位"循环扫描，可改为"干净/脏、使用/未用"四类双循环。<strong>手算经常考 CLOCK（循环替换）</strong>。</li>
+</ul>
+<p><strong>手算为保证：缺页次数 / 缺页率</strong>
+- 命中率 = 命中访问次数 / 总访问次数；缺页率 = 缺页次数 / 总访问次数。
+- （首屏（刚开始从空内存调入的）都算缺页。）
+- <strong>算 LRU 不丢步的写法</strong>：维护一张 3 行的表，每行是一个页框位，访问某页若在→把它"挪到最后/标记最新"；缺页→把"最旧"那行换出并把新页标成最新。画列=访问序列、行=3 个页框、每格写当前内容即可。</p>
+<p><strong>例题（同样访问串，三种算法对比，背答案）</strong>：访问串 <code>1,2,3,4,1,2,5,1,2,3,4,5</code>，页框 3：
+- <strong>FIFO</strong>：逐步踢最早调入的（见下），缺页 <strong>10</strong>。
+  <code>1→[1](缺) 2→[1,2](缺) 3→[1,2,3](缺) 4→踢1[2,3,4](缺)
+  1→踢2[3,4,1](缺) 2→踢3[4,1,2](缺) 5→踢4[1,2,5](缺)
+  1(在) 2(在) 3→踢1[2,5,3](缺) 4→踢2[5,3,4](缺) 5(在)</code>
+- <strong>LRU</strong>：换"最久没访问"的，缺页 <strong>9</strong>（比 FIFO 少 1）。设计 LRU 时比 FIFO 多命中第 3 个 1、第 3 个 2。
+- <strong>OPT</strong>（已知完整访问串，看未来）：缺页 <strong>7</strong>，是最优下界。</p>
+<blockquote>
+<p>为什么 LRU 用"最近"而 OPT 用"未来"：LRU 用<strong>历史</strong>近似"未来还会不会再用"——你刚用过的、八成还会再用（时间局部性）。OPT 要"神预言"未来，只作标准。</p>
+</blockquote>
+<p><strong>CLOCK 算法（手算步骤，常考）</strong>
+- 每个页有<strong>访问位 R</strong>（被访问置 1）。指针循环扫：
+  - R=0 → 换出它；R=1 → 清 R 为 0 并让指针继续。
+- 改进 CLOCK：每页有 (R，M)（访问位 M=修改位），按 (0,0)→(0,1)→(1,0)→(1,1) 偏好顺序先淘汰"干净未用"，其次"脏未用"，第三"干净用过"，最差"脏用过"。好处：优先淘汰<strong>没改过的干净页</strong>，省去写回外存。
+- <strong>考点</strong>：CLOCK 的第一次扫描会"把 R 清零"，所以刚被访问过的页也能在第二轮被淘汰。</p>
+<h3 id="35-tlb">3.5 页面分配、抖动、TLB（快表）</h3>
+<ul>
+<li><strong>抖动（thrashing）</strong>：同时运行的进程驻留集太小，频繁缺页换入换出，利用率极低。解决：设计合适的驻留集、降低多道度。</li>
+<li><strong>工作集</strong>：一段时间内实际访问的页面集合；工作集小于内存驻留集则较稳。<strong>驻留集 ≥ 工作集</strong>才不易抖动。</li>
+<li><strong>TLB（快表/旁路转换缓冲）</strong>：一级查 TLB（Cache），命中直接拿页框号；未命中查主存页表；页表项无效才缺页。<strong>TLB 未命中≠缺页</strong>。</li>
+<li><strong>两级页表</strong>（页表太大时）：逻辑地址拆成 <code>页目录号 P1 | 页表号 P2 | 页内偏移</code>，多一次查表但省内存（页表可部分不在内存）。408 常考"逻辑地址位数 → 各级页表项数"。</li>
+</ul>
+<hr />
+<h2 id="o3_1">O3 练习题</h2>
+<p><strong>Q1</strong>（分页换算）：页大小 512B，逻辑地址 0x0A3F，页表第 5 项→块 12，物理地址？
+<strong>解析</strong>：512B=2⁹ →低9位页内偏移=0x3F，高(逻辑地址位数−9)位是页号。设逻辑地址 0x0A3F=二进制 …010 1000 0111 1111，低9位=001 111111 页内偏移；页号=10100₂=20? 需给定位数——<strong>套路</strong>：偏出去 9 位，页框 12×512=0x1800，物理=0x1800+0x3F=0x183F。
+<strong>Q2</strong>（置换）：访问串 1,2,3,4,1,2,5,1,2,3,4,5，页面 3，求 LRU 缺页数与 FIFO 缺页数，谁的缺页少？
+<strong>解析</strong>（略推）：二者都 10 左右；此题 LRU 与 FIFO 缺页数相同（经典用例），但 <strong>FIFO 会出现 Belady 异常而 LRU 不会</strong>——这是关键概念考点。
+<strong>Q3</strong>（Belady 异常）：只出现在哪种算法？通常增加多少页框就减少缺页？
+<strong>解析</strong>：Belady 异常<strong>只发生在 FIFO</strong>（有时也见于 CLOCK，但 LRU/OPT 不会）。一般页框增多，缺页应减少，Belady 例外。→ 记"FIFO 有 Belady、LRU/OPT 没有"。
+<strong>Q4</strong>（TLB vs 缺页）：虚地址命中 TLB、命中页表、缺页，三者的访存次数差异？
+<strong>解析</strong>：命中 TLB=1 次（快表）；未命中查页表但页表项有效=慢（访问页表再取数据，多次）但没有缺页；缺页需先从磁盘/Flash 调页。<strong>分层缓存思想</strong>（见 C3）。</p>
+<hr />
+<h2 id="o4">O4　文件管理（★索引文件、磁盘调度是大题）</h2>
+<h3 id="41_1">4.1 文件与逻辑结构</h3>
+<ul>
+<li>文件 = 一段<strong>有名字的逻辑相关信息的集合</strong>。</li>
+<li><strong>逻辑结构</strong>：无结构（字节流）；有结构——定长记录 / 变长记录。</li>
+<li><strong>逻辑按内容访问 vs 按位置</strong>。</li>
+</ul>
+<h3 id="42_1">4.2 文件的物理结构（★重点）</h3>
+<p>把逻辑文件映射到磁盘/Flash 块：
+1. <strong>连续分配</strong>：文件占<strong>连续的若干块</strong>。随机访问快，但难扩展、有外部碎片。
+2. <strong>链式（链接）分配</strong>：文件块用"下一块指针"串起来。无外部碎片、易扩展，但<strong>只能顺序访问</strong>（跳转靠指针）、指针多耗空间、坏链风险。
+3. <strong>索引分配（inode）</strong>：文件有个<strong>索引块</strong>，记录它所有数据块的块号。随机访问快、无外部碎片。
+   - 单级索引：一个索引块，可指文件的所有块（受索引块能放多少指针限制）。
+   - <strong>多级/混合索引</strong>：直接块 + 一级/二级/三级间接索引。<strong>本题本项目"索引思想"</strong>。</p>
+<p><strong>混合索引计算（408 必考）</strong>：
+设块大小 B（字节）、每个块号指针 4 字节：
+- 每个索引块能容纳指针数 = B/4。
+- 直接块：12 个直接指针 → 直接数据 12×B。
+- 一级间接：1 个指针指向一个含 B/4 个指针的块 → 可覆盖 B/4 块。
+- 二级间接：1 个指针 → 指向的块里又有 B/4 个"一级索引" → 可覆盖 (B/4)² 块。
+- 三级同理 (B/4)³。</p>
+<p><strong>例题</strong>：块 4KB、指针 4B、inode=12 直接 + 1 一级 + 1 二级。
+- 一级可指 4096/4=1024 块 → 覆盖 1024×4KB=4MB。
+- 最大文件 = 直接 12×4KB + 一级 1024×4KB + 二级 1024²×4KB ≈ 4GB。
+- 访问偏移 4MB 处：先走直接块（前 12 块=48KB 之后），再走一级间接→1 次读索引块 + 1 次读数据 = <strong>2 次磁盘</strong>。</p>
+<p><strong>本项目 FRC 文件系统（SPIFFS）</strong>：用索引/位图管理块，本质接近"索引分配 + 位示图"；FFS 把块分配、判断空余用位图+B+树美化。题目测你的"结构层次 + 算多少块/几次磁盘"。</p>
+<h3 id="43-fcb">4.3 目录与 FCB、路径</h3>
+<ul>
+<li><strong>FCB（文件控制块）/ inode</strong>：文件名、类型、大小、物理位置、访问权限、时间戳等。是文件的"PCB"。本项目每个 FRC 文件的 inode/头部保存这些。</li>
+<li><strong>目录</strong>：目录项存"文件名 + 指向 inode/FCB 的指针"。</li>
+<li><strong>目录结构</strong>：单级（一个目录装所有文件——本项目 <code>/rec/</code> 录音区就是<strong>单级目录</strong>）、两级、树形（最流行）、无环图（共享）。</li>
+<li><strong>路径解析</strong>：<code>/rec/R0000007.FRC</code> 从根开始逐级查目录表，最后找到该文件 FCB → 数据块。</li>
+<li><strong>目录查找</strong>：顺序/索引/哈希。</li>
+</ul>
+<h3 id="44_1">4.4 空闲空间管理与磁盘调度（★计算）</h3>
+<p><strong>空闲空间管理</strong>：
+- <strong>空闲链表</strong>（链空闲块）。
+- <strong>位示图（bitmap）</strong>：一个 bit 表示一块是否空闲——本项目 SPIFFS 用位图管理 Flash 块。考"第 k 块对位示图第几字节第几位"。
+- 成组链接法（大文件系统）。</p>
+<p><strong>磁盘调度算法（求平均寻道距离）</strong>：设磁盘磁道 0~199，当前在 100，请求队列 {55,58,39,18,90,160,150,38,184}：
+- <strong>FCFS</strong>：按到达顺序，寻道距离 = 累加相邻差的绝对值。
+- <strong>SSTF（最短寻道优先）</strong>：每次选离当前最近的道（近似最短）。可能"来回"导致<strong>饥饿</strong>。
+- <strong>SCAN（电梯）</strong>：先向一个方向走到头再回头，中途把经过请求都服务。
+- <strong>C-SCAN（循环扫描）</strong>：只向一个方向服务，回到 0 再从 0 扫（减少回头抖动，等待更均匀）。
+- 计算就"模拟走一遍，逐段累加距离"。</p>
+<h3 id="45">4.5 文件一致性 / 原子性（本项目活案例）</h3>
+<ul>
+<li>本项目录音"先写 <code>ACTIVE.TMP</code>，完成后 <strong>rename</strong> 成 <code>R0000xxx.FRC</code>"：这是一个<strong>原子改名（提交点）</strong>。崩溃时旧文件完整、新文件不出现，系统一致。</li>
+<li><code>nvs_commit()</code> 是 NVS 的<strong>事务提交</strong>（把待写入的变更最后落盘、带 CRC）——类比数据库"提交即生效"。<strong>这就是 OS/文件系统"原子性/崩溃安全"的工程实现</strong>。</li>
+</ul>
+<hr />
+<h2 id="o4_1">O4 练习题</h2>
+<p><strong>Q1</strong>（索引）：块 1KB、指针 4B，inode 10 直接 + 1 一级 + 1 二级，求最大单文件大小与访问第 3000 块需几次磁盘。
+<strong>解析</strong>：一级索引指针数 = 1024/4=256 → 覆盖 256×1KB=256KB。直接 10 块=10KB。最大 = 10KB + 1 级 256KB + 二级 256²×1KB ≈ 64MB。
+第 3000 块：直接 10 块、一级 256 块 → 还没到 3000，走二级：先读二级索引块(1次)→读到对应的一级索引块(1次)→读数据块(1次) = <strong>3 次</strong>（访问索引要 2 次 + 数据 1 次）。
+<strong>Q2</strong>（位示图）：某文件系统用位示图管理 4096 个块，每个字节 8 位，问需多少字节？
+<strong>解析</strong>：4096 块 = 4096 bit = 512 字节。→ 位示图只用 512B，非常省。
+<strong>Q3</strong>（磁盘调度）：当前磁道 100，请求 55,58,39,18,90,160,150,38,184，SSTF 的访问顺序？
+<strong>解析</strong>：从 100 出发，最近的 90(距10)→55(35)? 90 后 55 距 35，58 距 37，选 55→58(3)→39(19)→38(1)→18(20)→150→160→184……算出顺序并求总寻道距离。（重点：<strong>SSTF 每次就近</strong>，会来回。）
+<strong>Q4</strong>（原子性）：为何用"临时文件 + rename"而不是直接把分块写进正式文件？
+<strong>解析</strong>：rename 是<strong>原子操作</strong>。若直接写正式文件，中途崩溃会留下"半截文件"（损坏）。写临时文件、最后一次 rename 改成正式名——崩溃时要么旧文件完整、要么新文件完整，<strong>绝无中间态</strong>。→ 保证文件一致性（会见投标本）。</p>
+<hr />
+<h2 id="o5-io-c7">O5　I/O 管理（与计组 C7 呼应）</h2>
+<h3 id="51-io">5.1 I/O 系统的软件层次</h3>
+<pre><code>用户进程（读/写文件）
+I/O 设备独立性层（通用接口：open/read/write，设备驱动差异被屏蔽）
+设备驱动（os_sys、硬件操作）
+中断处理（设备完成中断）
+硬件设备
+</code></pre>
+<ul>
+<li>本项目 <code>bsp_*</code> 封装就是把设备相关性藏在驱动层，上层用统一 API → <strong>设备独立性层 + 驱动</strong>。</li>
+<li><strong>DMA / 中断</strong>在计组 C7 已详述，这里同样适用于"录音持续传数据、CPU 干别的"。</li>
+</ul>
+<h3 id="52_1">5.2 缓冲技术</h3>
+<ul>
+<li><strong>单缓冲/双缓冲</strong>：一块/两块缓冲交替装入，减少等待。</li>
+<li><strong>循环缓冲/缓冲池</strong>：若干缓冲块循环使用。</li>
+<li>本项目 I2S 双环缓冲 + DMA，SPIFFS 页缓冲，HTTP 分块缓冲——都是"让 CPU 和慢设备解耦"。</li>
+</ul>
+<h3 id="53-spooling">5.3 SPOOLing（假脱机技术）</h3>
+<ul>
+<li>用<strong>磁盘作为中介缓冲</strong>，把独占设备（如打印机）模拟成"可同时占用"的共享设备：作业先写到磁盘上的"输出井"，由 SPOOLing 后台程序一批批真实输出。</li>
+<li>本项目类比："要回放的录音排成一个队列，后台依次读文件送入音频"就是 SPOOLing 的简化。</li>
+</ul>
+<h3 id="54_2">5.4 设备分配</h3>
+<ul>
+<li>独享设备（打印机）/共享设备（磁盘）/虚拟设备（SPOOLing 出来的）。</li>
+<li>分配策略：安全与否、是否可剥夺；逻辑分配/物理分配。</li>
+</ul>
+<hr />
+<h2 id="o5">O5 练习题</h2>
+<p><strong>Q1</strong>（为何要缓冲）：程序每次写 1 字节，设备按块存取，为什么要缓冲？
+<strong>解析</strong>：缓冲把多次小写<strong>聚合</strong>，减少对外设（磁盘/Flash）的访问次数与中断次数，提高效率（写 1 字节聚合到一页再一次性写 Flash）→ 缓解 CPU 与慢设备速度差。<strong>它是计组 C7"缓冲"在 OS 的落地</strong>。
+<strong>Q2</strong>（SPOOLing）：SPOOLing 用什么把独占设备变成共享？
+<strong>解析</strong>：磁盘+后台进程形成"虚拟设备"，多个作业的<strong>输出同时排队</strong>、互不阻塞，从使用者看设备仿佛可独占可共享。→ "凭空多出逻辑设备"就是虚拟化概念。</p>
+<hr />
+<h2 id="os">[第三部分小结：OS 的"六张计算表"（背）]</h2>
+<ol>
+<li><strong>调度</strong>：SJF 平均等待最短；RR 时间片权衡；算平均周转。</li>
+<li><strong>PV</strong>：生产者-消费者 4 行模板；读者写者；哲学家防死锁。</li>
+<li><strong>死锁</strong>：四必要条件 + 银行家安全序列（手算）。</li>
+<li><strong>分页</strong>：逻辑地址拆页号|偏移、物理=块号×页大小+偏移。</li>
+<li><strong>置换</strong>：FIFO/LRU/OPT/CLOCK 手算缺页，Belady 只在 FIFO。</li>
+<li><strong>索引/磁盘</strong>：inode 直接+间接的容量与访存次数；SSTF/SCAN 求寻道。</li>
+</ol>
+<hr />
+<h1 id="_7">第四大部分　计算机网络（把"跨机器传数据"讲透）</h1>
+<blockquote>
+<p>计网考试<strong>既能考分层概念，又能考算（子网划分、复用、拥塞窗口、往返时延）</strong>。这台设备是<strong>智能配网 + HTTP 下载</strong>的真实网络节点，
+所以 TCP 握手、DHCP 配网、HTTP 请求/下载全都能"摸到"。下面自底向上逐层细讲，重点层（网络层、传输层）放最多笔墨。</p>
+</blockquote>
+<hr />
+<h2 id="n1">N1　概述与分层</h2>
+<h3 id="11_2">1.1 为什么要分层（背）</h3>
+<ul>
+<li>把复杂的网络通信<strong>拆成若干互相独立的层</strong>，每层只关心"本层的功能与对等通信"，层间用<strong>服务接口</strong>衔接。</li>
+<li>好处：各层独立设计/替换、模块化、易于实现与标准化。</li>
+</ul>
+<h3 id="12-osi-vs-tcpip-lwip">1.2 OSI 七层 vs TCP/IP 五层（本项目 LwIP 用五层）</h3>
+<pre><code>OSI 7层           TCP/IP 5层（考点常用）        典型案例
+应用 表示 会话 →  应用层(应用/表示/会话合并)     HTTP、DNS、FTP、SNTP、DHCP
+传输            →  传输层                       TCP、UDP
+网络            →  网络层                       IP、ARP、ICMP、路由
+数据链路        →  数据链路层                   以太网、WiFi(802.11)、MAC
+物理            →  物理层                       电信号/射频、编码调制
+</code></pre>
+<ul>
+<li>收发自底向上，<strong>对等层之间"逻辑"通信</strong>，实际数据每层加"首部"封装（见 N3 组帧）。</li>
+</ul>
+<h3 id="13_1">1.3 性能指标（背 + 会算）</h3>
+<ul>
+<li><strong>带宽（bandwidth）</strong>：信道最高数据率，单位 bps（bit/s）。</li>
+<li><strong>吞吐量</strong>：实际每秒传的数据量。</li>
+<li><strong>时延 = 发送时延 + 传播时延 + 处理 + 排队</strong>。</li>
+<li><strong>发送（传输）时延</strong> = 数据长度 / 发送速率。</li>
+<li><strong>传播时延</strong> = 信道长度 / 信号传播速率（约 2×10⁸ m/s，光速量级）。</li>
+<li>（易错点：发送时延是"发完要多久"，传播时延是"传到对方要多久"，别混。）</li>
+<li><strong>往返时延 RTT</strong>：发送端从发出到收到确认/响应的时间（≈2×单程传播时延 + 处理）。</li>
+<li><strong>利用率</strong>：发送方发送速率 / 带宽。</li>
+</ul>
+<p><strong>本项目落点</strong>：下载录音时首页 <code>Content‑Length</code> / 下载进度就是你算"带宽×时间"的最真实场景。</p>
+<hr />
+<h2 id="n1_1">N1 练习题  （时延计算）</h2>
+<p><strong>Q1</strong>：数据 1000B，带宽 10Mbps，信道长 2000km，传播速率 2×10⁸m/s，求发送时延与传播时延。
+<strong>解析</strong>：发送时延 = (1000×8)bit / 10×10⁶bps = 8000/10⁷ = <strong>0.8ms</strong>。传播时延 = 2000×10³ / 2×10⁸ = 10⁻² s = <strong>10ms</strong>。
+（<strong>注意传播时延通常远大于发送时延</strong>，这是"长链路传输"的基础事实。）
+<strong>Q2</strong>：什么情况下传播时延大于发送时延？
+<strong>解析</strong>：数据很小 + 链路很长时（如 1bit / 千公里）→ 传播时延主导。它决定"存多少数据在途中"（带宽延迟积）。</p>
+<hr />
+<h2 id="n2">N2　物理层</h2>
+<h3 id="21_1">2.1 编码与调制</h3>
+<ul>
+<li><strong>数字-数字编码</strong>（数字信号传输）：<strong>曼彻斯特编码</strong>（每个码元中间跳变压/电平，自带时钟）、<strong>差分曼彻斯特</strong>（靠跳变有无表 0/1）、不归零法 NRZ、归零 RZ、<strong>8B/10B / 4B/5B</strong> 等。</li>
+<li><strong>数字-模拟调制</strong>（用载波的幅度/频率/相位表示 0/1）：</li>
+<li><strong>ASK</strong> 幅移键控、<strong>FSK</strong> 频移键控、<strong>PSK</strong> 相移键控、<strong>QAM</strong> 正交调幅（混合幅度+相位，如一码元多位）。</li>
+<li>WiFi 用的是 <strong>OFDM（正交频分复用）</strong>——把信道分成多个子载波并行传，属"分频 + 相/幅调制"。</li>
+</ul>
+<h3 id="22_1">2.2 复用技术（★考计算/概念）</h3>
+<ul>
+<li><strong>频分复用 FDM</strong>：不同频率互不相干扰（收音机）。</li>
+<li><strong>时分复用 TDM</strong>：同一频率分时隙（时隙轮着用）。</li>
+<li><strong>波分复用 WDM</strong>：不同光波（光纤）。</li>
+<li><strong>码分复用 CDM（CDMA）</strong>：用户用<strong>正交码</strong>叠加在同一时间同一频率，接收端用"相关"分离。<strong>算题常考</strong>：码片序列点积，如要 A 收 B，A 用 B 的码片序列做内积求和判 0/正/负。</li>
+</ul>
+<p><strong>CDMA 例题</strong>：码片 a=(1,−1,1,−1)，b=(−1,1,−1,1)，它们正交吗？
+<strong>解析</strong>：a·b = 1·(−1)+(−1)(1)+1·(−1)+(−1)(1) = −1−1−1−1 = −4 ≠ 0 → 不正交。
+（正交码片要求内积=0 才能同时传；编码后的叠加用目标码片内积可还原自己的数据。）</p>
+<h3 id="23_2">2.3 传输介质与极限速率</h3>
+<ul>
+<li>双绞线（差分、抗干扰）、同轴、<strong>光纤</strong>（全反射、带宽大）、无线（电磁波）。</li>
+<li><strong>奈奎斯特准则</strong>（无噪声，码元速率上限）：<code>C = 2W log₂V</code>（W=带宽，V=码元电平数/进制）。</li>
+<li><strong>香农定理</strong>（有噪声，理论最大速率）：<code>C = W log₂(1 + S/N)</code>，其中 <code>S/N = 10^(信噪比dB/10)</code>。</li>
+<li><strong>这两条必背计算</strong>：题干给"带宽/信噪比/电平数"，求 bps 上限。</li>
+</ul>
+<p><strong>香农例题</strong>：带宽 3kHz，信噪比 30dB，理论最大速率？
+<strong>解析</strong>：30dB → S/N = 10³=1000。C = 3000 × log₂(1+1000) ≈ 3000 × 9.97 ≈ 30kbps。</p>
+<hr />
+<h2 id="n2_1">N2 练习题</h2>
+<p><strong>Q1</strong>（香农）：带宽 4kHz，信噪比 20dB，最大数据率？
+<strong>解析</strong>：20dB → S/N=10²=100。C = 4000×log₂(101) ≈ 4000×6.66 ≈ 26.6kbps。
+<strong>Q2</strong>（Nyquist）：带宽 3kHz，采用 8 种电平（V=8），最大码元速率与数据率？
+<strong>解析</strong>：码元速率 = 2W = 2×3000 = 6000 码元/s（波特）。数据率 = 6000 × log₂8 = 6000×3 = 18kbps。（Nyquist 看"电平数"给多进制速率。）</p>
+<hr />
+<h2 id="n3-crccsma">N3　数据链路层（★CRC、窗口、CSMA 是大题）</h2>
+<h3 id="31_2">3.1 封装成帧与链路标识</h3>
+<ul>
+<li>帧 = 首部 + 数据（负载）+ 尾部（FCS校验）。</li>
+<li><strong>帧定界</strong>：字符填充（字节填充）/ 位填充 / 物理编码违例。</li>
+<li><strong>MAC 地址（48 位）/ 广、单、组播</strong>；本项目 WiFi MAC → 配网 SSID 后加 4 位。</li>
+</ul>
+<h3 id="32-crc">3.2 差错检测（★CRC 会算）</h3>
+<ul>
+<li><strong>奇偶校验</strong>：1 位，只能检奇数位错，不能纠错。</li>
+<li><strong>海明码</strong>：能纠 1 位错（见计组 C2）。</li>
+<li><strong>CRC（循环冗余）</strong>：发送方用生成多项式除数据得余数附后；接收方同样除、余数=0 则正确。<strong>能检测多位错</strong>。以太网 FCS 用的即 CRC-32。<strong>要会手算多项式除法（模 2 除）</strong>（见 C2 Q5）。本项目 FRC 文件头/SPIFFS/网络帧都用 CRC 校验。</li>
+</ul>
+<h3 id="33-gbnsr">3.3 可靠传输：停止等待、GBN、SR（★窗口计算）</h3>
+<p>假设每帧长度为 L，发送速率 v，信道单程传播时延为 τ（RTT=2τ）：</p>
+<ul>
+<li><strong>停止-等待（停等）</strong>：发一帧 → 等 ACK → 再发下一帧。
+  利用率 <code>U = 发送时延 / (发送时延 + 2τ)</code>（含帧全部传完到 ACK 回来）。</li>
+<li><strong>流水线/滑动窗口</strong>：允许同时多个帧在途，提高利用率。</li>
+<li><strong>GBN（回退 N / Go-Back-N）</strong>：接收方<strong>按序</strong>收，失序帧丢弃；发送方窗口 &gt;1；一个 ACK 丢失时回退重传从丢的那个之后所有帧。需要窗口 ≤2ⁿ−1（n=序号位数）防止序号重名/混乱。</li>
+<li><strong>SR（选择重传 / Selective Repeat）</strong>：接收方<strong>缓存失序帧</strong>，只重传没 ACK 的那帧；窗口 ≤2ⁿ⁻¹。</li>
+<li><strong>TCP 用的就是"滑动窗口 + 累计确认 +（快重传/快恢复）"</strong>（见 N5）。</li>
+</ul>
+<p><strong>例题（停止等待利用率）</strong>：传播时延 1ms，数据 1000B，带宽 10Mbps，利用率？
+<strong>解析</strong>：发送时延=1000×8/10M=0.8ms；U=0.8/(0.8+2×1)=0.8/2.8≈<strong>28.6%</strong>。
+（若启用 N 帧流水线：U=N×(发送)/(发送+2τ)。这个提升是 TCP 窗口的意义。）</p>
+<p><strong>流水线窗口（GBN/SR）核心公式与上限（必背，过年题）</strong>：
+- <strong>信道利用率（N 帧流水线）</strong>：<code>U = N × T发送 / (T发送 + 2τ)</code>，N 为发送窗口大小（在途帧数）。
+- <strong>为让链路不空等，需要的最小窗口</strong>：让"发出 N 帧用时 ≥ 一个往返时间"→ 取 <code>N ≥ (2τ + T发送)/T发送</code>，常化为"N ≥ ⌈2τ/T发送 + 1⌉"。
+- <strong>序号 n 位的最大窗口</strong>：GBN ≤ <code>2ⁿ−1</code>；SR ≤ <code>2ⁿ⁻¹</code>。（成因：接收方按序确认会因序号循环重名；GBN 未确认窗口越界、SR 收发双窗口需各占一半序号空间。）
+- <strong>能识别出"窗口与序号够不够"</strong>：给 <code>n=3位 序号</code> + 窗口大小，判断会不会"序号混淆"——窗口太大就会把旧帧误当新帧（408 常考）。</p>
+<p><strong>综合例题（利用率+窗口，实打实算一遍）</strong>：帧长 1000B，速率 1Mbps，单向传播时延 25ms。
+① 停止-等待利用率？
+<strong>解析</strong>：T发送=(1000×8)/1×10⁶ = 8ms；RTT=2τ=50ms。U=8/(8+50)=8/58≈<strong>13.8%</strong>。
+② 用 GBN 且让利用率≥90%，至少开多大窗口（帧数为整数）？
+<strong>解析</strong>：U=N×8/(8+50)≥0.9 → N×8 ≥ 0.9×58=52.2 → N ≥ 6.525 → <strong>N=7</strong>。
+③ 若窗口=7，至少需要多少位序号（用 GBN）？
+<strong>解析</strong>：需 <code>2ⁿ−1 ≥ 7</code> → 2ⁿ≥8 → <strong>n=3 位</strong>（此时可支持最大窗口 7，恰好够）。
+④ 若改 SR 且窗口=7，需几位序号？
+<strong>解析</strong>：需 <code>2ⁿ⁻¹ ≥ 7</code> → 2ⁿ ≥ 14 → <strong>n=4 位</strong>（2³=8 ≥ 7）。</p>
+<p><strong>为什么窗口上限不同（一步理解）</strong>：序号是模 <code>2ⁿ</code> 循环的。GBN 发送方只需区分"未确认窗口内的帧"与"新帧"，保证窗口 &lt; 序号空间即可，故 ≤ 2ⁿ−1；SR 收发都要缓存、接收方需能区分新旧，双窗口加起来不能超过整个序号空间，故仅用一半 → 窗口 ≤ 2ⁿ⁻¹。</p>
+<h3 id="34-mac">3.4 ★介质访问控制（随机访问 MAC）</h3>
+<ul>
+<li><strong>信道共享</strong>方式分类：随机访问（ALOHA/CSMA/CSMA‑CD）、受控访问（轮询/令牌）、信道复用（FDM/TDM，见 N2）。</li>
+<li><strong>CSMA（载波监听）</strong>：</li>
+<li>1 坚持 CSMA：监听忙就一直监听，空闲立即发。</li>
+<li>非坚持 CSMA：监听到忙就等随机时间再重试（减少冲突但增加延迟）。</li>
+<li>p 坚持 CSMA。</li>
+<li><strong>CSMA/CD（有线以太网）</strong>：<strong>先听后发、边发边听</strong>，检测到冲突立即停止并退避重发（指数退避）。</li>
+<li><strong>为什么要求最短帧长</strong>：要"发送方在发完一个帧之前能发现冲突"，则要求 <code>发送时延(最短帧长/速率) ≥ 2τ</code>（一个 RTT，保证冲突信号能传回来）。这是计算最短帧长的大题。</li>
+<li><strong>CSMA/CA（无线 802.11，本项目 WiFi）</strong>：无线<strong>无法边发边听</strong>（自己发会盖过收到），于是：<strong>先听 DIFS(帧间间隔) → 随机退避 → 发 → 等 ACK</strong>；可配合 <strong>RTS/CTS 预留信道</strong>解决<strong>隐藏终端</strong>问题。</li>
+<li><strong>ALOHA</strong>：不监听直接发，冲突概率大，利用率低。</li>
+</ul>
+<p><strong>CSMA/CD 最短帧长例题</strong>：网络最长距离 2500m，速率 100Mbps，传播速率 2×10⁸m/s，求最短帧长。
+<strong>解析</strong>：单程传播时延 = 2500/2×10⁸ = 12.5µs，2τ=25µs。最短帧长 = 速率×2τ = 100×10⁶×25×10⁻⁶ = 2500 bit ≈ <strong>312.5B</strong>。→ 大题的经典解。</p>
+<h3 id="35-vlan">3.5 以太网、VLAN</h3>
+<ul>
+<li><strong>以太网（802.3）</strong>：帧结构（前导码+DA+SA+类型/长度+数据+FCS）、MAC 48 位。</li>
+<li><strong>VLAN（虚拟局域网，802.1Q）</strong>：给帧加 4 字节 Tag（含 VLAN ID），把一台交换机切成多个逻辑广播域。</li>
+</ul>
+<hr />
+<h2 id="n3">N3 练习题</h2>
+<p><strong>Q1</strong>（GBN 序号范围）：帧序号 3 位，GBN 发送窗口最大多少？SR 呢？
+<strong>解析</strong>：GBN：窗口 ≤ 2³−1 = 7；SR：窗口 ≤ 2³⁻¹ = 4。（这是<strong>防序号重名</strong>的经典限制，必背。）
+<strong>Q2</strong>（CSMA/CA 为何用 ACK）：无线网为什么发完要等 ACK？
+<strong>解析</strong>：无线<strong>无法同时收发</strong>（不能边发边听，故没有 CSMA/CD 的冲突检测）；收方收到后回 ACK 作为"真的送到"的证据；若不回就重发。→ 无线用 <strong>CSMA/CA（碰撞避免）+ ACK</strong>，有线用 CSMA/CD（碰撞检测）。
+<strong>Q3</strong>（最短帧长）：速率 10Mbps，2τ=50µs，最短帧长？
+<strong>解析</strong>：最短帧长 = 10×10⁶ × 50×10⁻⁶ = <strong>500 bit = 62.5B</strong>。</p>
+<hr />
+<h2 id="n4-ip">N4　网络层（★IP、子网划分、路由是大题）</h2>
+<h3 id="41-ipv4">4.1 IPv4 与地址分类（背）</h3>
+<ul>
+<li><strong>IPv4</strong>：32 位，点分十进制（4 组 0~255）。</li>
+<li><strong>分类编址</strong>：</li>
+<li>A 类：<code>0 开头</code>，网络号 8 位，<code>0.0.0.0 ~ 127.255.255.255</code>，主机号 24 位。</li>
+<li>B 类：<code>10 开头</code>，16/16，<code>128~191</code>。</li>
+<li>C 类：<code>110 开头</code>，24 网络 + 8 主机，<code>192~223</code>。</li>
+<li>D：组播 <code>224~</code>；E：保留 <code>240~</code>。</li>
+<li><strong>私有地址（RFC1918，本项目 192.168.4.x 就是）</strong>：</li>
+<li><code>10.0.0.0/8</code>、<code>172.16.0.0/12</code>、<code>192.168.0.0/16</code>。内网可用、不能直接上公网（需 NAT）。</li>
+<li><strong>主机号全 0 = 网络地址，全 1 = 广播地址</strong>，都不能分配给主机 → 可用主机数 = <code>2^h − 2</code>。</li>
+</ul>
+<h3 id="42-cidr">4.2 ★子网划分与 CIDR（送分计算，务必刷熟）</h3>
+<p><strong>子网划分</strong>：借用若干主机位作子网号。给定 <code>IP/掩码</code>：
+- <strong>块大小 = 256 − (非255的掩码字节)</strong>。
+- <strong>网络地址</strong> = IP 与掩码逐位与。
+- <strong>广播地址</strong> = 网络地址 + 块大小 − 1（或把主机位全置 1）。
+- <strong>可用主机数</strong> = 2^(主机位数) − 2。</p>
+<p><strong>CIDR（无类别域间路由）</strong>：用 <code>/n</code> 表示前缀长度。<code>192.168.4.0/24</code> 表示网络号 24 位，主机 8 位。</p>
+<p><strong>例题</strong>：<code>192.168.4.66/26</code>：
+- /26 → 掩码 <code>255.255.255.192</code>；块大小 = 256−192 = 64。
+- 66/64=1…2 → 网络地址 = <code>192.168.4.0</code> + 64 = <code>192.168.4.64</code>。
+- 广播 = 下一个块 −1 = <code>192.168.4.127</code>。
+- 可用主机 = 64−2 = 62。
+（<strong>背三句</strong>：块大小=256−掩码字节 → 网络=第一个被包含的块 → 广播=下一块−1 → 可用=块−2。）</p>
+<h3 id="43-arp-dhcp-icmp">4.3 ARP / DHCP / ICMP / 路由（背流程）</h3>
+<ul>
+<li><strong>ARP</strong>：IP → MAC。<strong>同网段</strong>内：<strong>广播</strong>查（"谁有 192.168.4.1？"）→ 目标<strong>单播</strong>答 → 双方缓存（ARP 缓存）。跨网段则查路由/网关。<strong>ARP 只在本广播域有效</strong>。</li>
+<li><strong>DHCP</strong>（动态主机配置，<strong>本项目配网核心</strong>）：客户 <strong>广播 Discover</strong> → 服务器 <strong>Offer</strong> → 客户 <strong>Request</strong> → 服务器 <strong>Ack</strong>（<strong>4 次交互</strong>），分配 IP/网关/DNS 及<strong>租期</strong>。本项目手机给设备填 Wi‑Fi 密码后，设备就是"STA 客户端"去 DHCP 拿内网 IP。</li>
+<li><strong>ICMP</strong>：<code>ping</code> 用 ICMP <strong>Echo Request/Reply</strong> 测连通性与 RTT；<code>traceroute</code> 也用它。</li>
+<li><strong>路由算法</strong>：</li>
+<li><strong>RIP（距离向量，DV）</strong>：用"跳数"，每跳 1，最大 15 跳；周期性交换路由表（B‑ellman‑Ford）。慢收敛、有"无穷计数"。</li>
+<li><strong>OSPF（链路状态，LS）</strong>：全网同步链路状态，用 <strong>Dijkstra</strong> 算最短路径（带权），收敛快、分区域。</li>
+<li><strong>BGP（自治系统间）</strong>：路径向量，策略路由。</li>
+</ul>
+<h3 id="44-nat">4.4 NAT（网络地址转换）</h3>
+<ul>
+<li>内网<strong>私有 IP</strong> 通过网关 NAT 映射成<strong>公网 IP + 端口</strong>（端口 区分不同内网主机）→ 内网可上网同时隐藏拓扑。本项目设备连路由器上网即经 NAT。</li>
+</ul>
+<hr />
+<h2 id="n4">N4 练习题</h2>
+<p><strong>Q1</strong>（子网）：<code>200.100.20.130/27</code> 网络地址、广播、可用主机数？
+<strong>解析</strong>：/27 → 掩码 <code>255.255.255.224</code>，块=256−224=32。130/32=4…2 → 网络 = 0+4×32=<code>200.100.20.128</code>；广播=128+32−1=<code>200.100.20.159</code>；可用=32−2=<strong>30</strong>。
+<strong>Q2</strong>（子网数量）：把 <code>192.168.5.0/24</code> 借 3 位子网划分，可得几个子网、每个子网多少主机？
+<strong>解析</strong>：借 3 → 子网数 = 2³=8；每个子网主机位数=8−3=5 → 每子网可用主机 = 2⁵−2 = 30。
+<strong>Q3</strong>（ARP 作用域）：跨网段主机 A→B 能直接用 ARP 拿到 B 的 MAC 吗？
+<strong>解析</strong>：不行，ARP 只在本网段（广播域）有效；跨网段需先把包发往<strong>默认网关/路由器</strong>，由网关转发，A 只与"下一跳"通信。→ 节点本地路由表选下一跳，再 ARP 解析下一跳的 MAC。</p>
+<hr />
+<h2 id="n5-tcp">N5　传输层（★TCP 可靠/流量/拥塞控制是全年大题必守）</h2>
+<h3 id="51-udp-vs-tcp">5.1 UDP vs TCP 对比（背）</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>UDP</th>
+<th>TCP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>连接</td>
+<td>无连接</td>
+<td><strong>面向连接</strong></td>
+</tr>
+<tr>
+<td>可靠性</td>
+<td>不保证（尽力而为）</td>
+<td>可靠（确认、重传、序号）</td>
+</tr>
+<tr>
+<td>首部</td>
+<td>8B</td>
+<td>20B+</td>
+</tr>
+<tr>
+<td>流量/拥塞</td>
+<td>无</td>
+<td>有</td>
+</tr>
+<tr>
+<td>用途</td>
+<td>DNS(53)/SNTP(123)/DHCP/音视频</td>
+<td>HTTP、FTP、SMTP</td>
+</tr>
+<tr>
+<td>本项目</td>
+<td>SNTP 校时、DHCP</td>
+<td>配网 HTTP / 下载</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-tcp">5.2 TCP 报文段（背关键字段）</h3>
+<ul>
+<li><strong>源/目的端口、序号 seq、确认号 ack、窗口大小、标志位</strong>：<code>SYN/ACK/FIN/RST/PSH/URG</code>。</li>
+<li><strong>三次握手</strong>（建立连接）：
+  <code>客户端 ── SYN(seq=x) ────────────────&gt; 服务器
+  客户端 &lt;─ SYN+ACK(seq=y, ack=x+1) ── 服务器
+  客户端 ── ACK(ack=y+1) ─────────────&gt; 服务器</code>
+  → 双方都知道"我能收发、对方能收发"。本项目每次 HTTP 连接都经历。</li>
+<li><strong>四次挥手</strong>（释放）：
+  <code>客户端 ── FIN ──&gt; 服务器
+  客户端 &lt;─ ACK ── 服务器
+  客户端 &lt;─ FIN ── 服务器
+  客户端 ── ACK(进入 TIME_WAIT 2MSL)─&gt; 服务器</code>
+  → 半关闭、最后等 2MSL 确保旧包过期。</li>
+</ul>
+<h3 id="53_2">5.3 可靠传输与流量控制（★计算）</h3>
+<ul>
+<li><strong>滑动窗口 + 累计确认</strong>：发送窗口决定"能发多少在途"；收方按序收，整体确认"到序号 n-1"都收到（ack=n）。</li>
+<li><strong>确认号语义（必背）</strong>：<code>ack=n</code> 表示"期望下一段的起始序号是 n"，即 0~n-1 都已正确收到。</li>
+<li><strong>流量控制</strong>：接收方在 ACK 里写<strong>自己的接收窗口（rwnd）</strong>，限制发送方一次最多发多少，防止把自己冲垮。</li>
+</ul>
+<p><strong>例题（序号确认）</strong>：每段 1000B，发 seq=1000，收 ack=2000 → 实际确认到多少字节？下一段 seq 多少？
+<strong>解析</strong>：ack=2000 表示 1000~1999 这 1000B 已收到并确认，下一个应发 <strong>seq=2000</strong>。→ "确认号=已收字节+1"。</p>
+<h3 id="54-tcp">5.4 ★TCP 拥塞控制（★状态机，背死）</h3>
+<p>变量：<strong>拥塞窗口 cwnd</strong>、<strong>慢启动阈值 ssthresh</strong>。
+- <strong>慢启动（Slow Start）</strong>：cwnd 从 1 个 MSS 开始，<strong>每个 RTT 翻倍</strong>（指数），直到 <code>cwnd≥ssthresh</code> 转拥塞避免。
+- <strong>拥塞避免</strong>：每 RTT <strong>+1</strong>（线性加），AIMD 的"加性增"。
+- <strong>遇超时（丢包）</strong>：<code>ssthresh=cwnd/2</code>，<strong>cwnd=1</strong>，回到慢启动。
+- <strong>快重传</strong>：连收 <strong>3 个重复 ACK</strong> 立即重传（不等超时）。
+- <strong>快恢复</strong>：<code>ssthresh=cwnd/2</code>，<code>cwnd=ssthresh</code>，<strong>直接进拥塞避免</strong>（不回到 1）。（这是"斩半而非归零"的关键区别。）
+- 整体策略：<strong>慢启动指数冲、拥塞避免线性加、丢包减半（或归零重来）</strong> = <strong>加性增、乘性减 AIMD</strong>。
+- <strong>两个窗口别混</strong>：<strong>流量控制看 rwnd（接收方窗口）</strong>，<strong>拥塞控制看 cwnd（发送方估网络）</strong>；实际能发的最小值 = <strong><code>min(cwnd, rwnd)</code></strong>。这是 408 高频辨析。</p>
+<p><strong>例题（cwnd 轨迹，务必自己画一遍）</strong>：<code>ssthresh=16</code>，慢启动 cwnd=1,2,4,8,16 → 到 16 转拥塞避免：17,18,19,20。假设在 cwnd=20 时<strong>超时</strong> → <code>ssthresh=20/2=10</code>，<strong>cwnd=1 重慢启动</strong>：1,2,4,8→ 到 10 就转拥塞避免（因为 ssthresh=10）：10,11,12...
+（若是<strong>快重传</strong>：ssthresh=20/2=10，cwnd=10，直接进拥塞避免 11,12...）
+<strong>要点</strong>：区分"超时→cwnd=1"和"快恢复→cwnd=ssthresh"是判定题的核心。</p>
+<p><strong>进阶例题（分段轨迹，408 大题常见）</strong>：设 ssthresh 初始 32，某时刻 cwnd=34 时收到 3 个重复 ACK。
+- ① 此时进入<strong>快恢复</strong>：<code>ssthresh=cwnd/2=17</code>，<code>cwnd=ssthresh=17</code>，进入拥塞避免。
+- ② 之后每个 RTT cwnd 线性 +1：18,19,20,…
+- ③ 若到 cwnd=24 时<strong>超时</strong>：<code>ssthresh=cwnd/2=12</code>，<code>cwnd=1</code> 重回慢启动：1,2,4,8,12(到阈值转避免),13,14…
+- <strong>命题角度</strong>：让你填表列每个 RTT 后的 cwnd；或问 cwnd=34 时为何没有指数增长（因为已远在 ssthresh 之上走避免）。熟记"哪几个转折点改变模式"就不会错。</p>
+<p><strong>拥塞控制与"标注每个区段名称"题</strong>：给一张 cwnd 随时间锯齿状图，让写出各段对应"慢启动/拥塞避免/快恢复/超时重启"。识别法：
+- 斜率陡的上升期（×2 per RTT）= 慢启动；
+- 平缓上升期（+1 per RTT）= 拥塞避免；
+- 突然垂直跌落到一半、又平缓上升 = 快恢复（或 3 重复 ACK）；
+- 突然跌到 1、再次慢启动 = 超时重启。</p>
+<hr />
+<h2 id="n5">N5 练习题</h2>
+<p><strong>Q1</strong>（拥塞判断）：TCP 收到 3 个重复 ACK 后如何调整 cwnd 和 ssthresh？
+<strong>解析</strong>：判为<strong>快重传/快恢复</strong>：<code>ssthresh=cwnd/2</code>，<code>cwnd=ssthresh</code>，进入拥塞避免。<strong>不归 1</strong>。→ 这是 408 必考判别。
+<strong>Q2</strong>（握手目的）：为何 TCP 要三次握手不是两次？
+<strong>解析</strong>：两次做不到"服务器确认客户端也收到了它 SYN+ACK 的确认"，可能导致<strong>已失效的连接请求</strong>再次被当成新连接，浪费资源。（防"旧 SYN 重入"；三次才双向确认。）
+<strong>Q3</strong>（小明配网场景）：设备向手机 HTTP 服务器下载录音，传输层是 TCP。若中间丢一包，TCP 如何保证可靠？
+<strong>解析</strong>：发送方收不到 ACK 或收 3 重复 ACK → 重传；通过<strong>序号 + 确认 + 重传</strong> + 接收方按序缓存，最终保证字节流完整有序。这就是"可靠传输"。
+<strong>Q4</strong>（MSS/RTT 吞吐，硬算）：某 TCP 连接，MSS=1000B，RTT=10ms，接收窗口足够大，进入拥塞避免后 cwnd 稳定在 20 个 MSS，求吞吐量。
+<strong>解析</strong>：每 RTT 发 cwnd=20 MSS = 20000B，RTT=0.01s → 吞吐 = 20000/0.01 = <strong>2 MB/s（2×10⁶ B/s）</strong>。套路：<code>吞吐 ≈ cwnd×MSS / RTT</code>。
+<strong>Q5</strong>（滑动窗口+流量控制综合）：接收方通告 rwnd=5000B，发送方 cwnd 也="足"，每段 1000B，问最多同时几个段在途？
+<strong>解析</strong>：能发最小值 = min(cwnd, rwnd) = 5000B → 5000/1000 = <strong>5 个段在途</strong>（受 rwnd 上限约束）。</p>
+<hr />
+<h2 id="n6-http">N6　应用层（★HTTP 讲透，本项目配网/下载全靠它）</h2>
+<h3 id="61-dns">6.1 DNS（域名系统）</h3>
+<ul>
+<li>域名是<strong>层次树</strong>：根 → 顶级（.com/.cn）→ 二级（baidu.com）→ 子域（www）。</li>
+<li><strong>解析方式</strong>：递归查询（问根一次帮你追到底）vs <strong>迭代查询</strong>（逐级返回下一个要问的服务器自己问）。</li>
+<li><strong>类型</strong>：A（IPv4）、AAAA（IPv6）、CNAME（别名）、MX（邮件）、NS（域名服务器）。</li>
+<li>通常用 <strong>UDP:53</strong>，数据大才用 TCP。缓存减少查询。</li>
+<li>本项目配网走 IP 直连 <code>192.168.4.1</code>，不依赖公共 DNS；联网后 SNTP 才需时间服务器域名。</li>
+</ul>
+<h3 id="62-http">6.2 ★HTTP（本项目配网 + 下载的核心协议）</h3>
+<ul>
+<li>特性：<strong>工作在 TCP 之上</strong>，默认端口 <strong>80</strong>（本项目 <code>STUDY_WIFI_AP_PORT=80</code>）。</li>
+<li><strong>请求报文</strong>结构：<code>请求行(方法 URL 版本) + 首部行 + 空行 + 请求体</code>。</li>
+<li><code>GET /rec/dl?seq=7 HTTP/1.1</code> 这类就是请求行，<code>?seq=7</code> 是<strong>查询串（query）</strong>，是"把参数传给服务器"的方式。</li>
+<li><strong>方法（首字母必背）</strong>：</li>
+<li><strong>GET</strong>：取资源（本项目浏览器拉取页面、下载录音）。</li>
+<li><strong>POST</strong>：提交数据（本项目配网表单 <code>POST /save</code> 提交 SSID/密码）。</li>
+<li>PUT/DELETE/HEAD/OPTIONS。</li>
+<li><strong>状态码</strong>：</li>
+<li>1xx 信息；2xx 成功（<strong>200 OK</strong>）；3xx 重定向；4xx 客户端错（<strong>404 Not Found</strong>）；5xx 服务端错（<strong>500</strong>）。</li>
+<li><strong>常见首部</strong>：</li>
+<li><code>Host</code>、<code>Content-Type</code>（如 <code>application/json</code>、<code>audio/wav</code>）、<code>Content-Length</code>、<code>Content-Disposition: attachment; filename=...</code>（<strong>下载</strong>时让浏览器存成文件）、<code>Transfer-Encoding: chunked</code>（<strong>分块流式传输</strong>，本项目下载时逐块发）。</li>
+<li><strong>连接方式</strong>：</li>
+<li><strong>非持久连接</strong>：每个资源一次 TCP（老 HTTP/1.0）。</li>
+<li><strong>持久连接（keep-alive）</strong>：同一 TCP 用多次请求（HTTP/1.1 默认，本项目配网页/下载都尽量复用连接）。</li>
+<li><strong>本项目交互</strong>（把整个 N6.2 落地）：
+  1) 设备无凭证 → 开 <strong>SoftAP 热点</strong>（SSID=自动按 MAC 生成，密码显示在屏），手机连上，浏览器开 <code>http://192.168.4.1</code>。
+  2) 页面 <code>GET /</code> 返回 HTML 表单；用户提交 <code>POST /save</code>（带 <code>ssid=...&amp;pass=...</code>）；服务器解析 → 存 NVS → 关 AP → 设备去连那个 Wi‑Fi。
+  3) 联网后设备是 <strong>HTTP Server</strong>，监听 80 端口；手机 <code>GET /rec/dl?seq=N</code> → 服务器读 FRC → 解码成 WAV → 拼 WAV 头 + <strong>chunked 分块</strong>流式响应 → 手机存成 <code>R0000007.wav</code>。</li>
+</ul>
+<h3 id="63_2">6.3 其他应用层协议（背）</h3>
+<ul>
+<li><strong>FTP</strong>：<strong>控制连接 21 + 数据连接 20</strong>（带外传输），两条连接。</li>
+<li><strong>电子邮件</strong>：发送 SMTP（25/465），接收 POP3（110）或 IMAP（143），MIME 支持附件/编码。</li>
+<li><strong>SNMP</strong>：网络管理（161/162）。</li>
+<li><strong>DHCP 客户端</strong>：见 N4.3（本项目配网的核心）。</li>
+</ul>
+<hr />
+<h2 id="n6">N6 练习题</h2>
+<p><strong>Q1</strong>（状态码）：GET 一个不存在的 <code>/rec/dl?seq=999</code>，服务器应返回？
+<strong>解析</strong>：<strong>404 Not Found</strong>（4xx 客户端错，找不到资源）。
+<strong>Q2</strong>（DNS）：<code>www.baidu.com</code> 的解析，根服务器直接给你最终 IP 吗？
+<strong>解析</strong>：不一定。<strong>递归</strong>会帮你查到底（先根、再 .com、再 baidu.com）；<strong>迭代</strong>则只告诉你"下一步问 .com"的服务器，由你继续问。协议用 UDP:53。
+<strong>Q3</strong>（下载流程真相）：手机下载录音时，浏览器为何能存成 WAV 文件而不是在网页里显示？
+<strong>解析</strong>：靠响应 <code>Content-Disposition: attachment; filename=R0000007.wav</code> 首部，浏览器收到就触发"另存为/下载"，而不是把音频塞进页面 → 这正好是 N6.2 的工程体现。
+<strong>Q4</strong>（chunked 意义）：下载大数据为什么用 <code>Transfer-Encoding: chunked</code> 而不是固定长度？
+<strong>解析</strong>：当服务器<strong>事先不知道总长度</strong>（如一边解码一边发）、或想<strong>边生成边发</strong>时，用 chunked 分块，每块自带长度、最后用空块结束。→ 避免必须先把整个文件算好再发。本项目录音解码是边读边发，正好适合 chunked。</p>
+<hr />
+<h2 id="_8">[第四部分小结：计网"一张分层图 + 四类必算"（背）]</h2>
+<p><strong>分层图</strong>：物理→链路→网络→传输→应用；对等层通信、下层封装。
+<strong>四类必算</strong>：
+1. 时延：发送=数据/速率，传播=距离/速率，RTT。
+2. 香农/奈奎斯特：<code>C=W log₂(1+S/N)</code>、<code>C=2W log₂V</code>。
+3. CSMA/CD 最短帧长：帧长 ≥ 速率×2τ；复用/CDMA 内积。
+4. 子网划分：块大小=256−掩码，网络/广播/可用主机；TCP cwnd 走表。</p>
+<hr />
+<h1 id="_9">第五大部分　专题回顾 + 综合演练（把四科串起来）</h1>
+<blockquote>
+<p>单科学完，用项目里<strong>真实发生过的三个场景</strong>把跨学科考点串一遍——这是把"一块一块的知识"变成"一张网"的关键一步。</p>
+</blockquote>
+<h2 id="os_1">◆ 专题一：按一次按键，发生了什么？（跨计组 + OS + 数据结构）</h2>
+<p><strong>物理过程与知识点映射</strong>：</p>
+<ol>
+<li>
+<p><strong>物理层/周围硬件</strong>：三键共用一路 <strong>ADC（模数转换）</strong>按分压判键；静电/WiFi 射频会引入电压抖动 → <strong>采样抗噪</strong>（多采样平均、软件消抖）——属于计组"I/O + 校验/判稳"。
+   - 关联：本项目 <code>bsp_button.c</code> 的多采样平均 → 本质是<strong>时间/幅值滤波</strong>，对应计网"噪声"、计组"输入去抖"。</p>
+</li>
+<li>
+<p><strong>中断驱动 I/O</strong>：定时器<strong>周期中断</strong>读 ADC（ISR 极短）→ 产生按键事件 → 这是计组 C5.4 / C7 的<strong>中断驱动 I/O</strong>（对比"程序查询"和"DMA"）。</p>
+</li>
+<li>
+<p><strong>临界区与互斥（OS）</strong>：判决线程回调更新 UI，UI 是<strong>共享资源</strong>，要用 <code>bsp_lvgl_lock(timeout)</code>（互斥量 + 优先级继承）互斥访问 → OS O2.5 的<strong>临界区/信号量</strong>。</p>
+</li>
+<li>
+<p><strong>事件/生产者-消费者（DS + OS）</strong>：按键事件压入<strong>环形队列</strong>（DS D3 循环队列判空/判满），消费者（UI 任务）<code>poll_evt</code> 出队 → OS 的<strong>生产-消费同步</strong>（有界缓冲 + 信号量思想）。</p>
+</li>
+<li>
+<p><strong>CPU 与流水（计组）</strong>：每一次回调里的指令在 CPU 上<strong>取指→译码→执行</strong>，遇到分支（switch/if）走 beq，函数调用走 jal + 压栈 → 计组 C4/C5。</p>
+</li>
+<li>
+<p><strong>幽灵点击（纠错 + 稳定性）</strong>：250ms 窗口内同/异键连按被判为"幽灵"丢弃——这是<strong>软件滤波 / 去抖</strong>，工程层面就是"状态机 + 时间窗"，也是<em>稳定性/健壮性</em>考点（不是单科，但用到了数据结构的时间窗判断）。</p>
+</li>
+</ol>
+<blockquote>
+<p><strong>一句话总结</strong>：一次按键 = ADC(物/I) → 中断(计组) → 入队(DS) → 互斥/出队(OS) → UI 绘制(计组 CPU)。四科在同一件事上咬合。</p>
+</blockquote>
+<h2 id="16khz-esp_rst_panic-os">◆ 专题二：录音 16kHz 崩溃（ESP_RST_PANIC）背后是哪个考点？（跨计组 + OS）</h2>
+<p>这是一个真实排障场景——<strong>它在考场上就是一道最漂亮的综合大题</strong>：</p>
+<ul>
+<li><strong>计组 C1/C3（内存布局）</strong>：代码/常量在 Flash，变量/堆/栈在 SRAM。<strong>任务栈是 RAM 里的一块连续区</strong>。</li>
+<li><strong>OS O3（内存管理）</strong>：ESP 用<strong>动态堆 + 连续分配</strong>，出现<strong>外部碎片</strong>：空闲堆约 33KB、但<strong>最大连续块只有 16KB</strong>。16KB 大任务栈申请不连续 → 分配失败。</li>
+<li><strong>计组 C5（异常）</strong>：malloc/xTaskCreate 失败后若继续用，会触发<strong>非法内存访问 → 中止（abort）</strong> → IDF 复位重启 → <code>reset_reason=PANIC</code>。</li>
+<li><strong>计组 C3（局部性/缓冲见上）</strong>：Speex WB 编码器要较多堆 → 堆紧张。这解释了为何<strong>改成小内存的 8k NB 版本就没事</strong>：够放得下。</li>
+<li><strong>OS（任务栈水位）</strong>：<code>uxTaskGetStackHighWaterMark()</code> 看"现场够不够"——栈 HWM=4294967295（0xFFFFFFFF）表示该任务还没创建/未启动（无效数据）→ 提醒"任务还没跑起来，别把 HWM 当真实栈余判断"。</li>
+</ul>
+<blockquote>
+<p><strong>答大题模板</strong>：① 写出内存去向（Flash 代码 + SRAM 变量/堆/栈）；② 指出外部碎片/连续分配导致大连续块不足；③ 分配失败 + 继续使用 → 非法访问 → abort → 复位；④ 对策：减小任务栈、压缩堆、用碎片整理/位图管理、或回退 8k 版本。</p>
+</blockquote>
+<h2 id="_10">◆ 专题三：配网 + 下载录音 = 整个计网章节的"活体演练"</h2>
+<p><strong>端到端完整流程（把 N1~N6 全部走一遍）</strong>：
+1. 设备开 <strong>SoftAP</strong>（<code>192.168.4.1</code>，私有地址 → N4.1/NAT）。手机连上这个 WiFi → 走 802.11 <strong>CSMA/CA + ACK</strong>（N3.4）。
+2. 浏览器 <code>GET http://192.168.4.1/</code> → 设备起 <strong>HTTP Server</strong>（TCP:80）。HTTP 走 TCP → <strong>三次握手 → 一次请求/响应 →（HTTP/1.1 keep-alive 复用连接）</strong>（N5.2、N6.2）。
+3. 用户填 SSID/密码 <code>POST /save</code>（N6.2 方法），传 <code>ssid=..&amp;pass=..</code>（查询/表单），服务器 <code>parse_form</code> 拆串（DS D4 串处理）→ NVS 持久化（OS O4）。
+4. 设备关 AP、以 <strong>STA 连路由器</strong> → <strong>DHCP 广播发 Discover/Offer/Request/Ack（4 次）</strong> 拿到内网 IP（N4.3）。
+5. 手机下载：<code>GET /rec/dl?seq=N</code> → 服务器读 FRC → 解码 WAV → <strong>chunked</strong> 分块响应 + <code>Content-Disposition</code> → 手机存 <code>R….wav</code>（N6.2）。
+6. 全程由 LwIP 提供 <strong>TCP 可靠传输</strong>（N5.3）：丢包靠序号+ACK+重传。</p>
+<blockquote>
+<p><strong>一句话</strong>：从配网到下载，整个计网章节（分层、介质、MAC、IP/子网、TCP 握手、HTTP、DNS/DHCP）就是这台设备的日常。<strong>把每个"擦边点名"记下来，这一科就通了。</strong></p>
+</blockquote>
+<hr />
+<h1 id="_11">第六大部分　全书复盘 &amp; 考前冲刺清单</h1>
+<h2 id="61_2">6.1 三科主线的"一口闷"记忆卡</h2>
+<ul>
+<li><strong>数据结构主线</strong>：数据结构 = 逻辑结构×存储结构×运算；选择结构看操作频率；每个结构记"判空/判满/复杂度”。</li>
+<li><strong>计组主线</strong>：C ←（编译/汇编/链接）→ bin ← 装载 → CPU 取指→译码→执行 ← 存储层次从 Flash 到 Cache 到寄存器。</li>
+<li><strong>OS主线</strong>：进程（PCB）→ 调度 → 同步/互斥（PV）= 花最长时间 → 死锁（银行家）→ 内存（分页/置换）→ 文件（索引/磁盘）→ I/O（DMA）。</li>
+<li><strong>计网主线</strong>：分层 → 每个报文加"首部"→ 从手机；IP/TCP/HTTP 三层是考点重地。</li>
+</ul>
+<h2 id="62_1">6.2 最容易记混 &amp; 高频陷阱（按科列出，考前必扫）</h2>
+<p><strong>数据结构</strong>
+- 循环×2 = logn；双层全×2 = (logn)²，别当 nlogn。
+- KMP 的优势是<strong>主串不回溯</strong>；next 是模式串最长相等前后缀。
+- 完全二叉树编号 2i/2i+1/⌊i/2⌋；n₀=n₂+1。
+- 排序稳定=冒插归基；不稳定=快选堆希尔；比较排序下界 Ω(nlogn)。</p>
+<p><strong>计组</strong>
+- 主频高 ≠ 快，要比 CPI；CPU 时间=指令数×CPI×时钟周期。
+- 补码"取反+1"；符号扩展正补 0 负补 1。
+- 溢出：<strong>异号相加永不溢出</strong>，同号才可能。
+- IEEE754 阶码偏置 127、隐含 1；NaN/∞ 的编码。
+- Cache：<code>Tag=A−b−s</code>；写回靠脏位；AMAT 公式。
+- 流水：<code>T=5+(n−1)</code>；转发→数据冒险、预测→控制冒险、分离存储→结构冒险。
+- 中断/异常：fault 重执行、trap 下一条、abort 系统复位（PANIC）。
+- DMA 数据<strong>不经过 CPU</strong>，只在外设↔主存之间。</p>
+<p><strong>OS</strong>
+- 状态转换没有"就绪→阻塞"。
+- SJF 平均等待最短；RR 时间片太大会退化 FCFS。
+- 死锁四条件；银行家手算安全序列。
+- 分页=块号拼偏移；LRU vs FIFO；Belady 只在 FIFO。
+- 混合索引：直接+间接的容量、访存次数。
+- 磁盘调度 SSTF 会"来回"（饥饿）；SCAN 电梯式。</p>
+<p><strong>计网</strong>
+- 发送时延 = 数据/速率；传播时延 = 距离/速率，二者别混。
+- 香农看信噪比、奈奎斯特看电平数。
+- 子网：块大小=256−掩码字节；网络=包含的块；广播=下块−1；可用=块−2。
+- TCP 确认号=已收字节+1；完成三次握手（防旧 SYN）。
+- 拥塞：超时→cwnd=1；快恢复→cwnd=ssthresh。
+- CSMA/CD 检测、CSMA/CA 避免，别记反。</p>
+<h2 id="63-408">6.3 考点优先级（按 408 历年出现频率）</h2>
+<p><strong>必背必算（选择题/计算题送分）</strong>：
+- 数据结构：循环队列判空判满、哈希 ASL、排序复杂度与稳定性、树/哈夫曼。
+- 计组：补码/溢出、Cache 容量位数、IEEE754、流水线周期、指令编码、DMA。
+- OS：调度平均等待、PV 生产者-消费者、银行家、分页换算、页面置换、inode、磁盘调度。
+- 计网：时延、香农/奈奎斯特、子网划分、TCP cwnd、对称加密（HTTP/ DNS）。</p>
+<p><strong>重点大题</strong>：
+- 计组：Cache 计算、流水冒险、指令编码、中断流程。
+- OS：PV 大题、银行家、页面置换、混合索引。
+- 计网：TCP 拥塞、子网、停止等待/窗口、最短帧长。</p>
+<p><strong>次重点（能混眼熟即可）</strong>：
+- 物理层调制细节、VLAN 802.1Q、SNMP 端口、海明码排位（选做）等。</p>
+<hr />
+<h2 id="64">6.4 最后：复习节奏建议（回到总纲）</h2>
+<ul>
+<li><strong>第 1 轮</strong>：通读本文档，每个 <strong>★</strong> 例题动手推（不偷懒去看答案）。</li>
+<li><strong>第 2 轮</strong>：只刷"必算"清单（补码、Cache、子网、cwnd、PV 模板），每天熟一套。</li>
+<li><strong>第 3 轮</strong>：用第六大部分的"三个专题"自问互串，检验是否"一张网"。</li>
+<li><strong>错题本</strong>：把每道算错的题，"用了哪个公式 + 为什么错"记一行，考前翻熟。</li>
+</ul>
+<blockquote>
+<p>这台设备不是普通的嵌入式工程——它就是活的《408》。每按一次键、每录一段音、每下载一次，你都在复习计组、OS、数据结构、计网。祝 408 一战上岸！</p>
+</blockquote>
+<hr />
+<p><em>本手册按《408 考试大纲》与王道/袁春风主线编写，案例数据取自 repo 内真实代码（ESP32-C3 / FreeRTOS / LwIP / SPIFFS / RISC‑V）。如有题设与实际出入，以最新代码与官方教材为准。</em></p>
+</div>
+</body>
+</html>
