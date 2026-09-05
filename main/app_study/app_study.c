@@ -201,6 +201,19 @@ static void cfg_set(const char *k, int v) {
     if (s && s->save_meta_int) s->save_meta_int(k, v);
 }
 
+/* 把"当前已知时间"写回 NVS(t_y..t_mi),供深睡/重启后离线恢复。
+ * 不写会保留出厂"烧录时刻"为默认 → 深睡唤醒、断网重启后时间退回烧录时间。
+ * 仅在能算出当前时间时写入(真实 SNTP 或已配置的手动时钟)。 */
+void app_study_persist_time(void) {
+    struct tm t;
+    if (!study_time_civil_tm(&t)) return;
+    cfg_set("t_y",  t.tm_year + 1900);
+    cfg_set("t_mo", t.tm_mon + 1);
+    cfg_set("t_d",  t.tm_mday);
+    cfg_set("t_h",  t.tm_hour);
+    cfg_set("t_mi", t.tm_min);
+}
+
 /* ---------- 首次/升级后：只保留“日常任务”预置（科目按需自己在添加页加） ----------
  * 旧版本曾把全部科目预置进列表，此处按 v2 清理掉非日常任务；若日常为空则重新预置。
  * 睡前洗漱 / 睡觉 不给固定时间(做成“待办”，手动点完成)。 */
