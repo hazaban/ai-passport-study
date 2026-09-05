@@ -256,8 +256,14 @@ static void ensure_daily_seed(void) {
     ESP_LOGI(TAG, "日常任务已就绪(科目按需添加)");
 }
 
-/* 开机/跨日：把“重复类”任务今天的 done 复位，便于新一天重新开始 */
+/* 开机/跨日：把“重复类”任务今天的 done 复位，便于新一天重新开始。
+ * 用 NVS 记“上次清零的日数”,只有跨到新一天才清零 —— 避免深睡唤醒/当天
+ * 重启把当天已完成进度清掉。时间不可用时保守不清零。 */
 static void clear_daily_done(void) {
+    long day = study_time_get_epoch_day();
+    if (day < 0) return;                       /* 未校时:无法判断是否新的一天 */
+    long last = cfg_get("dlast", -1);
+    if (last == day) return;                   /* 同一天(含深睡唤醒)不清零 */
     int cap = TASK_MAX_COUNT;
     int *ids = (int *)malloc(sizeof(int) * cap);
     if (!ids) return;
@@ -268,6 +274,7 @@ static void clear_daily_done(void) {
         if (t.done && t.repeat != STUDY_REPEAT_ONCE) study_task_mark_done(ids[i], false);
     }
     free(ids);
+    cfg_set("dlast", (int)day);
 }
 
 /* 编译时刻(__DATE__/__TIME__，按 UTC)换算成北京时间，作为出厂默认手动时钟。

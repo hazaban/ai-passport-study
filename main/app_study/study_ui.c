@@ -427,7 +427,8 @@ void ui_home_destroy(void) {
     if (s_home_timer) { lv_timer_del(s_home_timer); s_home_timer = NULL; }
     s_home_date = NULL;
     s_home_clock = NULL;
-    s_home_bat_fill = NULL;
+    s_home_bat_seg[0] = s_home_bat_seg[1] = s_home_bat_seg[2] = NULL;
+    s_home_bat_seg[3] = s_home_bat_seg[4] = NULL;
     s_home_bat_pct = NULL;
     if (s_home_scr) { lv_obj_delete(s_home_scr); s_home_scr = NULL; }
 }
