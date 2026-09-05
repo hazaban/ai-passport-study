@@ -41,10 +41,9 @@ static void idle_sleep_task(void *arg) {
         if (study_recorder_is_recording() || study_recorder_is_playing()) continue; /* 忙碌不休眠 */
         int64_t now = esp_timer_get_time() / 1000;
         if (now - s_last_activity_ms < IDLE_SLEEP_MS) continue;
-        ESP_LOGI(TAG, "已闲置 %lld ms,进入深睡(按任意键唤醒)",
+        ESP_LOGI(TAG, "已闲置 %lld ms,准备深睡(按任意键唤醒)",
                  (long long)(now - s_last_activity_ms));
-        bsp_display_backlight(0);
-        /* 把三键共用引脚从 ADC 切回数字输入(带上拉):空闲为高,按键拉低即可唤唤醒 */
+        /* ① 把三键共用引脚从 ADC 切回数字输入(带上拉):空闲为高,按键拉低即可唤唤醒 */
         gpio_config_t io = {
             .pin_bit_mask = 1ULL << SLEEP_WAKE_PIN,
             .mode         = GPIO_MODE_INPUT,
@@ -53,9 +52,22 @@ static void idle_sleep_task(void *arg) {
             .intr_type    = GPIO_INTR_DISABLE,
         };
         gpio_config(&io);
-        /* 注意第一参数是位掩码(1ULL<<0),不是引脚号; LOW = 任意键按下即唤醒 */
-        esp_deep_sleep_enable_gpio_wakeup(1ULL << SLEEP_WAKE_PIN, ESP_GPIO_WAKEUP_GPIO_LOW);
-        esp_deep_sleep_start();   /* 不返回;冷启动后从头初始化 */
+        /* ② 先配好唤醒源并确认成功,再关背光/睡眠 —— 避免"配失败却睡死"或"黑屏空转"。
+         *    注意第一参数是位掩码(1ULL<<0),不是引脚号; LOW = 任意键按下即唤醒 */
+        esp_err_t we = esp_deep_sleep_enable_gpio_wakeup(1ULL << SLEEP_WAKE_PIN,
+                                                         ESP_GPIO_WAKEUP_GPIO_LOW);
+        if (we != ESP_OK) {
+            ESP_LOGE(TAG, "唤醒配置失败(%s),本次不休眠,3 分钟后再试", esp_err_to_name(we));
+            s_last_activity_ms = esp_timer_get_time() / 1000;
+            continue;
+        }
+        bsp_display_backlight(0);
+        /* ③ 深睡:正常不会返回;若返回说明失败,补个日志、开回背光、隔一会再试,不忙转 */
+        esp_err_t se = esp_deep_sleep_start();
+        ESP_LOGE(TAG, "esp_deep_sleep_start 意外返回(%s),放弃本次休眠", esp_err_to_name(se));
+        bsp_display_backlight(100);
+        s_last_activity_ms = esp_timer_get_time() / 1000;
+        vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
 
