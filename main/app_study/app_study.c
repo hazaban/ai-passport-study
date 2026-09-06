@@ -243,8 +243,16 @@ static void ensure_daily_seed(void) {
     ESP_LOGI(TAG, "日常任务已就绪(科目按需添加)");
 }
 
-/* 开机/跨日：把“重复类”任务今天的 done 复位，便于新一天重新开始 */
+/* 开机/跨日：把“重复类”任务今天的 done 复位，便于新一天重新开始。
+ * 用 NVS 记“上次清零的日数”——只有跨到新一天才清零，当天重启/浅睡唤醒不清，
+ * 避免把当天已完成进度误清掉。洗头发任务除外：其“进度”是 NVS 里的 hair_last_day
+ * 周期(第几天该提醒)，不受 done 复位影响，这里显式跳过以免误伤。
+ * 时间不可用(未校时且无手动时钟)时保守不清零。 */
 static void clear_daily_done(void) {
+    long day = study_time_get_epoch_day();
+    if (day < 0) return;                       /* 无法判断是否新的一天 */
+    long last = cfg_get("dlast", -1);
+    if (last == day) return;                   /* 同一天(含当天重启)不清零 */
     int cap = TASK_MAX_COUNT;
     int *ids = (int *)malloc(sizeof(int) * cap);
     if (!ids) return;
@@ -252,9 +260,12 @@ static void clear_daily_done(void) {
     for (int i = 0; i < n; i++) {
         study_task_t t;
         if (study_task_get(ids[i], &t) != 0) continue;
+        /* 洗头发进度例外：不做完成标记、只记录周期日，跨日复位不动它 */
+        if (t.hour < 0 && strstr(t.title, "洗头发") != NULL) continue;
         if (t.done && t.repeat != STUDY_REPEAT_ONCE) study_task_mark_done(ids[i], false);
     }
     free(ids);
+    cfg_set("dlast", (int)day);
 }
 
 /* 编译时刻(__DATE__/__TIME__，按 UTC)换算成北京时间，作为出厂默认手动时钟。

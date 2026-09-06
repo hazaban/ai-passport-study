@@ -24,6 +24,11 @@ typedef void (*bsp_btn_cb_t)(bsp_btn_t btn, bsp_btn_ev_t ev, void *user);
 
 esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user);
 
+// 完整反初始化:删除各 iot_button 句柄并释放 ADC unit/校准。
+// 浅睡唤醒/入睡前要把 GPIO0 从"ADC"切回"数字输入"时,先 deinit 再 init,
+// 确保 SAR ADC 完全脱离该引脚,数字唤醒与重建后的按键才能可靠工作。
+void bsp_button_deinit(void);
+
 // 读当前 ADC 原始电压(mV)。松开时约 3300;按住某键时约为该键的分压值。
 // ★ 换了分压/上拉阻值后,用它测出自己的三档电压,再改 bsp_pins.h 的 BSP_BTN_MV_TABLE。
 // 读取失败返回 -1。

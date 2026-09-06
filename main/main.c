@@ -15,10 +15,93 @@
 #include "lvgl.h"
 #include "esp_log.h"
 #include "esp_sleep.h"
+#include "esp_timer.h"
+#include "driver/gpio.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 /* -------- 考研助手 -------- */
 #include "app_study/app_study.h"
+#include "app_study/study_recorder.h"   /* is_recording / is_playing: 忙碌时不自动休眠 */
+#include "app_study/study_wifi.h"       /* 浅睡时停 WiFi(省电),唤醒后恢复并 SNTP 重校 */
 
 static const char *TAG = "main";
+
+/* -------- 自动休眠(官方身份牌"无操作→浅睡,任意键唤醒") --------
+ * 只用浅睡(esp_light_sleep_start),不碰深睡:浅睡保留 RAM 与系统时钟,
+ * 唤醒后整个应用/UI/任务进度/设置原地续跑;深睡会冷启动丢状态,
+ * 且唤醒源配置失败时会"睡死"到只能用硬件电源键重启 —— 已从本文件彻底移除。 */
+#define IDLE_SLEEP_MS      (3 * 60 * 1000)   /* 无操作 3 分钟进入浅睡 */
+#define SLEEP_WAKE_PIN     GPIO_NUM_0        /* 三键共用 ADC 引脚;按下任意键拉低→低电平唤醒 */
+static int64_t s_last_activity_ms = 0;       /* 最近一次按键活动时刻(esp_timer, ms) */
+
+static void touch_activity(void) { s_last_activity_ms = esp_timer_get_time() / 1000; }
+
+/* idle_sleep_task 在浅睡唤醒后要重建按键,前向声明 on_key(定义在本文件后部) */
+static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user);
+
+/* 闲置监看:每秒检查,连续 3 分钟无按键且不在录音/回放 → 关背光 → 浅睡。
+ * 入睡前做三件事降耗+保状态:
+ *   ① bsp_button_deinit() 让 SAR ADC 完全脱离 GPIO0 —— 否则数字输入/唤醒读到的是 ADC 态,
+ *      轻按不唤醒(这正是"按键不灵敏/睡死"的常见根因);
+ *   ② 把 GPIO0 配成数字输入(外部 10k 上拉,空闲=高,按键拉低=唤醒条件);
+ *   ③ gpio_wakeup_enable(LOW) + esp_sleep_enable_gpio_wakeup(),并逐级检查错误,
+ *      配置失败就恢复按键/跳过本次睡眠,绝不"黑屏睡死";
+ *   ④ 停 WiFi、关背光。
+ * 唤醒后(esp_light_sleep_start 原地返回):恢复背光 → 关掉残留唤醒配置 →
+ * 重建按键 ADC(失败自动重试一次) → 恢复 WiFi → 重置 3 分钟计时。 */
+static void idle_sleep_task(void *arg) {
+    (void)arg;
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        if (study_recorder_is_recording() || study_recorder_is_playing()) continue; /* 忙碌不休眠 */
+        int64_t now = esp_timer_get_time() / 1000;
+        if (now - s_last_activity_ms < IDLE_SLEEP_MS) continue;
+        ESP_LOGI(TAG, "已闲置 %lld ms,准备浅睡(按任意键唤醒)",
+                 (long long)(now - s_last_activity_ms));
+        /* ① 拆除按键 ADC(释放 GPIO0 给数字输入) */
+        bsp_button_deinit();
+        /* ② GPIO0 数字输入带上拉:空闲为高,按键拉低即可唤醒 */
+        gpio_config_t io = {
+            .pin_bit_mask = 1ULL << SLEEP_WAKE_PIN,
+            .mode         = GPIO_MODE_INPUT,
+            .pull_up_en   = GPIO_PULLUP_ENABLE,
+            .pull_down_en = GPIO_PULLDOWN_DISABLE,
+            .intr_type    = GPIO_INTR_DISABLE,
+        };
+        gpio_config(&io);
+        /* ③ 浅睡唤醒源:IDF v5.5 起 esp_sleep_enable_gpio_wakeup() 无参,
+         *    唤醒引脚与电平需先用 gpio_wakeup_enable() 单独配置。
+         *    GPIO_INTR_LOW_LEVEL = 任意键按下拉低即唤醒。失败则恢复按键跳过本次。 */
+        esp_err_t we = gpio_wakeup_enable(SLEEP_WAKE_PIN, GPIO_INTR_LOW_LEVEL);
+        if (we == ESP_OK) we = esp_sleep_enable_gpio_wakeup();
+        if (we != ESP_OK) {
+            ESP_LOGE(TAG, "唤醒配置失败(%s),本次不休眠,3 分钟后再试", esp_err_to_name(we));
+            bsp_button_init(on_key, NULL);
+            s_last_activity_ms = esp_timer_get_time() / 1000;
+            continue;
+        }
+        /* ④ 省电:记住亮度并关背光,停 WiFi(配置保留,唤醒后按事件自动重连并 SNTP 重校) */
+        uint8_t bl = bsp_display_backlight_get();
+        bsp_display_backlight(0);
+        study_wifi_pause();
+        ESP_LOGI(TAG, "进入浅睡:按任意键(GPIO0 低电平)唤醒");
+        /* 浅睡:该函数会【返回】——返回即已按任意键唤醒,应用原地续跑,无需重进考研助手 */
+        esp_light_sleep_start();
+        /* ⑤ 唤醒后恢复:背光 → 撤掉唤醒配置 → 重建按键 ADC → 恢复 WiFi */
+        bsp_display_backlight(bl);
+        gpio_wakeup_disable(SLEEP_WAKE_PIN);
+        esp_err_t be = bsp_button_init(on_key, NULL);
+        if (be != ESP_OK) {                 /* 偶发 ADC 忙碌:稍等重试一次 */
+            vTaskDelay(pdMS_TO_TICKS(120));
+            be = bsp_button_init(on_key, NULL);
+        }
+        if (be != ESP_OK) ESP_LOGE(TAG, "唤醒后按键重建失败(%s),按键暂不可用", esp_err_to_name(be));
+        study_wifi_resume();
+        ESP_LOGI(TAG, "浅睡唤醒,恢复背光 %u%%/按键(%s)/WiFi", bl,
+                 be == ESP_OK ? "OK" : "FAIL");
+        s_last_activity_ms = esp_timer_get_time() / 1000;   /* 重置闲置时钟,重新计时 */
+    }
+}
 
 static const demo_entry_t DEMOS[] = {
     { "Study",   app_study_enter,    app_study_exit,    app_study_key    },  /* 考研助手（默认第一项） */
@@ -114,6 +197,7 @@ static void enter_menu(void) {
 // 按键回调运行在 button 组件的任务里,操作 LVGL 必须加锁。
 static void on_key(bsp_btn_t btn, bsp_btn_ev_t ev, void *user) {
     (void)user;
+    touch_activity();              /* 任意键都算"有操作",重置 3 分钟闲置计时 */
     if (!bsp_lvgl_lock(100)) return;   /* 超时从 500ms→100ms，避免按键被 LVGL 刷新阻塞 */
 
     if (s_active >= 0) {
@@ -179,6 +263,11 @@ void app_main(void) {
         DEMOS[0].enter();
         bsp_lvgl_unlock();
     }
+
+    /* 启动闲置浅睡监看：从此刻起 3 分钟无按键且不在录音/回放 → 浅睡,任意键唤醒。
+     * 浅睡不冷启动,RAM/UI/任务进度原地保留;唤醒后按键 ADC 自动重建。 */
+    s_last_activity_ms = esp_timer_get_time() / 1000;
+    xTaskCreate(idle_sleep_task, "idle_sleep", 4096, NULL, 1, NULL);
 
     ESP_LOGI(TAG, "就绪:Display=%d Button=%d Audio=%d Battery=%d",
              s_ok[0], s_ok[1], s_ok[2], s_ok[3]);

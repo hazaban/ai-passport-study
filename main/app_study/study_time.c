@@ -49,10 +49,25 @@ void study_time_get_now(int *hour, int *min) {
     *min  = tmv.tm_min;
 }
 
+/* 公历日期 → 自 1970-01-01 起的天数(与 UTC 无关,纯日历基准)。
+ * 两个北京自然日必然相差 1,跨日检测/任务复位以此为准。 */
+static long days_from_civil(int y, int m, int d) {
+    y -= (m <= 2);
+    long era = (y >= 0 ? y : y - 399) / 400;
+    unsigned yoe = (unsigned)(y - era * 400);                          /* [0,399] */
+    unsigned doy = (153u * (unsigned)(m + (m > 2 ? -3 : 9)) + 2u) / 5u
+                 + (unsigned)d - 1u;                                   /* [0,365] */
+    unsigned doe = yoe * 365u + yoe / 4u - yoe / 100u + doy;           /* [0,146096] */
+    return era * 146097L + (long)doe - 719468L;
+}
+
 long study_time_get_epoch_day(void) {
-    time_t now = time(NULL);
-    if (now < 946684800L) return -1L;   /* 未同步 */
-    return (long)(now / 86400L);
+    /* 用“北京日历日”而不是 time(NULL)/86400：
+     * 离线手动时钟下 time(NULL) 停在 1970(未校时)返回 -1 会让跨日复位失效，
+     * 而 study_time_civil_tm() 在 SNTP 或手动时钟两种来源下都能给出正确的本地日期。 */
+    struct tm tmv;
+    if (!study_time_civil_tm(&tmv)) return -1L;   /* 未校时且无手动时间 */
+    return days_from_civil(tmv.tm_year + 1900, tmv.tm_mon + 1, tmv.tm_mday);
 }
 
 int study_time_days_until(int month, int day) {
