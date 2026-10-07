@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>固件下载 - 考研助手</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 48px auto; padding: 0 16px; }
+  h1 { font-size: 20px; }
+  .file { border: 1px solid #ddd; border-radius: 8px; padding: 14px 16px; margin: 12px 0; display: flex; justify-content: space-between; align-items: center; }
+  .file a { color: #1a73e8; text-decoration: none; font-weight: 600; }
+  .hint { color: #666; font-size: 13px; }
+</style>
+</head>
+<body>
+  <h1>考研助手 · 固件下载</h1>
+  <p class="hint">推荐下载合并镜像（含引导/分区/主固件/语音包），ESP32-C3 全量烧录到 0x0。</p>
+
+  <div class="file">
+    <div>
+      <div><a href="build/FoloToy-study-timer-merged.bin" download>FoloToy-study-timer-merged.bin</a>（推荐）</div>
+      <div class="hint">3.9 MB · 合并镜像，烧录地址 0x0</div>
+    </div>
+  </div>
+
+  <div class="file">
+    <div>
+      <div><a href="build/FoloToy-AI-Passport.bin" download>FoloToy-AI-Passport.bin</a></div>
+      <div class="hint">1.9 MB · 主固件，烧录地址 0x10000</div>
+    </div>
+  </div>
+
+  <div class="file">
+    <div>
+      <div><a href="build/voicepack.bin" download>voicepack.bin</a></div>
+      <div class="hint">480 KB · 语音包，烧录地址 0x35a000</div>
+    </div>
+  </div>
+</body>
+</html>
