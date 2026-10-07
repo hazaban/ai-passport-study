@@ -1703,7 +1703,8 @@ static void timer_run_header(lv_obj_t *scr) {
     if (left < 0) snprintf(buf, sizeof(buf), "考研日已过");
     else          snprintf(buf, sizeof(buf), "距离考研 %d 天", left);
     lv_obj_t *l = ui_pixel_label(head, buf, F_STUDY, thm()->accent);
-    lv_obj_center(l);
+    lv_obj_set_align(l, LV_ALIGN_TOP_MID);
+    lv_obj_set_pos(l, -17, 12);                  /* 居中向左修正半字宽（同首页标题） */
     lv_obj_set_style_transform_scale(l, 333, 0);   /* 同首页标题 ≈1.3x → 19px */
 }
 
@@ -1718,12 +1719,12 @@ static lv_obj_t *timer_stage_card(lv_obj_t *scr, const char *cap,
 
     lv_obj_t *c = ui_pixel_label(card, cap, F_STUDY, thm()->accent);
     lv_obj_set_align(c, LV_ALIGN_TOP_MID);
-    lv_obj_set_pos(c, 0, 10);
+    lv_obj_set_pos(c, -17, 10);                  /* 居中向左修正半字宽（同首页标题） */
     lv_obj_set_style_transform_scale(c, 333, 0);
 
     lv_obj_t *tm = ui_pixel_label(card, "00:00:00", &lv_font_montserrat_20, thm()->ink);
     lv_obj_set_align(tm, LV_ALIGN_CENTER);
-    lv_obj_set_pos(tm, 0, -10);
+    lv_obj_set_pos(tm, -20, -10);                /* 居中向左修正（同首页大数字） */
     lv_obj_set_style_transform_scale(tm, 384, 0);   /* 1.5x → 视觉 30px */
 
     lv_obj_t *st = ui_pixel_label(card, "", F_STUDY, thm()->muted);
@@ -1987,10 +1988,10 @@ static void tdn_timer_cb(lv_timer_t *t);
 static void tdn_update_run(void);
 
 static void tdn_update_setup(void) {
-    /* 预设高亮 */
+    /* 预设高亮（选中项常驻深蓝，OK 移到分/秒/提示音后依然保持） */
     for (int i = 0; i < 4; i++) {
         if (!s_tdn_preset_cards[i]) continue;
-        bool sel = (s_tdn_preset == i) && (s_tdn_focus == TDN_FOCUS_PRESET);
+        bool sel = (s_tdn_preset == i);
         lv_obj_set_style_bg_color(s_tdn_preset_cards[i],
             lv_color_hex(sel ? thm()->primary_d : thm()->card2), 0);
         lv_obj_set_style_border_width(s_tdn_preset_cards[i], sel ? 0 : 1, 0);
@@ -2088,13 +2089,13 @@ static void tdown_build_setup(void) {
         lv_obj_set_style_border_width(w, 0, 0);
         lv_obj_set_style_pad_all(w, 0, 0);
         s_tdn_min_lab = mod_card(w, 0, 0, 60, 20, thm()->card2, 6, true);
-        lv_obj_t *ml = ui_pixel_label(s_tdn_min_lab, m, F_STUDY, thm()->ink);
-        lv_obj_center(ml);
+        s_tdn_min_txt = ui_pixel_label(s_tdn_min_lab, m, F_STUDY, thm()->ink);
+        lv_obj_center(s_tdn_min_txt);
         lv_obj_t *mu = ui_pixel_label(w, "分", F_STUDY, thm()->muted);
         lv_obj_set_pos(mu, 64, 0);
         s_tdn_sec_lab = mod_card(w, 84, 0, 60, 20, thm()->card2, 6, true);
-        lv_obj_t *sl = ui_pixel_label(s_tdn_sec_lab, s, F_STUDY, thm()->ink);
-        lv_obj_center(sl);
+        s_tdn_sec_txt = ui_pixel_label(s_tdn_sec_lab, s, F_STUDY, thm()->ink);
+        lv_obj_center(s_tdn_sec_txt);
         lv_obj_t *su = ui_pixel_label(w, "秒", F_STUDY, thm()->muted);
         lv_obj_set_pos(su, 148, 0);
     }
