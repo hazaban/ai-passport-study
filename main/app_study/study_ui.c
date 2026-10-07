@@ -12,6 +12,7 @@
 #include "study_wifi.h"
 #include "study_time.h"
 #include "study_scheduler.h"
+#include "study_timer.h"
 #include "study_font.h"
 #include <string.h>
 #include <stdio.h>
@@ -1223,7 +1224,7 @@ bool ui_detail_wants_back(void) {
 /* ==============================================================
  * PAGE_SETTINGS — 设置（WiFi / 亮度 / 电量 / 音量 / 时间 / 早起记录 / 睡眠记录 / 起床闹钟 / 主题 / 洗头间隔 / 返回）
  * ============================================================== */
-enum { SET_WIFI = 0, SET_RECORDER, SET_BRIGHT, SET_VOL, SET_NOW, SET_WAKE, SET_SLEEP,
+enum { SET_WIFI = 0, SET_RECORDER, SET_TIMER, SET_BRIGHT, SET_VOL, SET_NOW, SET_WAKE, SET_SLEEP,
        SET_WAKE_ALARM, SET_THEME, SET_HAIR, SET_BATT, SET_HOME, SET_N };
 static lv_obj_t *s_set_scr;
 static lv_obj_t *s_set_list;   /* 设置列表滚动容器：行距/字体不压缩，行多时上下滚动 */
@@ -1233,6 +1234,7 @@ static bool s_set_wants_wifi;
 static bool s_set_wants_home;
 static bool s_set_wants_todo;
 static bool s_set_wants_recorder;
+static bool s_set_wants_timer;
 static bool s_set_edit;      /* 正在编辑某数值行 */
 static int  s_edit_unit;     /* 多单元行当前编辑的单元 */
 static int  s_bright;        /* 亮度 0..100 */
@@ -1252,7 +1254,7 @@ static int month_days(int y, int mo) {
 static int row_units(int i) {
     if (i == SET_NOW) return 3;
     if (i == SET_WAKE_ALARM) return 2;
-    if (i == SET_WAKE || i == SET_SLEEP || i == SET_THEME || i == SET_RECORDER) return 0;
+    if (i == SET_WAKE || i == SET_SLEEP || i == SET_THEME || i == SET_RECORDER || i == SET_TIMER) return 0;
     return 1;
 }
 
@@ -1263,6 +1265,7 @@ void ui_settings_build(void) {
     s_set_sel = 0;
     s_set_wants_wifi = false;
     s_set_wants_recorder = false;
+    s_set_wants_timer = false;
     s_set_wants_home = false;
     s_set_wants_todo = false;
     s_set_edit = false;
@@ -1318,6 +1321,7 @@ static void render_one_row(int i) {
     switch (i) {
         case SET_WIFI:    strcpy(buf, "WiFi 连接/配网"); break;
         case SET_RECORDER: strcpy(buf, "录音笔"); break;
+        case SET_TIMER:   strcpy(buf, "计时器"); break;
         case SET_BRIGHT: snprintf(buf, sizeof(buf), "屏幕亮度 %d%%", s_bright); break;
         case SET_VOL:    snprintf(buf, sizeof(buf), "音量 %d%%", s_vol); break;
         case SET_BATT: {
@@ -1403,6 +1407,7 @@ void ui_settings_key(uint8_t btn_u, uint8_t ev_u) {
             return;
         }
         if (s_set_sel == SET_RECORDER) { s_set_wants_recorder = true; return; }
+        if (s_set_sel == SET_TIMER)   { s_set_wants_timer = true; return; }
         if (s_set_sel == SET_WIFI) { s_set_wants_wifi = true; return; }
         if (s_set_sel == SET_HOME) { s_set_wants_home = true; return; }
         if (s_set_sel == SET_WAKE || s_set_sel == SET_SLEEP) {
@@ -1512,6 +1517,7 @@ bool ui_settings_wants_wifi(void) { return s_set_wants_wifi; }
 bool ui_settings_wants_home(void) { return s_set_wants_home; }
 bool ui_settings_wants_todo(void) { return s_set_wants_todo; }
 bool ui_settings_wants_recorder(void) { return s_set_wants_recorder; }
+bool ui_settings_wants_timer(void) { return s_set_wants_timer; }
 
 /* ==============================================================
  * PAGE_WIFI — WiFi 状态 / 配网引导
@@ -1654,6 +1660,738 @@ void ui_scene_close(void) {
 }
 bool ui_scene_is_showing(void) { return s_scn_scr != NULL; }
 
+/* ==============================================================
+ * 计时器页 (PAGE_TIMER_MENU / PAGE_TIMER_UP / PAGE_TIMER_DOWN / PAGE_TIMER_STATS)
+ *
+ * 入口：设置 → 计时器 → 菜单（正计时 / 倒计时 / 今日统计）
+ * 导航统一：▲/▼ 切换 · OK 确定 · 长按 OK 返回上一界面
+ * 正计时：就绪[开始/返回] → 运行[暂停/结束] → 暂停[继续/结束]，结束计入今日统计
+ * 倒计时：设置(预设/自定义 时·分·秒 → 提示音/静音 → [开始/返回]) → 运行/暂停；
+ *         自然走完计入统计并播提示音；手动结束不计入
+ * 计时中屏幕保持常亮：app_study_timer_active() 让 main.c 跳过自动休眠
+ * ============================================================== */
+
+/* 秒 → "HH:MM:SS"（计时大数字） */
+static void timer_fmt_hms(uint32_t sec, char *buf, int sz) {
+    uint32_t h = sec / 3600, m = (sec % 3600) / 60, s = sec % 60;
+    snprintf(buf, sz, "%02u:%02u:%02u", (unsigned)h, (unsigned)m, (unsigned)s);
+}
+
+/* 秒 → "X 时 X 分"（统计用） */
+static void timer_fmt_hour_min(uint32_t sec, char *buf, int sz) {
+    uint32_t h = sec / 3600, m = (sec % 3600) / 60;
+    if (h > 0) snprintf(buf, sz, "%u 时 %u 分", (unsigned)h, (unsigned)m);
+    else       snprintf(buf, sz, "%u 分", (unsigned)m);
+}
+
+/* 秒 → 紧凑时长 "3时" / "45分" / "45分30秒"（倒计时常亮提示行） */
+static void timer_fmt_duration(uint32_t sec, char *buf, int sz) {
+    uint32_t h = sec / 3600, m = (sec % 3600) / 60, s = sec % 60;
+    if (h > 0) snprintf(buf, sz, "%u时", (unsigned)h);
+    else if (s == 0) snprintf(buf, sz, "%u分", (unsigned)m);
+    else snprintf(buf, sz, "%u分%u秒", (unsigned)m, (unsigned)s);
+}
+
+/* 顶部「距离考研 XX 天」标题卡（橙色大号，同首页考研倒计时标题样式） */
+static void timer_run_header(lv_obj_t *scr) {
+    lv_obj_t *head = mod_card(scr, 8, 8, 224, 44, thm()->card, 14, true);
+    char buf[32];
+    int left = study_time_days_until(STUDY_EXAM_MONTH, STUDY_EXAM_DAY);
+    if (left < 0) snprintf(buf, sizeof(buf), "考研日已过");
+    else          snprintf(buf, sizeof(buf), "距离考研 %d 天", left);
+    lv_obj_t *l = ui_pixel_label(head, buf, F_STUDY, thm()->accent);
+    lv_obj_center(l);
+    lv_obj_set_style_transform_scale(l, 333, 0);   /* 同首页标题 ≈1.3x → 19px */
+}
+
+/* 计时显示卡（同首页考研倒计时卡：白底圆角 + 描边，位于页面中间）：
+ * cap 标题 + 大时间 + 状态行 + 常亮提示 */
+static lv_obj_t *timer_stage_card(lv_obj_t *scr, const char *cap,
+                                  lv_obj_t **out_time, lv_obj_t **out_state,
+                                  lv_obj_t **out_awake) {
+    lv_obj_t *card = mod_card(scr, 8, 70, 224, 150, thm()->card, 16, true);
+    lv_obj_set_style_border_width(card, 1, 0);
+    lv_obj_set_style_border_color(card, lv_color_hex(thm()->line), 0);
+
+    lv_obj_t *c = ui_pixel_label(card, cap, F_STUDY, thm()->accent);
+    lv_obj_set_align(c, LV_ALIGN_TOP_MID);
+    lv_obj_set_pos(c, 0, 10);
+    lv_obj_set_style_transform_scale(c, 333, 0);
+
+    lv_obj_t *tm = ui_pixel_label(card, "00:00:00", &lv_font_montserrat_20, thm()->ink);
+    lv_obj_set_align(tm, LV_ALIGN_CENTER);
+    lv_obj_set_pos(tm, 0, -10);
+    lv_obj_set_style_transform_scale(tm, 384, 0);   /* 1.5x → 视觉 30px */
+
+    lv_obj_t *st = ui_pixel_label(card, "", F_STUDY, thm()->muted);
+    lv_obj_set_align(st, LV_ALIGN_BOTTOM_MID);
+    lv_obj_set_pos(st, 0, -30);
+
+    lv_obj_t *aw = ui_pixel_label(card, "计时期间不休眠、不断电", F_STUDY, thm()->muted);
+    lv_obj_set_align(aw, LV_ALIGN_BOTTOM_MID);
+    lv_obj_set_pos(aw, 0, -8);
+
+    *out_time  = tm;
+    *out_state = st;
+    *out_awake = aw;
+    return card;
+}
+
+/* 两个操作按钮（运行页底部）：选中=实心主蓝+白字，未选中=白底+主蓝描边 */
+static void timer_btn_refresh(lv_obj_t *btn, bool sel) {
+    if (!btn) return;
+    lv_obj_set_style_bg_color(btn, lv_color_hex(sel ? thm()->primary_d : thm()->card), 0);
+    lv_obj_set_style_border_width(btn, sel ? 0 : 2, 0);
+    lv_obj_set_style_border_color(btn, lv_color_hex(thm()->primary), 0);
+    lv_obj_t *lab = lv_obj_get_child(btn, 0);
+    if (lab) lv_obj_set_style_text_color(lab, lv_color_hex(sel ? 0xFFFFFF : thm()->primary), 0);
+}
+
+/* ---------- PAGE_TIMER_MENU：正计时 / 倒计时 / 今日统计 三选一 ---------- */
+static lv_obj_t *s_tmenu_scr;
+static lv_obj_t *s_tmenu_cards[3];
+static lv_obj_t *s_tmenu_labs[3][2];
+static int s_tmenu_sel;
+static bool s_tmenu_wants_up, s_tmenu_wants_down, s_tmenu_wants_stats;
+
+static void tmenu_refresh(void) {
+    for (int i = 0; i < 3; i++) {
+        if (!s_tmenu_cards[i]) continue;
+        bool sel = (i == s_tmenu_sel);
+        lv_obj_set_style_bg_color(s_tmenu_cards[i],
+            lv_color_hex(sel ? thm()->primary_d : thm()->card), 0);
+        lv_obj_set_style_border_width(s_tmenu_cards[i], sel ? 0 : 1, 0);
+        lv_obj_set_style_border_color(s_tmenu_cards[i], lv_color_hex(thm()->line), 0);
+        for (int k = 0; k < 2; k++) {
+            if (!s_tmenu_labs[i][k]) continue;
+            lv_obj_set_style_text_color(s_tmenu_labs[i][k],
+                lv_color_hex(sel ? (k == 0 ? 0xFFFFFF : 0xD9E7EC) : (k == 0 ? thm()->ink : thm()->muted)), 0);
+        }
+    }
+}
+
+void ui_timer_menu_build(void) {
+    s_tmenu_sel = 0;
+    s_tmenu_wants_up = s_tmenu_wants_down = s_tmenu_wants_stats = false;
+
+    s_tmenu_scr = lv_obj_create(NULL);
+    lv_obj_remove_flag(s_tmenu_scr, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(s_tmenu_scr, lv_color_hex(thm()->bg), 0);
+    lv_obj_set_style_border_width(s_tmenu_scr, 0, 0);
+    lv_obj_set_style_pad_all(s_tmenu_scr, 0, 0);
+    s_cur_scr = s_tmenu_scr;
+
+    lv_obj_t *head = mod_card(s_tmenu_scr, 8, 8, 224, 40, thm()->card, 14, true);
+    lv_obj_t *title = ui_pixel_label(head, "计时器", F_STUDY, thm()->ink);
+    lv_obj_set_pos(title, 16, 8);
+
+    static const char *items[3][2] = {
+        { "正计时",   "专注累计 · 无提示音" },
+        { "倒计时",   "25分 / 45分 / 3时 模拟考" },
+        { "今日统计", "今日累计 + 最近 7 天" },
+    };
+    for (int i = 0; i < 3; i++) {
+        lv_obj_t *card = mod_card(s_tmenu_scr, 8, 62 + i * 62, 224, 56, thm()->card, 14, true);
+        lv_obj_set_style_border_width(card, 1, 0);
+        lv_obj_set_style_border_color(card, lv_color_hex(thm()->line), 0);
+        lv_obj_t *t1 = ui_pixel_label(card, items[i][0], F_STUDY, thm()->ink);
+        lv_obj_set_pos(t1, 20, 8);
+        lv_obj_t *t2 = ui_pixel_label(card, items[i][1], F_STUDY, thm()->muted);
+        lv_obj_set_pos(t2, 20, 32);
+        s_tmenu_cards[i] = card;
+        s_tmenu_labs[i][0] = t1;
+        s_tmenu_labs[i][1] = t2;
+    }
+    lv_obj_t *hint = ui_pixel_label(s_tmenu_scr, "上/下 切换 · OK 进入 · 长按返回", F_STUDY, thm()->muted);
+    lv_obj_set_align(hint, LV_ALIGN_BOTTOM_MID);
+    lv_obj_set_pos(hint, 0, -6);
+
+    tmenu_refresh();
+    lv_screen_load(s_tmenu_scr);
+}
+
+void ui_timer_menu_destroy(void) {
+    if (s_tmenu_scr) { lv_obj_delete(s_tmenu_scr); s_tmenu_scr = NULL; }
+}
+
+void ui_timer_menu_key(uint8_t btn_u, uint8_t ev_u) {
+    if (ev_u != BSP_BTN_CLICK) return;
+    bsp_btn_t btn = (bsp_btn_t)btn_u;
+    if (btn == BSP_BTN_UP)   { if (s_tmenu_sel > 0) s_tmenu_sel--; tmenu_refresh(); return; }
+    if (btn == BSP_BTN_DOWN) { if (s_tmenu_sel < 2) s_tmenu_sel++; tmenu_refresh(); return; }
+    if (btn == BSP_BTN_OK) {
+        if (s_tmenu_sel == 0) s_tmenu_wants_up = true;
+        else if (s_tmenu_sel == 1) s_tmenu_wants_down = true;
+        else s_tmenu_wants_stats = true;
+    }
+}
+
+bool ui_timer_menu_wants_up(void)    { bool r = s_tmenu_wants_up;    s_tmenu_wants_up = false;    return r; }
+bool ui_timer_menu_wants_down(void)  { bool r = s_tmenu_wants_down;  s_tmenu_wants_down = false;  return r; }
+bool ui_timer_menu_wants_stats(void) { bool r = s_tmenu_wants_stats; s_tmenu_wants_stats = false; return r; }
+
+/* ---------- PAGE_TIMER_UP：正计时（就绪/运行/暂停） ---------- */
+static lv_obj_t *s_tup_scr;
+static lv_obj_t *s_tup_time;
+static lv_obj_t *s_tup_state;
+static lv_obj_t *s_tup_btn[2];
+static int s_tup_sel;                  /* 0/1 操作按钮 */
+static bool s_tup_wants_menu;
+static lv_timer_t *s_tup_timer;        /* 1Hz 推进 + 刷新 */
+
+static void tup_render_buttons(void) {
+    const char *lab[2] = { "开始", "返回" };
+    if (study_timer_state() == STUDY_TIMER_RUNNING) { lab[0] = "暂停"; lab[1] = "结束"; }
+    if (study_timer_state() == STUDY_TIMER_PAUSED)  { lab[0] = "继续"; lab[1] = "结束"; }
+    for (int i = 0; i < 2; i++) {
+        if (!s_tup_btn[i]) continue;
+        lv_obj_t *l = lv_obj_get_child(s_tup_btn[i], 0);
+        if (l) lv_label_set_text(l, lab[i]);
+        timer_btn_refresh(s_tup_btn[i], s_tup_sel == i);
+    }
+}
+
+static void tup_refresh(void) {
+    char buf[16];
+    timer_fmt_hms(study_timer_elapsed(), buf, sizeof(buf));
+    if (s_tup_time) lv_label_set_text(s_tup_time, buf);
+    if (s_tup_state) {
+        const char *st;
+        switch (study_timer_state()) {
+            case STUDY_TIMER_RUNNING: st = "专注中 · 屏幕保持常亮"; break;
+            case STUDY_TIMER_PAUSED:  st = "已暂停 · 屏幕保持常亮"; break;
+            default:                  st = "就绪 · 屏幕保持常亮";   break;
+        }
+        lv_label_set_text(s_tup_state, st);
+        lv_obj_set_style_text_color(s_tup_state,
+            lv_color_hex(study_timer_state() == STUDY_TIMER_RUNNING
+                         ? thm()->primary_d : thm()->muted), 0);
+    }
+    tup_render_buttons();
+}
+
+static void tup_timer_cb(lv_timer_t *t) {
+    (void)t;
+    if (study_timer_is_running()) study_timer_tick();   /* 正计时无提示音 */
+    tup_refresh();
+}
+
+void ui_timer_up_build(void) {
+    study_timer_set_mode(STUDY_TIMER_UP);   /* 进入正计时：切到正计时模式并复位 */
+    s_tup_sel = 0;
+    s_tup_wants_menu = false;
+
+    s_tup_scr = lv_obj_create(NULL);
+    lv_obj_remove_flag(s_tup_scr, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(s_tup_scr, lv_color_hex(thm()->bg), 0);
+    lv_obj_set_style_border_width(s_tup_scr, 0, 0);
+    lv_obj_set_style_pad_all(s_tup_scr, 0, 0);
+    s_cur_scr = s_tup_scr;
+
+    timer_run_header(s_tup_scr);
+    timer_stage_card(s_tup_scr, "正计时", &s_tup_time, &s_tup_state, NULL);
+
+    s_tup_btn[0] = mod_button(s_tup_scr, 16, 238, 96, 36, thm()->primary_d, 0xFFFFFF, true);
+    mod_button_label(s_tup_btn[0], "开始", 0xFFFFFF);
+    s_tup_btn[1] = mod_button(s_tup_scr, 128, 238, 96, 36, thm()->card, thm()->primary, false);
+    mod_button_label(s_tup_btn[1], "返回", thm()->primary);
+
+    lv_obj_t *hint = ui_pixel_label(s_tup_scr, "上/下 切换 · OK 确定 · 长按返回", F_STUDY, thm()->muted);
+    lv_obj_set_align(hint, LV_ALIGN_BOTTOM_MID);
+    lv_obj_set_pos(hint, 0, -6);
+
+    if (!s_tup_timer) s_tup_timer = lv_timer_create(tup_timer_cb, 1000, NULL);
+    tup_refresh();
+    lv_screen_load(s_tup_scr);
+}
+
+void ui_timer_up_destroy(void) {
+    if (s_tup_timer) { lv_timer_del(s_tup_timer); s_tup_timer = NULL; }
+    s_tup_time = NULL; s_tup_state = NULL;
+    if (s_tup_scr) { lv_obj_delete(s_tup_scr); s_tup_scr = NULL; }
+}
+
+void ui_timer_up_key(uint8_t btn_u, uint8_t ev_u) {
+    if (ev_u != BSP_BTN_CLICK) return;
+    bsp_btn_t btn = (bsp_btn_t)btn_u;
+    if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) { s_tup_sel ^= 1; tup_refresh(); return; }
+    if (btn != BSP_BTN_OK) return;
+    switch (study_timer_state()) {
+        case STUDY_TIMER_IDLE:
+            if (s_tup_sel == 0) study_timer_start();
+            else                s_tup_wants_menu = true;       /* 返回 */
+            break;
+        case STUDY_TIMER_RUNNING:
+            if (s_tup_sel == 0) study_timer_pause();
+            else { study_timer_stop(); s_tup_wants_menu = true; }  /* 结束：计入今日 */
+            break;
+        case STUDY_TIMER_PAUSED:
+            if (s_tup_sel == 0) study_timer_toggle_pause();   /* 继续 */
+            else { study_timer_stop(); s_tup_wants_menu = true; }
+            break;
+    }
+    tup_refresh();
+}
+
+bool ui_timer_up_wants_menu(void) {
+    bool r = s_tup_wants_menu;
+    s_tup_wants_menu = false;
+    return r;
+}
+
+/* ---------- PAGE_TIMER_DOWN：倒计时（设置 → 运行/暂停 → 完成） ---------- */
+enum {
+    TDN_PHASE_SETUP = 0,   /* 设置阶段 */
+    TDN_PHASE_RUN,         /* 运行/暂停 */
+    TDN_PHASE_DONE,        /* 自然走完 */
+};
+enum {
+    TDN_FOCUS_PRESET = 0,  /* 时长预设 */
+    TDN_FOCUS_MIN,         /* 自定义：分 */
+    TDN_FOCUS_SEC,         /* 自定义：秒 */
+    TDN_FOCUS_RING,        /* 提示音/静音 */
+    TDN_FOCUS_START,       /* 开始按钮 */
+    TDN_FOCUS_BACK,        /* 返回按钮 */
+};
+static const int s_down_preset_sec[4] = { 25 * 60, 45 * 60, 3 * 3600, 0 };  /* 最后=自定义 */
+static const char *s_down_preset_t[4] = { "25分", "45分", "3时", "自定义" };
+static const char *s_down_preset_s[4] = { "专注", "标准", "模拟考", "分/秒" };
+
+static lv_obj_t *s_tdn_scr;
+static int s_tdn_phase;
+static int s_tdn_focus;
+static int s_tdn_preset;
+static int s_tdn_min, s_tdn_sec;
+static bool s_tdn_ring;      /* true=结束提示音(默认) false=静音 */
+static int  s_tdn_sel;       /* 运行/完成阶段按钮 0/1 */
+static int  s_tdn_total;     /* 本次倒计时总秒 */
+static bool s_tdn_wants_menu;
+static lv_timer_t *s_tdn_timer;
+/* 运行阶段控件句柄（time/state/awake） */
+static lv_obj_t *s_tdn_time, *s_tdn_state, *s_tdn_awake;
+
+/* 设置阶段控件句柄 */
+static lv_obj_t *s_tdn_preset_cards[4];
+static lv_obj_t *s_tdn_preset_labs[4][2];
+static lv_obj_t *s_tdn_min_lab, *s_tdn_sec_lab;
+static lv_obj_t *s_tdn_ring_cards[2];
+static lv_obj_t *s_tdn_ring_labs[2];
+static lv_obj_t *s_tdn_btn[2];
+
+static void tdn_update_setup(void) {
+    /* 预设高亮 */
+    for (int i = 0; i < 4; i++) {
+        if (!s_tdn_preset_cards[i]) continue;
+        bool sel = (s_tdn_preset == i) && (s_tdn_focus == TDN_FOCUS_PRESET);
+        lv_obj_set_style_bg_color(s_tdn_preset_cards[i],
+            lv_color_hex(sel ? thm()->primary_d : thm()->card2), 0);
+        lv_obj_set_style_border_width(s_tdn_preset_cards[i], sel ? 0 : 1, 0);
+        lv_obj_set_style_border_color(s_tdn_preset_cards[i], lv_color_hex(thm()->line), 0);
+        for (int k = 0; k < 2; k++) {
+            if (!s_tdn_preset_labs[i][k]) continue;
+            lv_obj_set_style_text_color(s_tdn_preset_labs[i][k],
+                lv_color_hex(sel ? (k == 0 ? 0xFFFFFF : 0xD9E7EC) : thm()->ink), 0);
+        }
+    }
+    /* 自定义分/秒高亮 */
+    if (s_tdn_min_lab) {
+        bool sel = (s_tdn_preset == 3) && s_tdn_focus == TDN_FOCUS_MIN;
+        lv_obj_set_style_bg_color(s_tdn_min_lab, lv_color_hex(sel ? thm()->sel : thm()->card2), 0);
+        lv_obj_set_style_border_width(s_tdn_min_lab, sel ? 2 : 0, 0);
+    }
+    if (s_tdn_sec_lab) {
+        bool sel = (s_tdn_preset == 3) && s_tdn_focus == TDN_FOCUS_SEC;
+        lv_obj_set_style_bg_color(s_tdn_sec_lab, lv_color_hex(sel ? thm()->sel : thm()->card2), 0);
+        lv_obj_set_style_border_width(s_tdn_sec_lab, sel ? 2 : 0, 0);
+    }
+    /* 提示音/静音高亮 */
+    for (int i = 0; i < 2; i++) {
+        if (!s_tdn_ring_cards[i]) continue;
+        bool sel = (s_tdn_ring == (i == 0)) && s_tdn_focus == TDN_FOCUS_RING;
+        lv_obj_set_style_bg_color(s_tdn_ring_cards[i],
+            lv_color_hex(sel ? thm()->primary_d : thm()->card2), 0);
+        lv_obj_set_style_border_width(s_tdn_ring_cards[i], sel ? 0 : 1, 0);
+        if (s_tdn_ring_labs[i])
+            lv_obj_set_style_text_color(s_tdn_ring_labs[i],
+                lv_color_hex(sel ? 0xFFFFFF : thm()->ink), 0);
+    }
+    /* 开始/返回按钮 */
+    for (int i = 0; i < 2; i++) {
+        bool sel = (s_tdn_focus == TDN_FOCUS_START + i);
+        timer_btn_refresh(s_tdn_btn[i], sel);
+    }
+}
+
+/* 设置页构建 */
+static void tdown_build_setup(void) {
+    s_tdn_scr = lv_obj_create(NULL);
+    lv_obj_remove_flag(s_tdn_scr, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(s_tdn_scr, lv_color_hex(thm()->bg), 0);
+    lv_obj_set_style_border_width(s_tdn_scr, 0, 0);
+    lv_obj_set_style_pad_all(s_tdn_scr, 0, 0);
+    s_cur_scr = s_tdn_scr;
+
+    lv_obj_t *head = mod_card(s_tdn_scr, 8, 8, 224, 40, thm()->card, 14, true);
+    lv_obj_t *title = ui_pixel_label(head, "倒计时 · 设置", F_STUDY, thm()->ink);
+    lv_obj_set_pos(title, 16, 8);
+
+    /* 时长卡：预设 2×2 + 自定义分/秒 */
+    lv_obj_t *ca = mod_card(s_tdn_scr, 8, 52, 224, 140, thm()->card, 14, true);
+    lv_obj_t *t = ui_pixel_label(ca, "时长（考研常用）", F_STUDY, thm()->muted);
+    lv_obj_set_pos(t, 16, 8);
+    for (int i = 0; i < 4; i++) {
+        int x = 12 + (i % 2) * 108;
+        int y = 28 + (i / 2) * 48;
+        lv_obj_t *c = mod_card(ca, x, y, 100, 42, thm()->card2, 10, true);
+        lv_obj_set_style_border_width(c, 1, 0);
+        lv_obj_set_style_border_color(c, lv_color_hex(thm()->line), 0);
+        lv_obj_t *l1 = ui_pixel_label(c, s_down_preset_t[i], F_STUDY, thm()->ink);
+        lv_obj_set_pos(l1, 10, 3);
+        lv_obj_t *l2 = ui_pixel_label(c, s_down_preset_s[i], F_STUDY, thm()->muted);
+        lv_obj_set_pos(l2, 10, 24);
+        s_tdn_preset_cards[i] = c;
+        s_tdn_preset_labs[i][0] = l1;
+        s_tdn_preset_labs[i][1] = l2;
+    }
+    /* 自定义分/秒（仅自定义时显示，由 tdn_update_setup 控制显隐） */
+    {
+        char m[8], s[8];
+        snprintf(m, sizeof(m), "%d", s_tdn_min);
+        snprintf(s, sizeof(s), "%d", s_tdn_sec);
+        lv_obj_t *w = mod_card(ca, 12, 116, 200, 20, LV_COLOR_TRANSP, 0, false);
+        s_tdn_min_lab = mod_card(w, 0, 0, 60, 20, thm()->card2, 6, true);
+        lv_obj_t *ml = ui_pixel_label(s_tdn_min_lab, m, F_STUDY, thm()->ink);
+        lv_obj_center(ml);
+        lv_obj_t *mu = ui_pixel_label(w, "分", F_STUDY, thm()->muted);
+        lv_obj_set_pos(mu, 64, 0);
+        s_tdn_sec_lab = mod_card(w, 84, 0, 60, 20, thm()->card2, 6, true);
+        lv_obj_t *sl = ui_pixel_label(s_tdn_sec_lab, s, F_STUDY, thm()->ink);
+        lv_obj_center(sl);
+        lv_obj_t *su = ui_pixel_label(w, "秒", F_STUDY, thm()->muted);
+        lv_obj_set_pos(su, 148, 0);
+    }
+
+    /* 结束时提醒卡 */
+    lv_obj_t *cb = mod_card(s_tdn_scr, 8, 198, 224, 62, thm()->card, 14, true);
+    lv_obj_t *t2 = ui_pixel_label(cb, "结束时提醒", F_STUDY, thm()->muted);
+    lv_obj_set_pos(t2, 16, 8);
+    static const char *ring_lab[2] = { "提示音", "静音" };
+    for (int i = 0; i < 2; i++) {
+        lv_obj_t *c = mod_card(cb, 12 + i * 108, 30, 100, 26, thm()->card2, 8, true);
+        lv_obj_set_style_border_width(c, 1, 0);
+        lv_obj_set_style_border_color(c, lv_color_hex(thm()->line), 0);
+        lv_obj_t *l = ui_pixel_label(c, ring_lab[i], F_STUDY, thm()->ink);
+        lv_obj_center(l);
+        s_tdn_ring_cards[i] = c;
+        s_tdn_ring_labs[i] = l;
+    }
+
+    /* 开始/返回 */
+    s_tdn_btn[0] = mod_button(s_tdn_scr, 16, 268, 96, 36, thm()->primary_d, 0xFFFFFF, true);
+    mod_button_label(s_tdn_btn[0], "开始", 0xFFFFFF);
+    s_tdn_btn[1] = mod_button(s_tdn_scr, 128, 268, 96, 36, thm()->card, thm()->primary, false);
+    mod_button_label(s_tdn_btn[1], "返回", thm()->primary);
+
+    lv_obj_t *hint = ui_pixel_label(s_tdn_scr, "上/下 步进 · OK 确认 · 长按返回", F_STUDY, thm()->muted);
+    lv_obj_set_align(hint, LV_ALIGN_BOTTOM_MID);
+    lv_obj_set_pos(hint, 0, -4);
+
+    tdn_update_setup();
+    lv_screen_load(s_tdn_scr);
+}
+
+/* 运行/完成页构建 */
+static void tdown_build_run(void) {
+    s_tdn_scr = lv_obj_create(NULL);
+    lv_obj_remove_flag(s_tdn_scr, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(s_tdn_scr, lv_color_hex(thm()->bg), 0);
+    lv_obj_set_style_border_width(s_tdn_scr, 0, 0);
+    lv_obj_set_style_pad_all(s_tdn_scr, 0, 0);
+    s_cur_scr = s_tdn_scr;
+
+    timer_run_header(s_tdn_scr);
+    timer_stage_card(s_tdn_scr, "倒计时", &s_tdn_time, &s_tdn_state, &s_tdn_awake);
+
+    s_tdn_btn[0] = mod_button(s_tdn_scr, 16, 238, 96, 36, thm()->primary_d, 0xFFFFFF, true);
+    mod_button_label(s_tdn_btn[0], "暂停", 0xFFFFFF);
+    s_tdn_btn[1] = mod_button(s_tdn_scr, 128, 238, 96, 36, thm()->card, thm()->primary, false);
+    mod_button_label(s_tdn_btn[1], "结束", thm()->primary);
+
+    lv_obj_t *hint = ui_pixel_label(s_tdn_scr, "上/下 切换 · OK 确定 · 长按返回", F_STUDY, thm()->muted);
+    lv_obj_set_align(hint, LV_ALIGN_BOTTOM_MID);
+    lv_obj_set_pos(hint, 0, -6);
+
+    if (!s_tdn_timer) s_tdn_timer = lv_timer_create(tdn_timer_cb, 1000, NULL);
+    tdn_update_run();
+    lv_screen_load(s_tdn_scr);
+}
+
+static void tdn_update_run(void) {
+    char buf[16];
+    timer_fmt_hms(study_timer_remaining(), buf, sizeof(buf));
+    if (s_tdn_time) lv_label_set_text(s_tdn_time, buf);
+
+    const char *st;
+    if (s_tdn_phase == TDN_PHASE_DONE) {
+        st = "时间到 · 已完成";
+    } else if (study_timer_is_running()) {
+        st = "倒计时中 · 屏幕保持常亮";
+    } else {
+        st = "已暂停 · 屏幕保持常亮";
+    }
+    if (s_tdn_state) {
+        lv_label_set_text(s_tdn_state, st);
+        lv_obj_set_style_text_color(s_tdn_state,
+            lv_color_hex(study_timer_is_running() ? thm()->primary_d : thm()->muted), 0);
+    }
+    if (s_tdn_awake) {
+        char d[24], ab[48];
+        timer_fmt_duration((uint32_t)s_tdn_total, d, sizeof(d));
+        snprintf(ab, sizeof(ab), "%s · %s", d, s_tdn_ring ? "结束提示音" : "结束静音");
+        lv_label_set_text(s_tdn_awake, ab);
+    }
+    /* 按钮 */
+    const char *lab[2] = { "暂停", "结束" };
+    if (s_tdn_phase == TDN_PHASE_DONE) lab[0] = "重新开始";
+    else if (!study_timer_is_running()) lab[0] = "继续";
+    for (int i = 0; i < 2; i++) {
+        if (!s_tdn_btn[i]) continue;
+        lv_obj_t *l = lv_obj_get_child(s_tdn_btn[i], 0);
+        if (l) lv_label_set_text(l, lab[i]);
+        timer_btn_refresh(s_tdn_btn[i], s_tdn_sel == i);
+    }
+}
+
+static void tdn_timer_cb(lv_timer_t *t) {
+    (void)t;
+    if (s_tdn_phase != TDN_PHASE_RUN) return;
+    study_timer_tick();
+    if (study_timer_just_finished()) {
+        if (s_tdn_ring && s_cb && s_cb->on_timer_finished) s_cb->on_timer_finished();
+        s_tdn_phase = TDN_PHASE_DONE;
+    }
+    tdn_update_run();
+}
+
+/* 重建当前倒计时页（设置 ↔ 运行切换时整页重建） */
+static void tdown_rebuild(void) {
+    if (s_tdn_scr) { lv_obj_delete(s_tdn_scr); s_tdn_scr = NULL; }
+    if (s_tdn_phase == TDN_PHASE_SETUP) tdown_build_setup();
+    else                               tdown_build_run();
+}
+
+void ui_timer_down_build(void) {
+    study_timer_set_mode(STUDY_TIMER_DOWN); /* 进入倒计时：切到倒计时模式并复位 */
+    s_tdn_phase = TDN_PHASE_SETUP;
+    s_tdn_focus = TDN_FOCUS_PRESET;
+    s_tdn_preset = 0;
+    s_tdn_min = 45; s_tdn_sec = 0;
+    s_tdn_ring = true;
+    s_tdn_sel = 0;
+    s_tdn_total = 0;
+    s_tdn_wants_menu = false;
+    tdown_build_setup();
+}
+
+void ui_timer_down_destroy(void) {
+    if (s_tdn_timer) { lv_timer_del(s_tdn_timer); s_tdn_timer = NULL; }
+    s_tdn_time = NULL; s_tdn_state = NULL; s_tdn_awake = NULL;
+    if (s_tdn_scr) { lv_obj_delete(s_tdn_scr); s_tdn_scr = NULL; }
+}
+
+void ui_timer_down_key(uint8_t btn_u, uint8_t ev_u) {
+    if (ev_u != BSP_BTN_CLICK) return;
+    bsp_btn_t btn = (bsp_btn_t)btn_u;
+
+    /* ---------- 设置阶段 ---------- */
+    if (s_tdn_phase == TDN_PHASE_SETUP) {
+        if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) {
+            int dir = (btn == BSP_BTN_UP) ? -1 : +1;
+            switch (s_tdn_focus) {
+                case TDN_FOCUS_PRESET:
+                    s_tdn_preset = (s_tdn_preset + dir + 4) % 4;
+                    break;
+                case TDN_FOCUS_MIN:
+                    s_tdn_min = (s_tdn_min + dir * 5 + 60) % 60;
+                    break;
+                case TDN_FOCUS_SEC:
+                    s_tdn_sec = (s_tdn_sec + dir * 5 + 60) % 60;
+                    break;
+                case TDN_FOCUS_RING:
+                    s_tdn_ring = !s_tdn_ring;
+                    break;
+                default:  /* START/BACK */
+                    s_tdn_sel ^= 1;
+                    s_tdn_focus = TDN_FOCUS_START + s_tdn_sel;
+                    break;
+            }
+            tdn_update_setup();
+            return;
+        }
+        if (btn == BSP_BTN_OK) {
+            switch (s_tdn_focus) {
+                case TDN_FOCUS_PRESET:
+                    s_tdn_focus = (s_tdn_preset == 3) ? TDN_FOCUS_MIN : TDN_FOCUS_RING;
+                    break;
+                case TDN_FOCUS_MIN: s_tdn_focus = TDN_FOCUS_SEC; break;
+                case TDN_FOCUS_SEC: s_tdn_focus = TDN_FOCUS_RING; break;
+                case TDN_FOCUS_RING: s_tdn_focus = TDN_FOCUS_START; s_tdn_sel = 0; break;
+                case TDN_FOCUS_START: {
+                    /* 开始：装配时长并启动 */
+                    s_tdn_total = (s_tdn_preset == 3)
+                        ? s_tdn_min * 60 + s_tdn_sec
+                        : s_down_preset_sec[s_tdn_preset];
+                    if (s_tdn_total < 1) s_tdn_total = 1;
+                    study_timer_set_countdown(s_tdn_total);
+                    study_timer_start();
+                    s_tdn_phase = TDN_PHASE_RUN;
+                    s_tdn_sel = 0;
+                    tdown_rebuild();
+                    return;
+                }
+                default: /* BACK */
+                    s_tdn_wants_menu = true;
+                    return;
+            }
+            tdn_update_setup();
+            return;
+        }
+        return;
+    }
+
+    /* ---------- 运行 / 完成阶段 ---------- */
+    if (btn == BSP_BTN_UP || btn == BSP_BTN_DOWN) { s_tdn_sel ^= 1; tdn_update_run(); return; }
+    if (btn != BSP_BTN_OK) return;
+
+    if (s_tdn_phase == TDN_PHASE_DONE) {
+        if (s_tdn_sel == 0) {           /* 重新开始 */
+            study_timer_set_countdown(s_tdn_total);
+            study_timer_start();
+            s_tdn_phase = TDN_PHASE_RUN;
+            s_tdn_sel = 0;
+            tdown_rebuild();
+        } else {
+            s_tdn_wants_menu = true;    /* 返回 */
+        }
+        return;
+    }
+
+    if (s_tdn_sel == 0) {               /* 暂停/继续 */
+        if (study_timer_is_running()) study_timer_pause();
+        else                          study_timer_toggle_pause();
+    } else {                            /* 结束（手动，不计入统计） */
+        study_timer_stop();
+        s_tdn_wants_menu = true;
+    }
+    tdn_update_run();
+}
+
+bool ui_timer_down_wants_menu(void) {
+    bool r = s_tdn_wants_menu;
+    s_tdn_wants_menu = false;
+    return r;
+}
+
+/* ---------- PAGE_TIMER_STATS：今日累计 + 最近 7 天柱状图 ---------- */
+static lv_obj_t *s_tst_scr;
+static bool s_tst_wants_menu;
+
+void ui_timer_stats_build(void) {
+    s_tst_wants_menu = false;
+
+    s_tst_scr = lv_obj_create(NULL);
+    lv_obj_remove_flag(s_tst_scr, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(s_tst_scr, lv_color_hex(thm()->bg), 0);
+    lv_obj_set_style_border_width(s_tst_scr, 0, 0);
+    lv_obj_set_style_pad_all(s_tst_scr, 0, 0);
+    s_cur_scr = s_tst_scr;
+
+    lv_obj_t *head = mod_card(s_tst_scr, 8, 8, 224, 40, thm()->card, 14, true);
+    lv_obj_t *title = ui_pixel_label(head, "今日统计", F_STUDY, thm()->ink);
+    lv_obj_set_pos(title, 16, 8);
+
+    /* 今日卡 */
+    lv_obj_t *today = mod_card(s_tst_scr, 8, 52, 224, 88, thm()->card2, 14, true);
+    lv_obj_set_style_border_width(today, 1, 0);
+    lv_obj_set_style_border_color(today, lv_color_hex(thm()->line), 0);
+    lv_obj_t *t1 = ui_pixel_label(today, "今天累计专注", F_STUDY, thm()->muted);
+    lv_obj_set_pos(t1, 16, 10);
+    char big[32];
+    timer_fmt_hour_min(study_timer_today_total(), big, sizeof(big));
+    lv_obj_t *bigl = ui_pixel_label(today, big, F_STUDY, thm()->primary_d);
+    lv_obj_set_pos(bigl, 16, 36);
+    lv_obj_set_style_transform_scale(bigl, 320, 0);
+    char sub[64];
+    {
+        char up[20], dn[20];
+        timer_fmt_hour_min(study_timer_today_up(), up, sizeof(up));
+        timer_fmt_hour_min(study_timer_today_down(), dn, sizeof(dn));
+        snprintf(sub, sizeof(sub), "正计时 %s · 倒计时 %s", up, dn);
+    }
+    lv_obj_t *s1 = ui_pixel_label(today, sub, F_STUDY, thm()->muted);
+    lv_obj_set_pos(s1, 16, 68);
+
+    /* 最近 7 天柱状图 */
+    lv_obj_t *week = mod_card(s_tst_scr, 8, 148, 224, 140, thm()->card, 14, true);
+    lv_obj_t *tw = ui_pixel_label(week, "最近 7 天", F_STUDY, thm()->ink);
+    lv_obj_set_pos(tw, 16, 10);
+
+    uint32_t maxv = 1;
+    for (int i = 0; i < 7; i++) if (study_timer_day_total(i) > maxv) maxv = study_timer_day_total(i);
+
+    struct tm tmv = {0};
+    int today_wd = 0;
+    if (study_time_civil_tm(&tmv)) today_wd = tmv.tm_wday;   /* 0=周日..6=周六 */
+    static const char *wd_cn = "日一二三四五";                 /* 六(U+516D)缺字 → 数字 6 */
+
+    for (int c = 0; c < 7; c++) {
+        int offset = 6 - c;              /* 最左=6天前，最右=今天 */
+        uint32_t v = study_timer_day_total(offset);
+        int hgt = (int)((v * 84) / maxv);
+        if (hgt < 2) hgt = 2;
+        int x = 16 + c * 30;
+        bool is_today = (offset == 0);
+
+        char vb[12];
+        snprintf(vb, sizeof(vb), "%.1fh", (double)v / 3600.0);
+        lv_obj_t *vl = ui_pixel_label(week, vb, F_STUDY, thm()->muted);
+        lv_obj_set_pos(vl, x - 2, 130 - hgt - 14);
+
+        lv_obj_t *bar = mod_card(week, x, 130 - hgt, 14, hgt, is_today ? thm()->primary_d : thm()->primary, 4, false);
+
+        int d = (today_wd - offset + 7) % 7;
+        char lb[4];
+        if (d == 6) strcpy(lb, "6");
+        else        memcpy(lb, wd_cn + d * 3, 3);
+        lb[3] = 0;
+        lv_obj_t *ll = ui_pixel_label(week, lb, F_STUDY, is_today ? thm()->ink : thm()->muted);
+        lv_obj_set_pos(ll, x - 2, 126);
+    }
+
+    lv_obj_t *note = ui_pixel_label(s_tst_scr, "数据按天自动记录 · 保留最近 7 天", F_STUDY, thm()->muted);
+    lv_obj_set_align(note, LV_ALIGN_BOTTOM_MID);
+    lv_obj_set_pos(note, 0, -22);
+    lv_obj_t *hint = ui_pixel_label(s_tst_scr, "长按 OK 返回计时器菜单", F_STUDY, thm()->muted);
+    lv_obj_set_align(hint, LV_ALIGN_BOTTOM_MID);
+    lv_obj_set_pos(hint, 0, -6);
+
+    lv_screen_load(s_tst_scr);
+}
+
+void ui_timer_stats_destroy(void) {
+    if (s_tst_scr) { lv_obj_delete(s_tst_scr); s_tst_scr = NULL; }
+}
+
+void ui_timer_stats_key(uint8_t btn_u, uint8_t ev_u) {
+    (void)btn_u; (void)ev_u;   /* 无按键语义，仅长按 OK 由 app 层统一返回 */
+}
+
+bool ui_timer_stats_wants_menu(void) {
+    bool r = s_tst_wants_menu;
+    s_tst_wants_menu = false;
+    return r;
+}
+
 #else  /* !ESP_PLATFORM — 宿主编译存根 */
 
 void study_ui_init(const study_ui_callbacks_t *cb) { (void)cb; }
@@ -1700,5 +2438,24 @@ bool ui_encourage_is_showing(void) { return false; }
 void ui_scene_show(study_scene_msg_t which) { (void)which; }
 void ui_scene_close(void) {}
 bool ui_scene_is_showing(void) { return false; }
+bool ui_settings_wants_timer(void) { return false; }
+void ui_timer_menu_build(void) {}
+void ui_timer_menu_destroy(void) {}
+void ui_timer_menu_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }
+bool ui_timer_menu_wants_up(void) { return false; }
+bool ui_timer_menu_wants_down(void) { return false; }
+bool ui_timer_menu_wants_stats(void) { return false; }
+void ui_timer_up_build(void) {}
+void ui_timer_up_destroy(void) {}
+void ui_timer_up_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }
+bool ui_timer_up_wants_menu(void) { return false; }
+void ui_timer_down_build(void) {}
+void ui_timer_down_destroy(void) {}
+void ui_timer_down_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }
+bool ui_timer_down_wants_menu(void) { return false; }
+void ui_timer_stats_build(void) {}
+void ui_timer_stats_destroy(void) {}
+void ui_timer_stats_key(uint8_t btn, uint8_t ev) { (void)btn; (void)ev; }
+bool ui_timer_stats_wants_menu(void) { return false; }
 
 #endif

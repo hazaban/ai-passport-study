@@ -13,6 +13,8 @@ void app_study_exit(void);    /* 释放资源 + 停止播放任务 + 定时器 *
 void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev);  /* 按键分发到当前 page */
 /* 封面页长按 OK 时请求完全退出回目录；main.c 轮询此标志 */
 bool app_study_wants_exit(void);
+/* 计时进行中（正/倒计时 运行或暂停）：main.c 据此跳过自动休眠，保持屏幕常亮 */
+bool app_study_timer_active(void);
 /* 把当前已知时间持久化到 NVS，供深睡/重启后离线恢复(避免时间退回烧录时刻)。
  * 仅当应用已进入考研助手且时间源可用时才有意义；main.c 深睡前调用。 */
 void app_study_persist_time(void);
