@@ -149,6 +149,15 @@
   /* ===== 倒计时设置 ===== */
   .set-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px; margin-bottom:10px; }
   .set-card .t { font-size:13px; font-weight:600; margin-bottom:8px; }
+  .presets { display:flex; gap:6px; flex-wrap:wrap; }
+  .preset {
+    flex:1; min-width:56px; text-align:center; font-size:12px; padding:7px 0;
+    border-radius:10px; background:var(--card2); border:1px solid var(--border);
+    color:var(--muted); cursor:pointer;
+  }
+  .preset.on { background:var(--blue_d); color:#fff; font-weight:600; border-color:var(--blue_d); }
+  .preset .p1 { font-size:13px; font-weight:700; }
+  .preset .p2 { font-size:9px; opacity:.75; }
   .wheel {
     display:flex; justify-content:center; gap:6px; align-items:center; font-size:22px; font-weight:700;
     font-variant-numeric:tabular-nums;
@@ -159,9 +168,7 @@
     background:var(--card2); border:1px solid var(--border);
   }
   .wheel .num.sel { background:var(--sel); box-shadow: inset 0 0 0 1.5px var(--blue); }
-  .ring-opt {
-    display:flex; gap:8px;
-  }
+  .ring-opt { display:flex; gap:8px; }
   .ring-opt div {
     flex:1; text-align:center; padding:8px 0; border-radius:10px; font-size:13px;
     background:var(--card2); border:1px solid var(--border); color:var(--muted);
@@ -195,7 +202,7 @@
 </style>
 </head>
 <body class="">
-  <h1>计时器 · 界面效果图</h1>
+  <h1>计时器 · 界面效果图（考研版）</h1>
   <div class="sub">240 × 320 竖屏 · 配色与主界面一致（柔和白 + 低饱和蓝，不晃眼）</div>
 
   <div class="controls">
@@ -227,35 +234,37 @@
         </div></div>
       </div>
 
-      <!-- ============ 计时主界面 ============ -->
+      <!-- ============ 计时主界面 · 正计时 ============ -->
       <div class="scr" id="scr-timer" style="display:none">
         <div class="scr-title">计时器</div>
         <div class="pad" style="justify-content:center">
           <div class="mode-tabs"><span class="on">正计时</span><span>倒计时</span></div>
           <div class="timer-card" style="margin-top:10px">
-            <div class="big-time"><span>00</span><span class="colon">:</span><span>00</span><span class="colon">:</span><span>00</span></div>
-            <div class="timer-state running">● 计时中 · 屏幕保持常亮</div>
+            <div class="big-time"><span>01</span><span class="colon">:</span><span>23</span><span class="colon">:</span><span>45</span></div>
+            <div class="timer-state running">● 专注中 · 屏幕保持常亮</div>
             <div class="timer-btns">
               <button class="tbtn start">暂停</button>
-              <button class="tbtn reset">重置</button>
+              <button class="tbtn reset">结束</button>
             </div>
             <div class="keep-awake"><span class="dot"></span> 计时期间不休眠、不断电</div>
           </div>
-          <div style="margin-top:10px; text-align:center">
-            <button class="tbtn ring" style="display:inline-block">🎧 完成提示音：开</button>
+          <div style="margin-top:10px; text-align:center; font-size:11px; color:var(--muted)">
+            正计时 · 纯计时累计，无提醒
           </div>
         </div>
       </div>
 
       <!-- ============ 倒计时设置 ============ -->
       <div class="scr" id="scr-countdown" style="display:none">
-        <div class="scr-title">倒计时设置</div>
+        <div class="scr-title">倒计时</div>
         <div class="pad">
           <div class="set-card">
-            <div class="t">时长</div>
-            <div class="wheel">
-              <div class="num sel">25</div><span class="unit">分</span>
-              <div class="num">00</div><span class="unit">秒</span>
+            <div class="t">时长（考研常用）</div>
+            <div class="presets">
+              <div class="preset"><div class="p1">25分</div><div class="p2">番茄</div></div>
+              <div class="preset"><div class="p1">45分</div><div class="p2">标准</div></div>
+              <div class="preset on"><div class="p1">3时</div><div class="p2">模拟考</div></div>
+              <div class="preset"><div class="p1">自定义</div><div class="p2">分/秒</div></div>
             </div>
             <div style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center">▲/▼ 调整 · OK 确认</div>
           </div>
@@ -265,6 +274,7 @@
               <div class="on">🔔 提示音</div>
               <div>🔇 静音</div>
             </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center">模拟考可切静音，避免打扰</div>
           </div>
           <div style="display:flex;gap:10px;justify-content:center;margin-top:6px">
             <button class="tbtn start" style="min-width:0;flex:1">开始</button>
@@ -280,8 +290,8 @@
           <div class="stat-today">
             <div>
               <div class="lab">今天累计专注</div>
-              <div class="big">2 时 35 分</div>
-              <div class="lab">目标：每日 4 小时</div>
+              <div class="big">3 时 12 分</div>
+              <div class="lab">含正计时 1h40m · 倒计时 1h32m</div>
             </div>
           </div>
           <div class="stat-week">
@@ -293,7 +303,7 @@
               <div class="bar-col"><span class="bar-val">4.0h</span><div class="bar" style="height:98px"></div><span class="bar-lbl">四</span></div>
               <div class="bar-col"><span class="bar-val">2.8h</span><div class="bar" style="height:69px"></div><span class="bar-lbl">五</span></div>
               <div class="bar-col"><span class="bar-val">0h</span><div class="bar" style="height:4px"></div><span class="bar-lbl">六</span></div>
-              <div class="bar-col"><span class="bar-val">2.6h</span><div class="bar today" style="height:63px"></div><span class="bar-lbl today">日</span></div>
+              <div class="bar-col"><span class="bar-val">3.2h</span><div class="bar today" style="height:78px"></div><span class="bar-lbl today">日</span></div>
             </div>
             <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">数据按天自动记录 · 跨天自动归档</div>
           </div>
@@ -304,8 +314,9 @@
   </div>
 
   <div class="foot-note">
-    说明：计时器入口位于「设置 → 录音笔」上方；计时页支持 正计时 / 倒计时 切换；倒计时开始时可选 <b>提示音 / 静音</b>；<br>
-    计时运行期间跳过自动浅睡（背光常亮、不熄屏）。统计页展示「今日累计 + 最近 7 天」。
+    设计要点：① 正计时 = 纯专注计时，无提示音，开始/暂停/结束；② 倒计时开始前可选 <b>提示音 / 静音</b>（模拟考可静音），
+    时长提供番茄 25 分、标准 45 分、模拟考 3 小时等考研常用档位 + 自定义；<br>
+    ③ 计时运行期间跳过自动浅睡（背光常亮、不熄屏）；④ 统计页只展示「今日累计 + 最近 7 天」，不做目标打卡。
   </div>
 
 <script>
