@@ -134,23 +134,30 @@
   .menu-item .mi-more { color:var(--muted); font-size:13px; }
   .menu-item.on .mi-more { color:#fff; }
 
-  /* ===== 计时显示区：数字直接居中于整页（无卡片框） ===== */
+  /* ===== 计时显示卡片：同首页"考研倒计时"卡 —— 白底圆角边框 + 中部居中 ===== */
   .timer-stage {
-    flex:1; display:flex; flex-direction:column;
+    width:100%; height:150px;
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    display:flex; flex-direction:column;
     align-items:center; justify-content:center;
     position:relative;
   }
+  .timer-cap {
+    position:absolute; top:8px; left:0; right:0;
+    text-align:center; font-size:12px; font-weight:700; color:var(--accent);
+    letter-spacing:1px;
+  }
   .big-time {
-    font-size:62px; font-weight:700; letter-spacing:2px; font-variant-numeric:tabular-nums;
+    font-size:54px; font-weight:700; letter-spacing:2px; font-variant-numeric:tabular-nums;
     color:var(--ink); line-height:1.1;
   }
   .big-time .colon { color:var(--muted); }
-  .timer-state { font-size:12px; color:var(--muted); margin-top:10px; }
+  .timer-state { font-size:12px; color:var(--muted); margin-top:6px; }
   .timer-state.running { color:var(--ok); }
   .timer-state.paused { color:var(--accent); }
   .keep-awake {
-    font-size:11px; color:var(--muted); display:flex; align-items:center; gap:5px;
-    margin-top:6px;
+    position:absolute; bottom:8px; left:0; right:0;
+    font-size:11px; color:var(--muted); display:flex; align-items:center; justify-content:center; gap:5px;
   }
   .keep-awake .dot { width:7px; height:7px; border-radius:50%; background:var(--ok); }
 
@@ -300,7 +307,8 @@
       <div class="scr" id="scr-timer-ready" style="display:none">
         <div class="scr-title">正计时</div>
         <div class="pad" style="justify-content:center">
-          <div class="timer-stage" style="margin-top:0">
+          <div class="timer-stage">
+            <div class="timer-cap">正计时</div>
             <div class="big-time"><span>00</span><span class="colon">:</span><span>00</span><span class="colon">:</span><span>00</span></div>
             <div class="timer-state">就绪 · 屏幕保持常亮</div>
             <div class="keep-awake"><span class="dot"></span> 计时期间不休眠、不断电</div>
@@ -319,7 +327,8 @@
       <div class="scr" id="scr-timer" style="display:none">
         <div class="scr-title">正计时</div>
         <div class="pad" style="justify-content:center">
-          <div class="timer-stage" style="margin-top:0">
+          <div class="timer-stage">
+            <div class="timer-cap">正计时</div>
             <div class="big-time"><span>01</span><span class="colon">:</span><span>23</span><span class="colon">:</span><span>45</span></div>
             <div class="timer-state running">● 专注中 · 屏幕保持常亮</div>
             <div class="keep-awake"><span class="dot"></span> 计时期间不休眠、不断电</div>
@@ -378,7 +387,8 @@
       <div class="scr" id="scr-cd-run" style="display:none">
         <div class="scr-title">倒计时 · 运行中</div>
         <div class="pad" style="justify-content:center">
-          <div class="timer-stage" style="margin-top:0">
+          <div class="timer-stage">
+            <div class="timer-cap">倒计时</div>
             <div class="big-time"><span>02</span><span class="colon">:</span><span>59</span><span class="colon">:</span><span>12</span></div>
             <div class="timer-state running">● 倒计时中 · 屏幕保持常亮</div>
             <div class="keep-awake"><span class="dot"></span> 3 小时模拟考 · 结束静音</div>
