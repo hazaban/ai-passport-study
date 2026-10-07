@@ -4,6 +4,7 @@
  * 的代码也一起做静态编译检查）。
  */
 #include "study_task_nvs.h"
+#include "study_timer_nvs.h"
 #include "study_category.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -144,6 +145,30 @@ static study_task_store_t s_store = {
     .save_meta_int = nvs_save_meta_int,
 };
 
+/* ---------- 计时器统计：NVS blob 存取（"config" 命名空间） ---------- */
+static int nvs_timer_load_blob(const char *key, char *out, int max) {
+    if (!s_ready || !key || !out) return -1;
+    size_t sz = (size_t)max;
+    esp_err_t e = nvs_get_blob(s_h_config, key, out, &sz);
+    if (e != ESP_OK) return -1;
+    return (int)sz;
+}
+static int nvs_timer_save_blob(const char *key, const char *data, int len) {
+    if (!s_ready || !key || !data || len < 0) return -1;
+    esp_err_t e = nvs_set_blob(s_h_config, key, data, (size_t)len);
+    if (e != ESP_OK) return -1;
+    return nvs_commit(s_h_config) == ESP_OK ? 0 : -1;
+}
+
+static study_timer_store_t s_timer_store = {
+    .load_blob = nvs_timer_load_blob,
+    .save_blob = nvs_timer_save_blob,
+};
+
+const study_timer_store_t *study_timer_nvs_store(void) {
+    return s_ready ? &s_timer_store : NULL;
+}
+
 int study_task_nvs_init(void) {
     esp_err_t e;
     if ((e = nvs_open("tasks",  NVS_READWRITE, &s_h_tasks))  != ESP_OK) {
@@ -164,5 +189,6 @@ const study_task_store_t *study_task_nvs_store(void) {
 
 int study_task_nvs_init(void) { return 0; }
 const study_task_store_t *study_task_nvs_store(void) { return NULL; }
+const study_timer_store_t *study_timer_nvs_store(void) { return NULL; }
 
 #endif

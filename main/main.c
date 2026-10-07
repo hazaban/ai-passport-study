@@ -46,6 +46,7 @@ static void idle_sleep_task(void *arg) {
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(1000));
         if (study_recorder_is_recording() || study_recorder_is_playing()) continue; /* 忙碌不休眠 */
+        if (s_active == 0 && app_study_timer_active()) continue;  /* 计时中：屏幕保持常亮 */
         int64_t now = esp_timer_get_time() / 1000;
         if (now - s_last_activity_ms < IDLE_SLEEP_MS) continue;
         ESP_LOGI(TAG, "已闲置 %lld ms,准备浅睡(按任意键唤醒)",

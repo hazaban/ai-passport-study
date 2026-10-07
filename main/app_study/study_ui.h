@@ -26,6 +26,8 @@ typedef struct {
     void (*cfg_set)(const char *k, int v);
     /* 通知业务层：白天/夜间主题已切换(0=夜间 1=白天)，需重建当前非首页页面 */
     void (*on_theme_changed)(int theme);
+    /* 通知业务层：倒计时自然走完（应用层据此播提示音；正计时无提示音） */
+    void (*on_timer_finished)(void);
 } study_ui_callbacks_t;
 
 /* ---------- 公共初始化 ---------- */
@@ -42,6 +44,10 @@ typedef enum {
     PAGE_RECORDER,        /* 录音机：录 / 播 / 删 / 导出（黑底白字） */
     PAGE_ENCOURAGE,       /* 完成任务后的鼓励弹窗（含颜色动画） */
     PAGE_SCENE,           /* 日常秩序场景的温馨提示（开始学习/睡觉等） */
+    PAGE_TIMER_MENU,      /* 计时器：正计时 / 倒计时 / 今日统计 菜单 */
+    PAGE_TIMER_UP,        /* 正计时：就绪/运行/暂停/结束 */
+    PAGE_TIMER_DOWN,      /* 倒计时：时长设置 → 运行/暂停/结束 */
+    PAGE_TIMER_STATS,     /* 今日统计：今日累计 + 最近 7 天 */
 } study_page_t;
 
 /* ---------- 页面 API（每个页面 build / refresh / destroy 三件套） ---------- */
@@ -119,6 +125,38 @@ bool ui_settings_wants_home(void);
 bool ui_settings_wants_todo(void);
 /* 设置页 OK 命中「录音笔」后置位；app_study 据此切到 PAGE_RECORDER */
 bool ui_settings_wants_recorder(void);
+/* 设置页 OK 命中「计时器」后置位；app_study 据此切到 PAGE_TIMER_MENU */
+bool ui_settings_wants_timer(void);
+
+/* -------- 计时器页 (PAGE_TIMER_*) --------
+ * 菜单：正计时 / 倒计时 / 今日统计 三选一（▲/▼ 切换，OK 进入）
+ * 正计时：就绪[开始/返回] → 运行[暂停/结束] → 暂停[继续/结束]；结束后计入今日统计
+ * 倒计时：设置(时长→自定义时/分→提示音→[开始/返回]) → 运行/暂停 → 自然走完计入统计
+ * 今日统计：今日累计 + 最近 7 天柱状图
+ * 导航统一：▲/▼ 切换 · OK 确定 · 长按 OK 返回上一界面
+ */
+void ui_timer_menu_build(void);
+void ui_timer_menu_destroy(void);
+void ui_timer_menu_key(uint8_t btn, uint8_t ev);
+bool ui_timer_menu_wants_up(void);
+bool ui_timer_menu_wants_down(void);
+bool ui_timer_menu_wants_stats(void);
+
+void ui_timer_up_build(void);
+void ui_timer_up_destroy(void);
+void ui_timer_up_key(uint8_t btn, uint8_t ev);
+/* 正计时页请求返回计时器菜单（[返回]/[结束] 命中后置位） */
+bool ui_timer_up_wants_menu(void);
+
+void ui_timer_down_build(void);
+void ui_timer_down_destroy(void);
+void ui_timer_down_key(uint8_t btn, uint8_t ev);
+bool ui_timer_down_wants_menu(void);
+
+void ui_timer_stats_build(void);
+void ui_timer_stats_destroy(void);
+void ui_timer_stats_key(uint8_t btn, uint8_t ev);
+bool ui_timer_stats_wants_menu(void);
 
 /* -------- WiFi 页 (PAGE_WIFI) -------- */
 void ui_wifi_build(void);

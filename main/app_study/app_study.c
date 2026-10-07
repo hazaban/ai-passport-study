@@ -25,6 +25,8 @@
 #include "study_voice.h"
 #include "study_time.h"
 #include "study_wifi.h"
+#include "study_timer.h"
+#include "study_timer_nvs.h"
 
 #ifdef ESP_PLATFORM
 
@@ -185,8 +187,6 @@ typedef struct {
     char        key[32];
     char        rtttl[160];
 } voice_cmd_t;
-
-static QueueHandle_t s_voice_cmd_q;
 
 /* ---------- 配置回调：接 NVS config 命名空间 ---------- */
 static int cfg_get(const char *k, int def) {
@@ -436,8 +436,25 @@ static void on_theme_changed(int theme) {
         case PAGE_TASK_DETAIL: ui_detail_destroy();     ui_detail_build(ui_detail_current_id()); break;
         case PAGE_SETTINGS:    ui_settings_destroy();   ui_settings_build();        break;
         case PAGE_WIFI:        ui_wifi_destroy();       ui_wifi_build();            break;
+        case PAGE_TIMER_MENU:  ui_timer_menu_destroy(); ui_timer_menu_build();      break;
+        case PAGE_TIMER_UP:    ui_timer_up_destroy();   ui_timer_up_build();        break;
+        case PAGE_TIMER_DOWN:  ui_timer_down_destroy(); ui_timer_down_build();      break;
+        case PAGE_TIMER_STATS: ui_timer_stats_destroy(); ui_timer_stats_build();    break;
         default: break;
     }
+}
+
+/* 倒计时自然走完（静音配置在 UI 层已拦下，只播柔和提示音；正计时无提示音） */
+static void on_timer_finished(void) {
+    voice_cmd_t cmd = { .kind = VCMD_RTTTL };
+    strncpy(cmd.rtttl, STUDY_VOICE_CHIME_RTTTL, sizeof(cmd.rtttl) - 1);
+    cmd.rtttl[sizeof(cmd.rtttl) - 1] = '\0';
+    if (s_voice_cmd_q) xQueueSend(s_voice_cmd_q, &cmd, 0);
+}
+
+/* 计时进行中（正/倒计时 运行或暂停）：main.c 据此跳过自动休眠，屏幕保持常亮 */
+bool app_study_timer_active(void) {
+    return study_timer_is_running() || study_timer_state() == STUDY_TIMER_PAUSED;
 }
 
 static study_ui_callbacks_t s_ui_cb = {
@@ -449,6 +466,7 @@ static study_ui_callbacks_t s_ui_cb = {
     .cfg_get                  = cfg_get,
     .cfg_set                  = cfg_set,
     .on_theme_changed         = on_theme_changed,
+    .on_timer_finished        = on_timer_finished,
 };
 
 /* ---------- 播放 worker 任务 ---------- */
@@ -568,7 +586,10 @@ void app_study_enter(void) {
     if (study_task_nvs_init() == 0) {
         const study_task_store_t *s = study_task_nvs_store();
         if (s) study_task_set_store(s);
+        const study_timer_store_t *ts = study_timer_nvs_store();
+        if (ts) study_timer_set_store(ts);
     }
+    study_timer_init();   /* 读入计时统计并归档跨天 */
     study_scheduler_reset();
     /* 起床闹钟时间从设置读取（默认 7:00；tick 循环也会跟随设置变化） */
     study_sched_set_wake_time(cfg_get("wake_h", 7), cfg_get("wake_m", 0));
@@ -619,6 +640,7 @@ void app_study_exit(void) {
     study_voice_stop();
     study_recorder_stop_playback();
     study_recorder_cancel();
+    study_timer_stop();   /* 退出时若计时中：正计时计入当日，倒计时手动结束不计入 */
     if (bsp_lvgl_lock(1000)) {
         switch (s_page) {
             case PAGE_HOME:       ui_home_destroy(); break;
@@ -628,6 +650,10 @@ void app_study_exit(void) {
             case PAGE_SETTINGS:   ui_settings_destroy(); break;
             case PAGE_WIFI:       ui_wifi_destroy(); break;
             case PAGE_RECORDER:   ui_rec_destroy(); break;
+            case PAGE_TIMER_MENU: ui_timer_menu_destroy(); break;
+            case PAGE_TIMER_UP:   ui_timer_up_destroy(); break;
+            case PAGE_TIMER_DOWN: ui_timer_down_destroy(); break;
+            case PAGE_TIMER_STATS: ui_timer_stats_destroy(); break;
             default: break;
         }
         bsp_lvgl_unlock();
@@ -704,6 +730,28 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
                 ui_settings_build();
                 s_page = PAGE_SETTINGS;
             }
+            bsp_lvgl_unlock();
+            return;
+        }
+        /* 计时器子页长按 OK → 回计时器菜单；菜单长按 → 回设置。
+         * 先 stop 计时：否则状态机残留 RUNNING 而页面已销毁，1Hz tick 不再推进，
+         * 且 app_study_timer_active() 会一直拦着自动休眠。 */
+        if (s_page == PAGE_TIMER_UP || s_page == PAGE_TIMER_DOWN || s_page == PAGE_TIMER_STATS) {
+            study_timer_stop();
+            if (s_page == PAGE_TIMER_UP)   ui_timer_up_destroy();
+            else if (s_page == PAGE_TIMER_DOWN) ui_timer_down_destroy();
+            else                           ui_timer_stats_destroy();
+            ui_timer_menu_build();
+            s_page = PAGE_TIMER_MENU;
+            s_prev_page = PAGE_SETTINGS;
+            bsp_lvgl_unlock();
+            return;
+        }
+        if (s_page == PAGE_TIMER_MENU) {
+            ui_timer_menu_destroy();
+            ui_settings_build();
+            s_page = PAGE_SETTINGS;
+            s_prev_page = PAGE_HOME;
             bsp_lvgl_unlock();
             return;
         }
@@ -807,6 +855,11 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
                 ui_settings_destroy();
                 ui_todo_build();
                 s_page = PAGE_TODO;
+            } else if (ui_settings_wants_timer()) {
+                s_prev_page = s_page;
+                ui_settings_destroy();
+                ui_timer_menu_build();
+                s_page = PAGE_TIMER_MENU;
             }
             break;
         case PAGE_WIFI:
@@ -826,6 +879,52 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
                 s_page = PAGE_SETTINGS;
             }
             break;
+        case PAGE_TIMER_MENU:
+            ui_timer_menu_key((uint8_t)btn, (uint8_t)ev);
+            if (ui_timer_menu_wants_up()) {
+                s_prev_page = s_page;
+                ui_timer_menu_destroy();
+                ui_timer_up_build();
+                s_page = PAGE_TIMER_UP;
+            } else if (ui_timer_menu_wants_down()) {
+                s_prev_page = s_page;
+                ui_timer_menu_destroy();
+                ui_timer_down_build();
+                s_page = PAGE_TIMER_DOWN;
+            } else if (ui_timer_menu_wants_stats()) {
+                s_prev_page = s_page;
+                ui_timer_menu_destroy();
+                ui_timer_stats_build();
+                s_page = PAGE_TIMER_STATS;
+            }
+            break;
+        case PAGE_TIMER_UP:
+            ui_timer_up_key((uint8_t)btn, (uint8_t)ev);
+            if (ui_timer_up_wants_menu()) {   /* [返回]/[结束]：回计时器菜单 */
+                s_prev_page = PAGE_SETTINGS;
+                ui_timer_up_destroy();
+                ui_timer_menu_build();
+                s_page = PAGE_TIMER_MENU;
+            }
+            break;
+        case PAGE_TIMER_DOWN:
+            ui_timer_down_key((uint8_t)btn, (uint8_t)ev);
+            if (ui_timer_down_wants_menu()) {   /* 设置页[返回] / 运行页[结束] */
+                s_prev_page = PAGE_SETTINGS;
+                ui_timer_down_destroy();
+                ui_timer_menu_build();
+                s_page = PAGE_TIMER_MENU;
+            }
+            break;
+        case PAGE_TIMER_STATS:
+            ui_timer_stats_key((uint8_t)btn, (uint8_t)ev);
+            if (ui_timer_stats_wants_menu()) {
+                s_prev_page = PAGE_SETTINGS;
+                ui_timer_stats_destroy();
+                ui_timer_menu_build();
+                s_page = PAGE_TIMER_MENU;
+            }
+            break;
         default: break;
     }
 
@@ -843,5 +942,6 @@ bool app_study_wants_exit(void) {
 void app_study_enter(void) {}
 void app_study_exit(void) {}
 void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) { (void)btn; (void)ev; }
+bool app_study_timer_active(void) { return false; }
 
 #endif
