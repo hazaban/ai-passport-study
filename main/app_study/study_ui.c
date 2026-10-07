@@ -1734,9 +1734,9 @@ static lv_obj_t *timer_stage_card(lv_obj_t *scr, const char *cap,
     lv_obj_set_align(aw, LV_ALIGN_BOTTOM_MID);
     lv_obj_set_pos(aw, 0, -8);
 
-    *out_time  = tm;
-    *out_state = st;
-    *out_awake = aw;
+    if (out_time)  *out_time  = tm;
+    if (out_state) *out_state = st;
+    if (out_awake) *out_awake = aw;
     return card;
 }
 
@@ -1977,6 +1977,7 @@ static lv_obj_t *s_tdn_time, *s_tdn_state, *s_tdn_awake;
 static lv_obj_t *s_tdn_preset_cards[4];
 static lv_obj_t *s_tdn_preset_labs[4][2];
 static lv_obj_t *s_tdn_min_lab, *s_tdn_sec_lab;
+static lv_obj_t *s_tdn_min_txt, *s_tdn_sec_txt;   /* 分/秒数字文本 label（调整时刷新） */
 static lv_obj_t *s_tdn_ring_cards[2];
 static lv_obj_t *s_tdn_ring_labs[2];
 static lv_obj_t *s_tdn_btn[2];
@@ -2000,16 +2001,30 @@ static void tdn_update_setup(void) {
                 lv_color_hex(sel ? (k == 0 ? 0xFFFFFF : 0xD9E7EC) : thm()->ink), 0);
         }
     }
-    /* 自定义分/秒高亮 */
+    /* 自定义分/秒高亮（选中=深蓝实心+白字；未选中=card2 底+墨字） */
     if (s_tdn_min_lab) {
         bool sel = (s_tdn_preset == 3) && s_tdn_focus == TDN_FOCUS_MIN;
-        lv_obj_set_style_bg_color(s_tdn_min_lab, lv_color_hex(sel ? thm()->sel : thm()->card2), 0);
+        lv_obj_set_style_bg_color(s_tdn_min_lab, lv_color_hex(sel ? thm()->primary_d : thm()->card2), 0);
         lv_obj_set_style_border_width(s_tdn_min_lab, sel ? 2 : 0, 0);
+        lv_obj_set_style_border_color(s_tdn_min_lab, lv_color_hex(sel ? thm()->primary_d : thm()->line), 0);
+        if (s_tdn_min_txt) {
+            char m[8];
+            snprintf(m, sizeof(m), "%d", s_tdn_min);
+            lv_label_set_text(s_tdn_min_txt, m);
+            lv_obj_set_style_text_color(s_tdn_min_txt, lv_color_hex(sel ? 0xFFFFFF : thm()->ink), 0);
+        }
     }
     if (s_tdn_sec_lab) {
         bool sel = (s_tdn_preset == 3) && s_tdn_focus == TDN_FOCUS_SEC;
-        lv_obj_set_style_bg_color(s_tdn_sec_lab, lv_color_hex(sel ? thm()->sel : thm()->card2), 0);
+        lv_obj_set_style_bg_color(s_tdn_sec_lab, lv_color_hex(sel ? thm()->primary_d : thm()->card2), 0);
         lv_obj_set_style_border_width(s_tdn_sec_lab, sel ? 2 : 0, 0);
+        lv_obj_set_style_border_color(s_tdn_sec_lab, lv_color_hex(sel ? thm()->primary_d : thm()->line), 0);
+        if (s_tdn_sec_txt) {
+            char s[8];
+            snprintf(s, sizeof(s), "%d", s_tdn_sec);
+            lv_label_set_text(s_tdn_sec_txt, s);
+            lv_obj_set_style_text_color(s_tdn_sec_txt, lv_color_hex(sel ? 0xFFFFFF : thm()->ink), 0);
+        }
     }
     /* 提示音/静音高亮 */
     for (int i = 0; i < 2; i++) {
