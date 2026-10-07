@@ -85,9 +85,12 @@ esp_err_t bsp_button_init(bsp_btn_cb_t cb, void *user) {
             .min          = BTN_MV[i][0],
             .max          = BTN_MV[i][1],
         };
-        /* 按键参数调优：短按阈值 80ms（加快单击确认），长按阈值 500ms（提前判定长按） */
+        /* 按键参数调优：短按阈值 80ms（加快单击确认），长按阈值 800ms。
+         * 之前 500ms 太敏感：用户"按一下但稍慢"（500ms+）会被判成长按，
+         * 既误触发页面导航，又打开 app_study 的单击抑制窗口吞掉后续按键（按键不灵）。
+         * 800ms 与 sdkconfig 默认(CONFIG_BUTTON_LONG_PRESS_TIME_MS)拉开、给正常单击留足余量。 */
         const button_config_t bc = {
-            .long_press_time  = 500,
+            .long_press_time  = 800,
             .short_press_time = 80,
         };
         esp_err_t e = iot_button_new_adc_device(&bc, &ac, &s_btn[i]);

@@ -760,8 +760,10 @@ void app_study_key(bsp_btn_t btn, bsp_btn_ev_t ev) {
         bsp_lvgl_unlock();
         return;
     }
-    /* 刚长按完 600ms 内的单击可能是释放尾随或 ADC 反弹，忽略，避免误触 */
-    if (ev == BSP_BTN_CLICK && (esp_timer_get_time() / 1000) - s_last_long_ok_ms < 600) {
+    /* 刚长按完 350ms 内的单击可能是释放尾随或 ADC 反弹，忽略，避免误触。
+     * 窗口从 600ms 收到 350ms：长按阈值已提到 800ms，误长按减少，
+     * 350ms 足够盖住释放尾随幽灵单击（释放后 ~80ms 确认），又不再吞掉长按后的快速连续操作。 */
+    if (ev == BSP_BTN_CLICK && (esp_timer_get_time() / 1000) - s_last_long_ok_ms < 350) {
         bsp_lvgl_unlock();
         return;
     }
