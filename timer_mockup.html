@@ -134,27 +134,29 @@
   .menu-item .mi-more { color:var(--muted); font-size:13px; }
   .menu-item.on .mi-more { color:#fff; }
 
-  /* ===== 计时卡片 ===== */
-  .timer-card {
-    flex:1; background:var(--card2); border:1px solid var(--border);
-    border-radius:18px; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; position:relative;
+  /* ===== 计时显示区：时间数字垂直居中于页面，更醒目 ===== */
+  .timer-stage {
+    flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    background:var(--card2); border:1px solid var(--border);
+    border-radius:20px; position:relative; margin-top:6px;
   }
   .big-time {
-    font-size:56px; font-weight:700; letter-spacing:2px; font-variant-numeric:tabular-nums;
-    color:var(--ink); margin:4px 0 2px;
+    font-size:62px; font-weight:700; letter-spacing:2px; font-variant-numeric:tabular-nums;
+    color:var(--ink); line-height:1.1;
   }
   .big-time .colon { color:var(--muted); }
-  .timer-state { font-size:12px; color:var(--muted); margin-bottom:10px; }
+  .timer-state { font-size:12px; color:var(--muted); margin-top:10px; }
   .timer-state.running { color:var(--ok); }
   .timer-state.paused { color:var(--accent); }
   .keep-awake {
     font-size:11px; color:var(--muted); display:flex; align-items:center; gap:5px;
+    margin-top:6px;
   }
   .keep-awake .dot { width:7px; height:7px; border-radius:50%; background:var(--ok); }
 
   /* ===== 运行操作按钮（上下键切换 + OK确定，同主页按钮） ===== */
-  .ops { display:flex; gap:10px; margin-top:12px; }
+  .ops { display:flex; gap:10px; margin-top:14px; }
   .op {
     flex:1; text-align:center; font-size:15px; padding:11px 0;
     border-radius:999px; background:var(--card); border:1.5px solid var(--border);
@@ -239,7 +241,8 @@
   <div class="controls">
     <button data-scr="settings" class="active">设置页</button>
     <button data-scr="menu">计时器菜单</button>
-    <button data-scr="timer">正计时</button>
+    <button data-scr="timer-ready">正计时·就绪</button>
+    <button data-scr="timer">正计时·运行</button>
     <button data-scr="cd-set">倒计时·设置</button>
     <button data-scr="cd-run">倒计时·运行</button>
     <button data-scr="stats">今日统计</button>
@@ -294,11 +297,30 @@
         </div>
       </div>
 
-      <!-- ============ 正计时运行 ============ -->
+      <!-- ============ 正计时·就绪（进入后先按开始） ============ -->
+      <div class="scr" id="scr-timer-ready" style="display:none">
+        <div class="scr-title">正计时</div>
+        <div class="pad" style="justify-content:center">
+          <div class="timer-stage" style="margin-top:0">
+            <div class="big-time"><span>00</span><span class="colon">:</span><span>00</span><span class="colon">:</span><span>00</span></div>
+            <div class="timer-state">就绪 · 屏幕保持常亮</div>
+            <div class="keep-awake"><span class="dot"></span> 计时期间不休眠、不断电</div>
+          </div>
+          <div class="ops">
+            <div class="op on">开始 ▶</div>
+            <div class="op">返回</div>
+          </div>
+          <div class="key-hint">
+            <b>▲/▼</b> 在「开始/返回」间切换 · <b>OK</b> 开始计时 · <b>长按 OK</b> 返回菜单
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 正计时·运行 ============ -->
       <div class="scr" id="scr-timer" style="display:none">
         <div class="scr-title">正计时</div>
         <div class="pad" style="justify-content:center">
-          <div class="timer-card">
+          <div class="timer-stage" style="margin-top:0">
             <div class="big-time"><span>01</span><span class="colon">:</span><span>23</span><span class="colon">:</span><span>45</span></div>
             <div class="timer-state running">● 专注中 · 屏幕保持常亮</div>
             <div class="keep-awake"><span class="dot"></span> 计时期间不休眠、不断电</div>
@@ -357,7 +379,7 @@
       <div class="scr" id="scr-cd-run" style="display:none">
         <div class="scr-title">倒计时 · 运行中</div>
         <div class="pad" style="justify-content:center">
-          <div class="timer-card">
+          <div class="timer-stage" style="margin-top:0">
             <div class="big-time"><span>02</span><span class="colon">:</span><span>59</span><span class="colon">:</span><span>12</span></div>
             <div class="timer-state running">● 倒计时中 · 屏幕保持常亮</div>
             <div class="keep-awake"><span class="dot"></span> 3 小时模拟考 · 结束静音</div>
