@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>计时器 · 效果图（日间/夜间）</title>
+<style>
+  :root {
+    /* 日间（主页面亮色令牌） */
+    --bg:       #F1F5FB;
+    --card:     #FFFFFF;
+    --card2:    #EAF1FB;
+    --border:   #DFE7F1;
+    --ink:      #35435E;
+    --muted:    #93A1B5;
+    --blue:     #7A9BCC;
+    --blue_d:   #6390C4;
+    --accent:   #E8923C;
+    --ok:       #53A66A;
+    --sel:      #E4ECF5;
+  }
+  body.night {
+    /* 夜间（非首页深色令牌） */
+    --bg:       #111A24;
+    --card:     #1D2834;
+    --card2:    #22314B;
+    --border:   #2B3948;
+    --ink:      #EDF3F8;
+    --muted:    #9AA8B8;
+    --blue:     #5C7BA0;
+    --blue_d:   #456282;
+    --accent:   #FFB23E;
+    --ok:       #53A66A;
+    --sel:      #2E3A55;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background: #E4EAF2;
+    color: #22314D;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 40px;
+  }
+  body.night { background:#0B1219; color:#DDE7F0; }
+  h1 { font-size:20px; margin-bottom:4px; }
+  .sub { font-size:13px; color:#7a8798; margin-bottom:18px; }
+  body.night .sub { color:#7A8FA5; }
+  .controls {
+    display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+    margin-bottom:22px;
+  }
+  .controls button {
+    font-size:14px; padding:9px 18px; border-radius:999px; border:1px solid #C9D6E6;
+    background:#fff; color:#35435E; cursor:pointer; font-family:inherit;
+    transition:all .15s;
+  }
+  body.night .controls button { background:#1D2834; border-color:#2B3948; color:#EDF3F8; }
+  .controls button.active {
+    background:var(--blue_d); border-color:var(--blue_d); color:#fff; font-weight:600;
+  }
+  .stage { display:flex; gap:28px; flex-wrap:wrap; justify-content:center; }
+
+  /* ===== 设备框 ===== */
+  .device {
+    width: 360px;               /* 240 × 1.5 缩放，便于观看 */
+    height: 480px;
+    border-radius: 34px;
+    background: #10141a;
+    padding: 12px;
+    box-shadow: 0 20px 50px rgba(20,40,70,.35);
+    flex-shrink:0;
+  }
+  body.night .device { box-shadow:0 20px 50px rgba(0,0,0,.6); }
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 22px;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--ink);
+    position: relative;
+    display: flex; flex-direction: column;
+    transition: background .3s, color .3s;
+  }
+  .screen .notch {
+    position:absolute; top:6px; left:50%; transform:translateX(-50%);
+    width:56px; height:5px; border-radius:3px; background:rgba(90,100,120,.35);
+    z-index:50;
+  }
+  .scr-title {
+    height:44px; display:flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:600; margin:0 8px;
+    background:var(--card); border-radius:0 0 14px 14px;
+  }
+  .pad { padding:10px 12px; flex:1; overflow:hidden; display:flex; flex-direction:column; }
+
+  /* ===== 设置列表 ===== */
+  .list { flex:1; overflow:hidden; }
+  .row {
+    display:flex; align-items:center; height:34px; margin:0 4px 4px;
+    padding:0 12px; border-radius:10px; background:var(--card);
+    font-size:14px;
+  }
+  .row.new { background:var(--sel); box-shadow: inset 0 0 0 1.5px var(--blue); }
+  .row .icon { width:20px; text-align:center; color:var(--muted); font-size:13px; }
+  .row .label { flex:1; margin-left:6px; }
+  .row .arrow { color:var(--muted); font-size:13px; }
+  .badge-new {
+    font-size:10px; color:#fff; background:var(--accent);
+    border-radius:999px; padding:1px 7px; margin-left:6px;
+  }
+
+  /* ===== 计时主界面 ===== */
+  .timer-card {
+    flex:1; background:var(--card2); border:1px solid var(--border);
+    border-radius:18px; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; position:relative;
+  }
+  .mode-tabs {
+    display:flex; background:var(--card); border:1px solid var(--border);
+    border-radius:999px; overflow:hidden; margin-top:14px; width:60%;
+  }
+  .mode-tabs span {
+    flex:1; text-align:center; font-size:13px; padding:7px 0; color:var(--muted); cursor:pointer;
+  }
+  .mode-tabs span.on { background:var(--blue_d); color:#fff; font-weight:600; }
+  .big-time {
+    font-size:58px; font-weight:700; letter-spacing:2px; font-variant-numeric:tabular-nums;
+    color:var(--ink); margin:8px 0 2px;
+  }
+  .big-time .colon { color:var(--muted); }
+  .timer-state { font-size:12px; color:var(--muted); margin-bottom:14px; }
+  .timer-state.running { color:var(--ok); }
+  .timer-btns { display:flex; gap:10px; margin-bottom:14px; }
+  .tbtn {
+    min-width:92px; text-align:center; font-size:15px; padding:10px 16px;
+    border-radius:999px; border:none; cursor:pointer; font-family:inherit; font-weight:600;
+  }
+  .tbtn.start  { background:var(--blue_d); color:#fff; }
+  .tbtn.reset  { background:var(--card); color:var(--ink); border:1.5px solid var(--border); }
+  .tbtn.ring   { background:var(--card); color:var(--ink); border:1.5px solid var(--border); font-size:12px; min-width:0; padding:6px 12px; }
+  .keep-awake {
+    font-size:11px; color:var(--muted); display:flex; align-items:center; gap:5px;
+  }
+  .keep-awake .dot { width:7px; height:7px; border-radius:50%; background:var(--ok); }
+
+  /* ===== 倒计时设置 ===== */
+  .set-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px; margin-bottom:10px; }
+  .set-card .t { font-size:13px; font-weight:600; margin-bottom:8px; }
+  .wheel {
+    display:flex; justify-content:center; gap:6px; align-items:center; font-size:22px; font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  .wheel .unit { font-size:12px; color:var(--muted); margin:0 2px; }
+  .wheel .num {
+    min-width:56px; text-align:center; padding:6px 0; border-radius:10px;
+    background:var(--card2); border:1px solid var(--border);
+  }
+  .wheel .num.sel { background:var(--sel); box-shadow: inset 0 0 0 1.5px var(--blue); }
+  .ring-opt {
+    display:flex; gap:8px;
+  }
+  .ring-opt div {
+    flex:1; text-align:center; padding:8px 0; border-radius:10px; font-size:13px;
+    background:var(--card2); border:1px solid var(--border); color:var(--muted);
+  }
+  .ring-opt div.on { background:var(--blue_d); color:#fff; font-weight:600; border-color:var(--blue_d); }
+
+  /* ===== 统计界面 ===== */
+  .stat-today {
+    background:var(--card2); border:1px solid var(--border); border-radius:16px;
+    padding:14px 16px; display:flex; align-items:center; gap:14px; margin-bottom:10px;
+  }
+  .stat-today .big {
+    font-size:34px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--blue_d);
+  }
+  .stat-today .lab { font-size:12px; color:var(--muted); }
+  .stat-week { flex:1; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:12px; }
+  .stat-week .t { font-size:13px; font-weight:600; margin-bottom:10px; }
+  .bars { display:flex; justify-content:space-between; align-items:flex-end; height:110px; }
+  .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .bar-val { font-size:9px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .bar {
+    width:16px; border-radius:5px 5px 2px 2px; background:var(--blue);
+    position:relative;
+  }
+  .bar.today { background:var(--blue_d); }
+  .bar-lbl { font-size:10px; color:var(--muted); }
+  .bar-lbl.today { color:var(--ink); font-weight:600; }
+
+  .foot-note { margin-top:16px; max-width:740px; font-size:12px; color:#7a8798; line-height:1.8; text-align:center; }
+  body.night .foot-note { color:#7A8FA5; }
+</style>
+</head>
+<body class="">
+  <h1>计时器 · 界面效果图</h1>
+  <div class="sub">240 × 320 竖屏 · 配色与主界面一致（柔和白 + 低饱和蓝，不晃眼）</div>
+
+  <div class="controls">
+    <button data-scr="settings" class="active">设置页（入口）</button>
+    <button data-scr="timer">计时主界面</button>
+    <button data-scr="countdown">倒计时设置</button>
+    <button data-scr="stats">统计界面</button>
+    <button id="themeBtn">切换：夜间模式</button>
+  </div>
+
+  <div class="stage">
+    <div class="device"><div class="screen">
+      <div class="notch"></div>
+
+      <!-- ============ 设置页 ============ -->
+      <div class="scr" id="scr-settings">
+        <div class="scr-title">设置</div>
+        <div class="pad"><div class="list">
+          <div class="row"><span class="icon">◉</span><span class="label">WiFi 连接/配网</span><span class="arrow">›</span></div>
+          <div class="row new"><span class="icon">⏱</span><span class="label">计时器 <span class="badge-new">新</span></span><span class="arrow">›</span></div>
+          <div class="row"><span class="icon">🎙</span><span class="label">录音笔</span><span class="arrow">›</span></div>
+          <div class="row"><span class="icon">☀</span><span class="label">屏幕亮度 45%</span><span class="arrow">›</span></div>
+          <div class="row"><span class="icon">♪</span><span class="label">音量 80%</span><span class="arrow">›</span></div>
+          <div class="row"><span class="icon">🕑</span><span class="label">当前时间 2026-10-07 14:30</span><span class="arrow">›</span></div>
+          <div class="row"><span class="icon">🌅</span><span class="label">早起记录</span><span class="arrow">›</span></div>
+          <div class="row"><span class="icon">🌙</span><span class="label">睡眠记录</span><span class="arrow">›</span></div>
+          <div class="row"><span class="icon">⏰</span><span class="label">起床闹钟 07:00</span><span class="arrow">›</span></div>
+          <div class="row"><span class="icon">🎨</span><span class="label">界面模式</span><span class="arrow">›</span></div>
+        </div></div>
+      </div>
+
+      <!-- ============ 计时主界面 ============ -->
+      <div class="scr" id="scr-timer" style="display:none">
+        <div class="scr-title">计时器</div>
+        <div class="pad" style="justify-content:center">
+          <div class="mode-tabs"><span class="on">正计时</span><span>倒计时</span></div>
+          <div class="timer-card" style="margin-top:10px">
+            <div class="big-time"><span>00</span><span class="colon">:</span><span>00</span><span class="colon">:</span><span>00</span></div>
+            <div class="timer-state running">● 计时中 · 屏幕保持常亮</div>
+            <div class="timer-btns">
+              <button class="tbtn start">暂停</button>
+              <button class="tbtn reset">重置</button>
+            </div>
+            <div class="keep-awake"><span class="dot"></span> 计时期间不休眠、不断电</div>
+          </div>
+          <div style="margin-top:10px; text-align:center">
+            <button class="tbtn ring" style="display:inline-block">🎧 完成提示音：开</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 倒计时设置 ============ -->
+      <div class="scr" id="scr-countdown" style="display:none">
+        <div class="scr-title">倒计时设置</div>
+        <div class="pad">
+          <div class="set-card">
+            <div class="t">时长</div>
+            <div class="wheel">
+              <div class="num sel">25</div><span class="unit">分</span>
+              <div class="num">00</div><span class="unit">秒</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center">▲/▼ 调整 · OK 确认</div>
+          </div>
+          <div class="set-card">
+            <div class="t">结束时提醒</div>
+            <div class="ring-opt">
+              <div class="on">🔔 提示音</div>
+              <div>🔇 静音</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:center;margin-top:6px">
+            <button class="tbtn start" style="min-width:0;flex:1">开始</button>
+            <button class="tbtn reset" style="min-width:0;flex:1">返回</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 统计界面 ============ -->
+      <div class="scr" id="scr-stats" style="display:none">
+        <div class="scr-title">今日计时</div>
+        <div class="pad">
+          <div class="stat-today">
+            <div>
+              <div class="lab">今天累计专注</div>
+              <div class="big">2 时 35 分</div>
+              <div class="lab">目标：每日 4 小时</div>
+            </div>
+          </div>
+          <div class="stat-week">
+            <div class="t">最近 7 天</div>
+            <div class="bars">
+              <div class="bar-col"><span class="bar-val">2.1h</span><div class="bar" style="height:52px"></div><span class="bar-lbl">一</span></div>
+              <div class="bar-col"><span class="bar-val">3.5h</span><div class="bar" style="height:86px"></div><span class="bar-lbl">二</span></div>
+              <div class="bar-col"><span class="bar-val">1.2h</span><div class="bar" style="height:30px"></div><span class="bar-lbl">三</span></div>
+              <div class="bar-col"><span class="bar-val">4.0h</span><div class="bar" style="height:98px"></div><span class="bar-lbl">四</span></div>
+              <div class="bar-col"><span class="bar-val">2.8h</span><div class="bar" style="height:69px"></div><span class="bar-lbl">五</span></div>
+              <div class="bar-col"><span class="bar-val">0h</span><div class="bar" style="height:4px"></div><span class="bar-lbl">六</span></div>
+              <div class="bar-col"><span class="bar-val">2.6h</span><div class="bar today" style="height:63px"></div><span class="bar-lbl today">日</span></div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">数据按天自动记录 · 跨天自动归档</div>
+          </div>
+        </div>
+      </div>
+
+    </div></div>
+  </div>
+
+  <div class="foot-note">
+    说明：计时器入口位于「设置 → 录音笔」上方；计时页支持 正计时 / 倒计时 切换；倒计时开始时可选 <b>提示音 / 静音</b>；<br>
+    计时运行期间跳过自动浅睡（背光常亮、不熄屏）。统计页展示「今日累计 + 最近 7 天」。
+  </div>
+
+<script>
+  const body = document.body;
+  const btn = document.getElementById('themeBtn');
+  let night = false;
+  btn.addEventListener('click', () => {
+    night = !night;
+    body.classList.toggle('night', night);
+    btn.textContent = night ? '切换：日间模式' : '切换：夜间模式';
+  });
+  document.querySelectorAll('.controls button[data-scr]').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.controls button[data-scr]').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      document.querySelectorAll('.scr').forEach(s => s.style.display = 'none');
+      document.getElementById('scr-' + b.dataset.scr).style.display = 'block';
+    });
+  });
+</script>
+</body>
+</html>
