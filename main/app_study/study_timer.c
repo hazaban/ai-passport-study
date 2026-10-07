@@ -55,7 +55,8 @@ static long timer_epoch_day(void) {
 static void stats_serialize(const study_timer_stats_t *st, char *out, int max) {
     int n = snprintf(out, max, "%ld", st->today_epoch);
     for (int i = 0; i < STATS_SLOTS && n < max - 1; i++) {
-        n += snprintf(out + n, max - n, ",%u,%u", st->up_sec[i], st->dn_sec[i]);
+        n += snprintf(out + n, max - n, ",%u,%u",
+                      (unsigned)st->up_sec[i], (unsigned)st->dn_sec[i]);
     }
 }
 

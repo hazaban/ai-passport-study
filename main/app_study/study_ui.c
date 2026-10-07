@@ -66,6 +66,7 @@ typedef struct {
     uint32_t sel;       /* 列表选中背景 */
     uint32_t sel_border;/* 选中态边框（白天用降饱和，不用主蓝） */
     uint32_t pill;      /* 倒计时胶囊底 */
+    uint32_t card2;     /* 嵌套卡片/选中行底色（比 card 深一档，夜间更明显） */
 } ui_theme_t;
 
 /* 夜间：深靛蓝底，蓝色再压一档，避免晃眼；白天不动 */
@@ -81,6 +82,7 @@ static const ui_theme_t s_theme_night = {
     .sel       = 0x2E3A55,
     .sel_border= 0x5C7BA0,   /* 和 primary 对齐 */
     .pill      = 0x22314B,
+    .card2     = 0x16212C,   /* 嵌套卡片：比 card(0x1D2834) 深一档 */
 };
 
 /* 白天：柔和浅蓝灰底 + 白卡片 + 深藏青文字，不晃眼且清晰；
@@ -97,6 +99,7 @@ static const ui_theme_t s_theme_day = {
     .sel       = 0xE4ECF5,
     .sel_border= 0x9BB1C6,   /* 降饱和灰蓝边框 */
     .pill      = 0xE9F0F8,
+    .card2     = 0xF6F8FB,   /* 嵌套卡片：比白卡片略灰 */
 };
 
 /* 当前主题（0=夜间 1=白天，读 NVS） */
@@ -1978,6 +1981,10 @@ static lv_obj_t *s_tdn_ring_cards[2];
 static lv_obj_t *s_tdn_ring_labs[2];
 static lv_obj_t *s_tdn_btn[2];
 
+/* 前向声明（tdown_build_run 在定义之前使用） */
+static void tdn_timer_cb(lv_timer_t *t);
+static void tdn_update_run(void);
+
 static void tdn_update_setup(void) {
     /* 预设高亮 */
     for (int i = 0; i < 4; i++) {
@@ -2058,7 +2065,13 @@ static void tdown_build_setup(void) {
         char m[8], s[8];
         snprintf(m, sizeof(m), "%d", s_tdn_min);
         snprintf(s, sizeof(s), "%d", s_tdn_sec);
-        lv_obj_t *w = mod_card(ca, 12, 116, 200, 20, LV_COLOR_TRANSP, 0, false);
+        lv_obj_t *w = lv_obj_create(ca);           /* 透明容器：仅定位分/秒标签 */
+        lv_obj_remove_flag(w, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_pos(w, 12, 116);
+        lv_obj_set_size(w, 200, 20);
+        lv_obj_set_style_bg_opa(w, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_width(w, 0, 0);
+        lv_obj_set_style_pad_all(w, 0, 0);
         s_tdn_min_lab = mod_card(w, 0, 0, 60, 20, thm()->card2, 6, true);
         lv_obj_t *ml = ui_pixel_label(s_tdn_min_lab, m, F_STUDY, thm()->ink);
         lv_obj_center(ml);
